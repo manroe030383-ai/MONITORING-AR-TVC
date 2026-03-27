@@ -1,39 +1,30 @@
 const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTjNg8b8zSmDd2oOO7FGzeIttLstq4azmEjOGLnXHLOyt4FlBykKYIEFe160BMLnjajbdUPeoAmiQu-/pub?gid=0&single=true&output=csv";
 
-async function getData(){
+async function getData() {
+    try {
 
-    const res = await fetch(sheetURL);
-    const text = await res.text();
+        const res = await fetch(sheetURL);
+        const text = await res.text();
 
-    const rows = text.split("\n").slice(1);
+        const rows = text.trim().split("\n").slice(1);
 
-    return rows.map(row=>{
-        const col = row.split(",");
-        return {
-            customer: col[0],
-            sales: Number(col[1]),
-            balance: Number(col[2]),
-            unit: col[3]
-        }
-    });
+        return rows.map(row => {
 
-}";
+            const col = row.split(",");
 
-async function getData(){
+            return {
+                customer: col[0] ? col[0].trim() : "",
+                sales: col[1] ? Number(col[1].replace(/[^0-9]/g, "")) : 0,
+                balance: col[2] ? Number(col[2].replace(/[^0-9]/g, "")) : 0,
+                unit: col[3] ? col[3].trim() : ""
+            }
 
-    const res = await fetch(sheetURL);
-    const text = await res.text();
+        });
 
-    const rows = text.split("\n").slice(1);
+    } catch (error) {
 
-    return rows.map(row=>{
-        const col = row.split(",");
-        return {
-            customer: col[0],
-            sales: Number(col[1]),
-            balance: Number(col[2]),
-            unit: col[3]
-        }
-    });
+        console.log("Error ambil data:", error);
+        return [];
 
+    }
 }
