@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>TAFS Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="data.js"></script>
+<script src="script.js"></script>
+
+<style>
+
+body{
+    margin:0;
+    font-family:Segoe UI;
+    background:#f4f6f9;
+}
+
+/* HEADER */
+.header{
+    background:#2a5bd7;
+    color:white;
+    padding:15px 30px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logout{
+    background:#e32626;
+    border:none;
+    padding:8px 15px;
+    color:white;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+/* CONTAINER */
+.container{
+    padding:30px;
+}
+
+/* GRID KPI */
+.grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+}
+
+/* CARD */
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.1);
+}
+
+.card h3{
+    color:#777;
+    font-size:14px;
+}
+
+.card h1{
+    margin-top:10px;
+}
+
+/* CHART */
+canvas{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-top:20px;
+}
+
+/* TABLE */
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    margin-top:20px;
+    border-radius:10px;
+    overflow:hidden;
+}
+
+th{
+    background:#2a5bd7;
+    color:white;
+    padding:10px;
+}
+
+td{
+    padding:10px;
+    border-bottom:1px solid #ddd;
+}
+
+</style>
+
+</head>
+
+<body onload="loadTAFS()">
+
+<div class="header">
+    <h2>TAFS Dashboard</h2>
+    <button class="logout" onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+
+<div class="grid">
+
+<div class="card">
+    <h3>Total Customer</h3>
+    <h1 id="customer">0</h1>
+</div>
+
+<div class="card">
+    <h3>Total Sales</h3>
+    <h1 id="sales">0</h1>
+</div>
+
+<div class="card">
+    <h3>Outstanding</h3>
+    <h1 id="balance">0</h1>
+</div>
+
+</div>
+
+<canvas id="chart"></canvas>
+
+<table>
+
+<thead>
+<tr>
+<th>Customer</th>
+<th>Sales</th>
+<th>Balance</th>
+<th>Unit</th>
+</tr>
+</thead>
+
+<tbody id="table"></tbody>
+
+</table>
+
+</div>
+
+<script>
+
+async function loadTAFS(){
+
+    checkAuth("tafs");
+
+    const data = (await getData()).filter(x => x.unit === "TAFS");
+
+    document.getElementById("customer").innerText = data.length;
+
+    let totalSales = 0;
+    let totalBalance = 0;
+
+    data.forEach(d=>{
+        totalSales += d.sales;
+        totalBalance += d.balance;
+    });
+
+    document.getElementById("sales").innerText = totalSales;
+    document.getElementById("balance").innerText = totalBalance;
+
+    const table = document.getElementById("table");
+
+    data.forEach(d=>{
+        table.innerHTML += `
+        <tr>
+            <td>${d.customer}</td>
+            <td>${d.sales}</td>
+            <td>${d.balance}</td>
+            <td>${d.unit}</td>
+        </tr>`;
+    });
+
+    new Chart(document.getElementById("chart"),{
+        type:"bar",
+        data:{
+            labels:data.map(x=>x.customer),
+            datasets:[{
+                label:"Sales TAFS",
+                data:data.map(x=>x.sales)
+            }]
+        }
+    });
+
+}
+
+</script>
+
+</body>
+</html>

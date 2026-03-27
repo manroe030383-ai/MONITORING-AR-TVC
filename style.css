@@ -1,0 +1,29 @@
+body {
+    background: #E0F7FF;
+}
+
+.login-left {
+    background: #00AEEF;
+    color: white;
+}
+
+.right-content h2 {
+    color: #0086B3;
+}
+
+.input-group label {
+    color: #0086B3;
+}
+
+.input-group input {
+    border: 1px solid #00AEEF;
+}
+
+.login-button {
+    background: #00AEEF;
+    color: white;
+}
+
+.login-button:hover {
+    background: #00C8FF;
+}

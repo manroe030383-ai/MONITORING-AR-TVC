@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Branch Control Center</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="dashboard-body" onload="checkAuth('admin')">
+
+    <div class="main-wrapper">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-building-shield"></i>
+                <span>Branch Control</span>
+            </div>
+            
+            <div class="menu-section">
+                <p class="menu-label">AR KENDARAAN (UNIT)</p>
+                <a href="dashboard.html" class="menu-item active"><i class="fa-solid fa-chart-line"></i> Dashboard Unit</a>
+                <a href="admin.html" class="menu-item"><i class="fa-solid fa-database"></i> Data AR Unit</a>
+            </div>
+
+            <div class="menu-section">
+                <p class="menu-label">PARTNER KEUANGAN</p>
+                <a href="tafs.html" class="menu-item"><i class="fa-solid fa-handshake"></i> TAFs</a>
+                <a href="acc.html" class="menu-item"><i class="fa-solid fa-handshake"></i> ACC</a>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <i class="fa-solid fa-circle-user"></i>
+                    <span>Auto2000 P.Bun</span>
+                </div>
+            </div>
+        </nav>
+
+        <main class="content-area">
+            <header class="top-header">
+                <h2>Overview Dashboard Unit</h2>
+                <div class="date-info" id="currentDate"></div>
+            </header>
+
+            <div class="stats-grid">
+                <div class="card stat-card blue">
+                    <p>Total Balance</p>
+                    <h3 id="totalDisplay">Rp 0</h3>
+                </div>
+                <div class="card stat-card yellow">
+                    <p>Total Customer</p>
+                    <h3 id="customerCount">0</h3>
+                </div>
+                <div class="card stat-card red">
+                    <p>Overdue System</p>
+                    <h3>Realtime</h3>
+                </div>
+            </div>
+
+            <div class="charts-row">
+                <div class="card chart-container">
+                    <h3>Aging Analysis (Umur Piutang)</h3>
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card table-container">
+                <div class="table-header">
+                    <h3>Monitoring AR Unit</h3>
+                    <button class="btn-download"><i class="fa-solid fa-download"></i> Download</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Customer Name</th>
+                            <th>Sales Officer</th>
+                            <th>Balance Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTjNg8b8zSmDd2oOO7FGzeIttLstq4azmEjOGLnXHLOyt4FlBykKYIEFe160BMLnjajbdUPeoAmiQu-/pub?output=csv";
+
+        fetch(url)
+        .then(res => res.text())
+        .then(data => {
+            const rows = data.split("\n").slice(1);
+            let totalBalance = 0;
+            let labels = [];
+            let values = [];
+            let tableHTML = "";
+
+            rows.forEach(row => {
+                if(row.trim() !== ""){
+                    const col = row.split(",");
+                    const balance = parseInt(col[2] || 0);
+                    
+                    labels.push(col[0]);
+                    values.push(balance);
+                    totalBalance += balance;
+
+                    tableHTML += `
+                        <tr>
+                            <td><strong>${col[0]}</strong></td>
+                            <td>${col[1]}</td>
+                            <td class="amount">Rp ${balance.toLocaleString('id-ID')}</td>
+                            <td><span class="badge ${balance > 100000000 ? 'overdue' : 'safe'}">Active</span></td>
+                        </tr>
+                    `;
+                }
+            });
+
+            document.getElementById("tableBody").innerHTML = tableHTML;
+            document.getElementById("totalDisplay").innerText = "Rp " + totalBalance.toLocaleString('id-ID');
+            document.getElementById("customerCount").innerText = rows.length;
+            document.getElementById("currentDate").innerText = new Date().toLocaleDateString('id-ID', { dateStyle: 'long' });
+
+            // Grafik dengan style yang lebih modern (Warna Merah sesuai Auto2000)
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Outstanding Balance',
+                        data: values,
+                        backgroundColor: '#e74c3c',
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
