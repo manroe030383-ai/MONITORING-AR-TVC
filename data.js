@@ -13,8 +13,8 @@ async function getData() {
             const col = row.split(",");
 
             return {
-                customer: col[0] ? col[0].trim() : "",
-                sales: col[1] ? Number(col[1].replace(/[^0-9]/g, "")) : 0,
+                customer_name: col[0] ? col[0].trim() : "",
+                salesman_name: col[1] ? Number(col[1].replace(/[^0-9]/g, "")) : 0,
                 balance: col[2] ? Number(col[2].replace(/[^0-9]/g, "")) : 0,
                 unit: col[3] ? col[3].trim() : ""
             }
