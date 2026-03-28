@@ -1,236 +1,72 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Branch Control Center</title>
+    <title>Login Dashboard</title>
 
-<style>
+    <style>
+        body{
+            background:#7a0000;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            height:100vh;
+            font-family:Arial;
+        }
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Segoe UI, sans-serif;
-}
+        .login{
+            background:white;
+            padding:30px;
+            border-radius:10px;
+            width:300px;
+        }
 
-body{
-    background:#e9edf2;
-    height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
+        input{
+            width:100%;
+            padding:10px;
+            margin-top:10px;
+        }
 
-/* CONTAINER */
-.container{
-    width:950px;
-    height:480px;
-    display:flex;
-    border-radius:20px;
-    overflow:hidden;
-    box-shadow:0 15px 40px rgba(0,0,0,0.15);
-    background:white;
-}
+        button{
+            width:100%;
+            padding:10px;
+            margin-top:15px;
+            background:#7a0000;
+            color:white;
+            border:none;
+        }
+    </style>
 
-/* LEFT */
-.left{
-    width:50%;
-    background:linear-gradient(135deg,#4b2d33,#7a2e35,#a64043);
-    color:white;
-    padding:60px;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-}
-
-.left h1{
-    font-size:42px;
-    margin-bottom:20px;
-}
-
-.left p{
-    font-size:18px;
-    line-height:28px;
-    opacity:0.9;
-}
-
-/* RIGHT */
-.right{
-    width:50%;
-    background:#f4f6f9;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
-
-.login-box{
-    width:340px;
-}
-
-/* TITLE */
-.login-box h2{
-    color:#1c2b3a;
-    margin-bottom:5px;
-}
-
-.subtitle{
-    color:#7d8a97;
-    font-size:13px;
-    margin-bottom:20px;
-}
-
-/* LABEL */
-.label{
-    font-size:12px;
-    color:#2a5bd7;
-    font-weight:600;
-    margin-bottom:6px;
-}
-
-/* INPUT */
-.input-box{
-    background:#eef2f6;
-    padding:12px;
-    border-radius:8px;
-    margin-bottom:18px;
-    display:flex;
-    align-items:center;
-}
-
-.icon{
-    margin-right:10px;
-    opacity:0.6;
-}
-
-.input-box input{
-    border:none;
-    background:transparent;
-    width:100%;
-    outline:none;
-    font-size:14px;
-}
-
-/* ERROR */
-.error{
-    background:#ffe5e5;
-    color:#d10000;
-    padding:10px;
-    border-radius:8px;
-    font-size:13px;
-    margin-bottom:15px;
-    display:none;
-}
-
-/* BUTTON */
-button{
-    width:100%;
-    padding:14px;
-    background:#e32626;
-    color:white;
-    border:none;
-    border-radius:10px;
-    font-size:15px;
-    cursor:pointer;
-    transition:0.25s;
-}
-
-button:hover{
-    background:#c40000;
-}
-
-/* INFO */
-.info{
-    margin-top:15px;
-    text-align:center;
-    font-size:13px;
-    color:#6b7b8c;
-}
-
-.info span{
-    color:#2a5bd7;
-}
-
-/* RESPONSIVE */
-@media(max-width:900px){
-
-    .container{
-        width:95%;
-        height:auto;
-        flex-direction:column;
-    }
-
-    .left{
-        width:100%;
-        padding:40px;
-        text-align:center;
-    }
-
-    .right{
-        width:100%;
-        padding:40px;
-    }
-
-}
-
-</style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="login">
 
-    <!-- LEFT PANEL -->
-    <div class="left">
-        <h1>Branch Control Center</h1>
-        <p>
-            Pusat Kendali Administrasi Cabang<br>
-            Pangkalan Bun Kalteng
-        </p>
-    </div>
+    <h2>Login</h2>
 
-    <!-- RIGHT PANEL -->
-    <div class="right">
+    <input type="text" id="user" placeholder="username">
+    <input type="password" id="pass" placeholder="password">
 
-        <div class="login-box">
-
-            <h2>Login Sistem</h2>
-            <div class="subtitle">
-                Gunakan kredensial otorisasi Anda
-            </div>
-
-            <div class="label">USERNAME</div>
-            <div class="input-box">
-                <div class="icon">👤</div>
-                <input type="text" id="username" placeholder="Enter username">
-            </div>
-
-            <div class="label">PASSWORD</div>
-            <div class="input-box">
-                <div class="icon">🔒</div>
-                <input type="password" id="password" placeholder="Enter password">
-            </div>
-
-            <div class="error" id="error">
-                Username atau password salah
-            </div>
-
-            <button onclick="login()">Masuk Sistem</button>
-
-            <div class="info">
-                Admin: <span>admin123</span> |
-                TAFS: <span>tafs123</span> |
-                ACC: <span>acc123</span>
-            </div>
-
-        </div>
-
-    </div>
+    <button onclick="login()">Login</button>
 
 </div>
 
-<!-- SCRIPT JS -->
-<script src="script.js"></script>
+<script>
+
+function login(){
+
+    let u = document.getElementById("user").value;
+    let p = document.getElementById("pass").value;
+
+    if(u=="admin" && p=="1234"){
+        window.location="admin.html";
+    }else{
+        alert("Login salah");
+    }
+
+}
+
+</script>
 
 </body>
 </html>

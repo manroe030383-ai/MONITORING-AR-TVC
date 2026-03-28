@@ -1,246 +1,102 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin</title>
 
-<title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="data.js"></script>
 
-<style>
-
-body{
-    margin:0;
-    font-family:Segoe UI;
-    background:#eef1f5;
-}
-
-/* HEADER */
-
-.header{
-    background:linear-gradient(90deg,#4b2d33,#a64043);
-    color:white;
-    padding:20px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
-
-.logout{
-    background:white;
-    color:#a64043;
-    border:none;
-    padding:8px 15px;
-    border-radius:8px;
-    cursor:pointer;
-}
-
-/* CONTAINER */
-
-.container{
-    padding:30px;
-}
-
-/* CARDS */
-
-.cards{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:20px;
-    margin-bottom:30px;
-}
-
-.card{
-    background:white;
-    padding:20px;
-    border-radius:15px;
-    box-shadow:0 5px 15px rgba(0,0,0,0.1);
-}
-
-.card h3{
-    margin:0;
-    color:#666;
-}
-
-.card h1{
-    margin-top:10px;
-    color:#a64043;
-}
-
-/* CHART */
-
-.chart-box{
-    background:white;
-    padding:20px;
-    border-radius:15px;
-    box-shadow:0 5px 15px rgba(0,0,0,0.1);
-    margin-bottom:30px;
-}
-
-/* TABLE */
-
-.table-box{
-    background:white;
-    padding:20px;
-    border-radius:15px;
-    box-shadow:0 5px 15px rgba(0,0,0,0.1);
-}
-
-table{
-    width:100%;
-    border-collapse:collapse;
-}
-
-th{
-    background:#4b2d33;
-    color:white;
-    padding:10px;
-}
-
-td{
-    padding:10px;
-    border-bottom:1px solid #ddd;
-}
-
-</style>
 </head>
 
-<body onload="loadDashboard()">
+<body>
 
 <div class="header">
-    <h2>Admin Dashboard</h2>
-    <button class="logout" onclick="logout()">Logout</button>
+    AUTO2000 DASHBOARD
 </div>
 
 <div class="container">
 
-    <!-- CARDS -->
     <div class="cards">
 
         <div class="card">
             <h3>Total Customer</h3>
-            <h1 id="totalCustomer">0</h1>
-        </div>
-
-        <div class="card">
-            <h3>Total Sales</h3>
-            <h1 id="totalSales">0</h1>
+            <h2 id="totalCustomer">0</h2>
         </div>
 
         <div class="card">
             <h3>Outstanding Balance</h3>
-            <h1 id="totalBalance">0</h1>
+            <h2 id="totalBalance">0</h2>
+        </div>
+
+        <div class="card">
+            <h3>Aging 1-30</h3>
+            <h2 id="aging1">0</h2>
+        </div>
+
+        <div class="card">
+            <h3>>60 Hari</h3>
+            <h2 id="aging3">0</h2>
         </div>
 
     </div>
 
-    <!-- CHART -->
-    <div class="chart-box">
-        <canvas id="chart"></canvas>
-    </div>
+    <table>
 
-    <!-- TABLE -->
-    <div class="table-box">
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>Sales</th>
+                <th>Supervisor</th>
+                <th>Balance</th>
+            </tr>
+        </thead>
 
-        <table>
+        <tbody id="tableData"></tbody>
 
-            <thead>
-                <tr>
-                    <th>Customer</th>
-                    <th>Sales</th>
-                    <th>Balance</th>
-                    <th>Unit</th>
-                </tr>
-            </thead>
-
-            <tbody id="tableData"></tbody>
-
-        </table>
-
-    </div>
+    </table>
 
 </div>
 
-<!-- DATA GOOGLE SHEET -->
-<script src="data.js"></script>
-
 <script>
 
-function checkAuth(){
-
-    const role = localStorage.getItem("role");
-
-    if(role !== "admin"){
-        window.location.href = "index.html";
-    }
-
-}
-
-function logout(){
-
-    localStorage.removeItem("role");
-    window.location.href = "index.html";
-
-}
-
-async function loadDashboard(){
-
-    checkAuth();
+async function loadDashboard() {
 
     const data = await getData();
 
-    console.log(data);
-
     let totalCustomer = data.length;
-    let totalSales = 0;
     let totalBalance = 0;
+    let aging1 = 0;
+    let aging3 = 0;
 
-    let tafsSales = 0;
-    let accSales = 0;
-
-    let table = "";
+    let html = "";
 
     data.forEach(d => {
 
-        totalSales += d.sales;
         totalBalance += d.balance;
+        aging1 += d.overdue1;
+        aging3 += d.overdue3;
 
-        if(d.unit === "TAFS") tafsSales += d.sales;
-        if(d.unit === "ACC") accSales += d.sales;
-
-        table += `
-            <tr>
-                <td>${d.customer_name}</td>
-                <td>Rp ${d.salesman_name.toLocaleString()}</td>
-                <td>Rp ${d.balance.toLocaleString()}</td>
-                <td>${d.unit}</td>
-            </tr>
+        html += `
+        <tr>
+            <td>${d.customer}</td>
+            <td>${d.sales}</td>
+            <td>${d.supervisor}</td>
+            <td>Rp ${d.balance.toLocaleString()}</td>
+        </tr>
         `;
-
     });
 
     document.getElementById("totalCustomer").innerText = totalCustomer;
-    document.getElementById("totalSales").innerText = "Rp " + totalSales.toLocaleString();
     document.getElementById("totalBalance").innerText = "Rp " + totalBalance.toLocaleString();
+    document.getElementById("aging1").innerText = "Rp " + aging1.toLocaleString();
+    document.getElementById("aging3").innerText = "Rp " + aging3.toLocaleString();
 
-    document.getElementById("tableData").innerHTML = table;
-
-    new Chart(document.getElementById("chart"), {
-
-        type: "bar",
-
-        data: {
-            labels: ["TAFS", "ACC"],
-            datasets: [{
-                label: "Sales",
-                data: [tafsSales, accSales]
-            }]
-        }
-
-    });
-
+    document.getElementById("tableData").innerHTML = html;
 }
+
+loadDashboard();
 
 </script>
 
