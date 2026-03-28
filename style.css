@@ -1,62 +1,97 @@
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f5f6fa;
-}
-
-.header {
-    background: linear-gradient(90deg,#7a0000,#b30000,#ffffff);
-    padding: 20px;
+/* Bagian Kiri (Hero Section) dengan Radial Gradient */
+.hero-section {
+    flex: 1;
+    /* Efek pancaran merah dari pojok kanan bawah ke hitam di kiri atas */
+    background: radial-gradient(circle at bottom right, 
+        #8b0a1a 0%,    /* Merah marun terang di pojok */
+        #5a0b14 30%,   /* Merah gelap transisi */
+        #1d1b2e 70%,   /* Biru dongker sangat gelap */
+        #0a0a14 100%   /* Hitam kebiruan di pojok kiri atas */
+    );
     color: white;
-    font-size: 22px;
-    font-weight: bold;
+    display: flex;
+    align-items: center;
+    padding: 70px; /* Padding lebih lebar agar teks tidak terlalu ke pinggir */
+    border-top-left-radius: 40px;
+    border-bottom-left-radius: 40px;
 }
 
-.container {
-    padding: 20px;
+/* Judul dengan Spasi Baris Rapat */
+.hero-content h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1.0; /* Rapat seperti di gambar */
+    margin-bottom: 30px;
+    letter-spacing: -2px;
 }
 
-.cards {
-    display: grid;
-    grid-template-columns: repeat(4,1fr);
-    gap: 20px;
-    margin-bottom: 20px;
+/* Teks Deskripsi di bawah judul */
+.hero-content p {
+    font-size: 1.05rem;
+    line-height: 1.5;
+    max-width: 320px;
+    opacity: 0.9;
+    font-weight: 300;
 }
 
-.card {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+/* --- DETAIL FORM KANAN --- */
+
+/* Label Biru yang Sangat Khas */
+.input-group label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 900;
+    color: #3b5bdb; /* Biru terang */
+    background: #e7f0ff; /* Background kotak biru muda di label */
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
 }
 
-.card h3 {
-    margin: 0;
-    color: #666;
-}
-
-.card h2 {
-    margin-top: 10px;
-    color: #7a0000;
-}
-
-table {
+/* Input Box Abu-abu Terang Bersih */
+.input-wrapper input {
     width: 100%;
-    border-collapse: collapse;
-    background: white;
+    padding: 18px 20px 18px 55px;
+    background: #f8fafb; /* Abu-abu pucat kebiruan */
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    color: #333;
 }
 
-th {
-    background: #7a0000;
+/* Icon User & Gembok */
+.input-wrapper i {
+    position: absolute;
+    left: 20px;
+    color: #b0b8c1;
+    font-size: 1.2rem;
+}
+
+/* Tombol Merah Menyala */
+.btn-login {
+    width: 100%;
+    padding: 18px;
+    background-color: #df0b25; /* Merah "Danger" yang kuat */
     color: white;
-    padding: 10px;
+    border: none;
+    border-radius: 15px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 10px;
 }
 
-td {
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-}
-
-tr:hover {
-    background: #f1f1f1;
+/* Pesan Error Halus */
+.alert-danger {
+    background-color: #fff2f1;
+    border: 1px solid #ffe5e3;
+    color: #e03131;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 25px;
 }

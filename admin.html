@@ -1,103 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>Dashboard Admin</title>
-
-    <link rel="stylesheet" href="style.css">
-
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-    <script src="data.js"></script>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Admin</title>
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<div class="header">
-    AUTO2000 DASHBOARD
+<div class="dashboard-container">
+    <h2>Dashboard Admin</h2>
+    <table class="dashboard-table" id="dashboardTable"></table>
 </div>
 
-<div class="container">
-
-    <div class="cards">
-
-        <div class="card">
-            <h3>Total Customer</h3>
-            <h2 id="totalCustomer">0</h2>
-        </div>
-
-        <div class="card">
-            <h3>Outstanding Balance</h3>
-            <h2 id="totalBalance">0</h2>
-        </div>
-
-        <div class="card">
-            <h3>Aging 1-30</h3>
-            <h2 id="aging1">0</h2>
-        </div>
-
-        <div class="card">
-            <h3>>60 Hari</h3>
-            <h2 id="aging3">0</h2>
-        </div>
-
-    </div>
-
-    <table>
-
-        <thead>
-            <tr>
-                <th>Customer</th>
-                <th>Sales</th>
-                <th>Supervisor</th>
-                <th>Balance</th>
-            </tr>
-        </thead>
-
-        <tbody id="tableData"></tbody>
-
-    </table>
-
-</div>
-
+<script src="data.js"></script>
 <script>
-
-async function loadDashboard() {
-
-    const data = await getData();
-
-    let totalCustomer = data.length;
-    let totalBalance = 0;
-    let aging1 = 0;
-    let aging3 = 0;
-
-    let html = "";
-
-    data.forEach(d => {
-
-        totalBalance += d.balance;
-        aging1 += d.overdue1;
-        aging3 += d.overdue3;
-
-        html += `
-        <tr>
-            <td>${d.customer}</td>
-            <td>${d.sales}</td>
-            <td>${d.supervisor}</td>
-            <td>Rp ${d.balance.toLocaleString()}</td>
-        </tr>
-        `;
-    });
-
-    document.getElementById("totalCustomer").innerText = totalCustomer;
-    document.getElementById("totalBalance").innerText = "Rp " + totalBalance.toLocaleString();
-    document.getElementById("aging1").innerText = "Rp " + aging1.toLocaleString();
-    document.getElementById("aging3").innerText = "Rp " + aging3.toLocaleString();
-
-    document.getElementById("tableData").innerHTML = html;
-}
-
-loadDashboard();
-
+renderTable("dashboardTable");
 </script>
 
 </body>

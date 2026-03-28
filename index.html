@@ -1,71 +1,174 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>Login Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - Branch Control Center</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family: 'Poppins', sans-serif; }
+.login-container { display:flex; height:100vh; }
+.hero-section { flex:1; background:#800000; color:white; display:flex; justify-content:center; align-items:center; }
+.hero-content { padding:50px; }
+.hero-content h1 { font-size:48px; font-weight:700; line-height:1.2; }
+.hero-content p { margin-top:20px; font-size:18px; }
+.form-section { flex:1; display:flex; justify-content:center; align-items:center; background:#f8f8f8; }
+.form-box { background:white; padding:40px; border-radius:15px; width:100%; max-width:380px; box-shadow:0 4px 15px rgba(0,0,0,0.15); }
+.form-box h2 { color:#800000; font-weight:700; text-align:center; }
+.subtitle { text-align:center; font-size:14px; color:#555; margin-bottom:25px; }
+.input-group { margin-bottom:20px; }
+.input-group label { font-size:12px; color:#555; margin-bottom:5px; display:block; }
+.input-wrapper { position:relative; }
+.input-wrapper i { position:absolute; top:50%; left:10px; transform:translateY(-50%); color:#800000; }
+.input-wrapper input { width:100%; padding:12px 12px 12px 35px; border-radius:5px; border:1px solid #ccc; font-size:14px; }
+.alert-danger { display:none; margin-bottom:15px; background:#ffdddd; color:#d8000c; padding:10px; border-radius:5px; font-size:14px; align-items:center; }
+.alert-danger i { margin-right:8px; }
+.btn-login { width:100%; padding:12px; background:#800000; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer; transition:0.3s; }
+.btn-login:hover { background:#a00000; }
+.footer-info { margin-top:20px; font-size:12px; color:#555; display:flex; justify-content:center; align-items:center; flex-wrap:wrap; }
+.footer-info .divider { margin:0 5px; color:#aaa; }
+.footer-info b { color:#800000; }
 
-    <style>
-        body{
-            background:#7a0000;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            height:100vh;
-            font-family:Arial;
-        }
-
-        .login{
-            background:white;
-            padding:30px;
-            border-radius:10px;
-            width:300px;
-        }
-
-        input{
-            width:100%;
-            padding:10px;
-            margin-top:10px;
-        }
-
-        button{
-            width:100%;
-            padding:10px;
-            margin-top:15px;
-            background:#7a0000;
-            color:white;
-            border:none;
-        }
-    </style>
-
+/* DASHBOARD */
+.dashboard-container { display:none; padding:20px; }
+.dashboard-container h2 { color:#800000; margin-bottom:20px; }
+.dashboard-table { width:100%; border-collapse:collapse; overflow-x:auto; display:block; max-height:70vh; }
+.dashboard-table th, .dashboard-table td { border:1px solid #ccc; padding:8px; font-size:12px; text-align:left; white-space:nowrap; }
+.dashboard-table th { background:#f2f2f2; color:#333; }
+</style>
 </head>
-
 <body>
 
-<div class="login">
+<!-- LOGIN SECTION -->
+<div class="login-container" id="loginSection">
+    <div class="hero-section">
+        <div class="hero-content">
+            <h1>Branch Control <br> Center.</h1>
+            <p>Pusat kendali Administrasi cabang Tanjung Api-Api Palembang</p>
+        </div>
+    </div>
 
-    <h2>Login</h2>
+    <div class="form-section">
+        <div class="form-box">
+            <h2>Login Sistem</h2>
+            <p class="subtitle">Gunakan kredensial otorisasi Anda.</p>
 
-    <input type="text" id="user" placeholder="username">
-    <input type="password" id="pass" placeholder="password">
+            <form onsubmit="return login(event)">
+                <div class="input-group">
+                    <label>USERNAME</label>
+                    <div class="input-wrapper">
+                        <i class="fa-regular fa-user"></i>
+                        <input type="text" placeholder="admin / tafs / acc" required>
+                    </div>
+                </div>
 
-    <button onclick="login()">Login</button>
+                <div class="input-group">
+                    <label>PASSWORD</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" placeholder="********" required>
+                    </div>
+                </div>
 
+                <div class="alert-danger">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span>Username atau password salah!</span>
+                </div>
+
+                <button type="submit" class="btn-login">Masuk Sistem</button>
+            </form>
+
+            <div class="footer-info">
+                <span>Admin: <b>admin</b></span>
+                <span class="divider">|</span>
+                <span>TAFS: <b>tafs</b></span>
+                <span class="divider">|</span>
+                <span>ACC: <b>acc</b></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DASHBOARD SECTION -->
+<div class="dashboard-container" id="dashboardSection">
+    <h2 id="dashboardTitle">Dashboard</h2>
+    <table class="dashboard-table" id="dashboardTable"></table>
 </div>
 
 <script>
+// ========================
+// Contoh data per role
+// ========================
+const header = ["No","Customer_Name","No_Customer","No_SPK","No_Billing","salesman_name","Supervisor_Name","Kjual","Metode_Pembayaran","Leasing_Name","Func_Loc","GI_Date","Material_Code","Post_Date","Due_Date","Age","Hari_Overdue","Status_Aging","os_balance","leasing_type","lancar","hari_1_30","hari_31_60","lebih_60_hari","total_overdue","Penalty_Amount","Ket_Cabang","Plan_bayar_leasing","Ket_Leasing"];
 
-function login(){
+const dataAdmin = [
+  [1,"Customer A","C001","SPK001","BILL001","Sales 1","Sup 1",100,"Cash","Leasing 1","LOC1","2026-03-28","MAT001","2026-03-28","2026-04-28",30,0,"Lancar",5000000,"Type A",1,0,0,0,0,"Cabang 1","Plan A","Ket A"],
+  [2,"Customer B","C002","SPK002","BILL002","Sales 2","Sup 2",200,"Credit","Leasing 2","LOC2","2026-03-28","MAT002","2026-03-28","2026-04-28",30,0,"Lancar",7000000,"Type B",1,0,0,0,0,"Cabang 2","Plan B","Ket B"]
+];
 
-    let u = document.getElementById("user").value;
-    let p = document.getElementById("pass").value;
+const dataTAFS = [
+  [1,"Customer C","C003","SPK003","BILL003","TAFS 1","Sup 3",50,"Cash","Leasing 3","LOC3","2026-03-28","MAT003","2026-03-28","2026-04-28",15,0,"Lancar",2000000,"Type C",1,0,0,0,0,"Cabang 3","Plan C","Ket C"]
+];
 
-    if(u=="admin" && p=="1234"){
-        window.location="admin.html";
-    }else{
-        alert("Login salah");
-    }
+const dataACC = [
+  [1,"Customer D","C004","SPK004","BILL004","ACC 1","Sup 4",80,"Credit","Leasing 4","LOC4","2026-03-28","MAT004","2026-03-28","2026-04-28",20,0,"Lancar",3000000,"Type D",1,0,0,0,0,"Cabang 4","Plan D","Ket D"]
+];
 
+// ========================
+// LOGIN FUNCTION
+// ========================
+function login(e){
+    e.preventDefault();
+    const username = document.querySelector("input[type='text']").value.trim().toLowerCase();
+    const password = document.querySelector("input[type='password']").value.trim();
+    const alertBox = document.querySelector(".alert-danger");
+    alertBox.style.display = "none";
+
+    let role = "";
+    let roleData = [];
+
+    if(username === "admin" && password === "admin123") { role="Admin"; roleData = dataAdmin; }
+    else if(username === "tafs" && password === "tafs123") { role="TAFS"; roleData = dataTAFS; }
+    else if(username === "acc" && password === "acc123") { role="ACC"; roleData = dataACC; }
+    else { alertBox.style.display = "flex"; return false; }
+
+    // sembunyikan login, tampilkan dashboard
+    document.getElementById("loginSection").style.display = "none";
+    document.getElementById("dashboardSection").style.display = "block";
+    document.getElementById("dashboardTitle").textContent = `Dashboard ${role}`;
+
+    renderTable(roleData);
 }
 
+// ========================
+// RENDER TABEL
+// ========================
+function renderTable(data){
+    const table = document.getElementById("dashboardTable");
+    table.innerHTML = "";
+
+    // header
+    let trHeader = document.createElement("tr");
+    header.forEach(h => {
+        let th = document.createElement("th");
+        th.textContent = h;
+        trHeader.appendChild(th);
+    });
+    table.appendChild(trHeader);
+
+    // data
+    data.forEach(row => {
+        let tr = document.createElement("tr");
+        row.forEach(cell => {
+            let td = document.createElement("td");
+            td.textContent = cell;
+            tr.appendChild(td);
+        });
+        table.appendChild(tr);
+    });
+}
 </script>
 
 </body>
