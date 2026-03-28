@@ -1,12 +1,9 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
-// GANTI dengan link CSV kamu yang sudah publish
-const sheetCsvUrl = https://docs.google.com/spreadsheets/d/e/2PACX-1vTjNg8b8zSmDd2oOO7FGzeIttLstq4azmEjOGLnXHLOyt4FlBykKYIEFe160BMLnjajbdUPeoAmiQu-/pub?gid=0&single=true&output=csv;
+const sheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTjNg8b8zSmDd2oOO7FGzeIttLstq4azmEjOGLnXHLOyt4FlBykKYIEFe160BMLnjajbdUPeoAmiQu-/pub?gid=0&single=true&output=csv";
 
-let allData = [];   // akan menampung semua data setelah parse
+let allData = [];
 
-// ---------------------------------
-// ambil data sheet
-// ---------------------------------
 async function loadSheetData() {
     return new Promise((resolve, reject) => {
         Papa.parse(sheetCsvUrl, {
@@ -24,9 +21,6 @@ async function loadSheetData() {
     });
 }
 
-// ---------------------------------
-// login function
-// ---------------------------------
 async function login(e){
     e.preventDefault();
 
@@ -41,10 +35,8 @@ async function login(e){
     else if(username === "acc" && password === "acc123") role = "ACC";
     else { alertBox.style.display = "flex"; return false;}
 
-    // dulu load data sheet
     await loadSheetData();
 
-    // sembunyikan login + tampilkan dashboard
     document.getElementById("loginSection").style.display = "none";
     document.getElementById("dashboardSection").style.display = "block";
     document.getElementById("dashboardTitle").textContent = `Dashboard ${role}`;
@@ -53,14 +45,10 @@ async function login(e){
     return false;
 }
 
-// ---------------------------------
-// filter & tampil
-// ---------------------------------
 function renderFilteredData(role){
     const table = document.getElementById("dashboardTable");
     table.innerHTML = "";
 
-    // buat header
     let trHeader = document.createElement("tr");
     const keys = Object.keys(allData[0] || {});
     keys.forEach(key => {
@@ -70,14 +58,13 @@ function renderFilteredData(role){
     });
     table.appendChild(trHeader);
 
-    // filter data per role
     let filtered = allData.filter(row => {
-        if(role === "Admin") return true; // semua data
+        if(role === "Admin") return true;
         if(role === "TAFS") return row.salesman_name && row.salesman_name.toLowerCase().includes("tafs");
         if(role === "ACC") return row.salesman_name && row.salesman_name.toLowerCase().includes("acc");
+        return false;
     });
 
-    // tampilbaris
     filtered.forEach(row => {
         let tr = document.createElement("tr");
         keys.forEach(key => {
