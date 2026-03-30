@@ -1,22 +1,239 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Admin</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR PRO v3 | Enterprise Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .sidebar-dark { background-color: #1a1c2e; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+        .rounded-super { border-radius: 24px; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
 </head>
-<body>
+<body class="flex h-screen overflow-hidden text-slate-700">
 
-<div class="dashboard-container">
-    <h2>Dashboard Admin</h2>
-    <table class="dashboard-table" id="dashboardTable"></table>
-</div>
+    <aside class="w-64 sidebar-dark text-slate-400 flex flex-col hidden lg:flex">
+        <div class="p-6 flex items-center space-x-3">
+            <div class="h-9 w-9 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/40">
+                <i class="fas fa-chart-line text-white"></i>
+            </div>
+            <span class="text-white font-bold text-xl tracking-tight">AR PRO <span class="text-indigo-400">v3</span></span>
+        </div>
 
-<script src="data.js"></script>
-<script>
-renderTable("dashboardTable");
-</script>
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+            <a href="#" class="flex items-center space-x-3 px-4 py-3 bg-indigo-600/10 text-indigo-400 border-r-4 border-indigo-600 font-semibold transition-all">
+                <i class="fas fa-th-large"></i> <span>Dashboard</span>
+            </a>
+            <a href="index.html" class="flex items-center space-x-3 px-4 py-3 hover:text-white transition-all">
+                <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+            </a>
+        </nav>
 
+        <div class="m-4 p-4 rounded-2xl bg-slate-800/40 border border-slate-700/50">
+            <div class="flex items-center space-x-2 mb-1">
+                <div class="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+                <span class="text-xs text-slate-300 font-medium">Supabase Live</span>
+            </div>
+            <p class="text-[9px] text-slate-500 ml-4 italic">Sync: <span id="syncTime">-</span></p>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <header class="h-20 bg-white/80 backdrop-blur-md border-b flex items-center justify-between px-8">
+            <div>
+                <h2 class="text-xl font-bold text-slate-800 tracking-tight">Financial Dashboard</h2>
+                <p class="text-xs text-slate-500 font-medium">Monitoring Real-time Auto2000</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="globalSearch" placeholder="Cari nama konsumen..." 
+                        class="bg-slate-100 border-none rounded-full pl-11 pr-6 py-2 text-sm w-64 focus:ring-2 focus:ring-indigo-500 transition-all">
+                </div>
+                <button onclick="loadData()" class="h-10 w-10 rounded-full bg-indigo-600 text-white shadow-lg hover:rotate-180 transition-all duration-500">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8 space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-white p-6 rounded-super shadow-sm border border-slate-100 flex items-start space-x-4">
+                    <div class="stat-icon bg-blue-50 text-blue-500"><i class="fas fa-wallet text-xl"></i></div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total O/S</p>
+                        <h3 class="text-2xl font-extrabold text-slate-800 mt-1" id="totalOS">Rp 0</h3>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-super shadow-sm border border-slate-100 flex items-start space-x-4">
+                    <div class="stat-icon bg-red-50 text-red-500"><i class="fas fa-exclamation-triangle text-xl"></i></div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Overdue</p>
+                        <h3 class="text-2xl font-extrabold text-red-600 mt-1" id="totalOverdue">Rp 0</h3>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-super shadow-sm border border-slate-100 flex items-start space-x-4">
+                    <div class="stat-icon bg-amber-50 text-amber-500"><i class="fas fa-users text-xl"></i></div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Case</p>
+                        <h3 class="text-2xl font-extrabold text-slate-800 mt-1" id="overdueCount">0</h3>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-super shadow-sm border border-slate-100 flex items-start space-x-4">
+                    <div class="stat-icon bg-emerald-50 text-emerald-500"><i class="fas fa-hand-holding-dollar text-xl"></i></div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Penalty</p>
+                        <h3 class="text-2xl font-extrabold text-slate-800 mt-1" id="totalPenalty">Rp 0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-white p-8 rounded-super shadow-sm border border-slate-50">
+                    <h4 class="font-bold text-slate-800 mb-6 flex items-center"><i class="fas fa-chart-bar mr-2 text-indigo-500"></i> Outstanding by Aging Status</h4>
+                    <div id="chartAging"></div>
+                </div>
+                <div class="bg-white p-8 rounded-super shadow-sm border border-slate-50">
+                    <h4 class="font-bold text-slate-800 mb-6 flex items-center"><i class="fas fa-chart-pie mr-2 text-indigo-500"></i> Leasing Share</h4>
+                    <div id="chartLeasing"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-super shadow-sm border border-slate-100 overflow-hidden">
+                <div class="px-8 py-6 border-b flex justify-between items-center bg-slate-50/50">
+                    <h3 class="font-bold text-slate-800">Master Data Detail</h3>
+                    <span id="loadCount" class="text-[10px] bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full font-bold uppercase tracking-widest">0 Consumers</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 border-b">
+                            <tr class="text-[11px] font-bold text-slate-400 uppercase">
+                                <th class="px-8 py-4">Nama Konsumen</th>
+                                <th class="px-8 py-4">Unit</th>
+                                <th class="px-8 py-4 text-right">Outstanding</th>
+                                <th class="px-8 py-4 text-right">Overdue</th>
+                                <th class="px-8 py-4 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="masterTable" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const SB_URL = 'https://hnefaswbhaclsvtojmlk.supabase.co';
+        const SB_KEY = 'sb_publishable_Z3HCV9sEiJfcisoht1FaMw_rLMlrIUB'; 
+        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+        let fullData = [];
+        let chartAgingObj, chartLeasingObj;
+
+        async function loadData() {
+            document.getElementById('syncTime').textContent = "Syncing...";
+            try {
+                const { data, error } = await supabaseClient.from('ar_unit').select('*');
+                if (error) throw error;
+                fullData = data;
+                processAndRender(data);
+                document.getElementById('syncTime').textContent = new Date().toLocaleTimeString('id-ID');
+                document.getElementById('loadCount').textContent = data.length + ' Consumers Loaded';
+            } catch (err) {
+                console.error("Gagal ambil data:", err.message);
+            }
+        }
+
+        function processAndRender(data) {
+            let stats = { os: 0, ovd: 0, penalty: 0, count: 0 };
+            const leasingMap = {}, agingMap = {};
+            const tableBody = document.getElementById('masterTable');
+            tableBody.innerHTML = '';
+
+            data.forEach(item => {
+                const osVal = parseFloat(item.os_balance) || 0;
+                const ovdVal = parseFloat(item.total_overdue) || 0;
+                const pnlVal = parseFloat(item.Penalty_Amount) || 0;
+                const status = item.Status_Aging || 'Lancar';
+                const leasing = item.Leasing_Name || 'N/A';
+
+                stats.os += osVal;
+                stats.ovd += ovdVal;
+                stats.penalty += pnlVal;
+                if (ovdVal > 0) stats.count++;
+
+                leasingMap[leasing] = (leasingMap[leasing] || 0) + osVal;
+                agingMap[status] = (agingMap[status] || 0) + osVal;
+
+                tableBody.insertAdjacentHTML('beforeend', `
+                    <tr class="hover:bg-indigo-50/40 transition-colors">
+                        <td class="px-8 py-4 font-bold text-slate-700">${item.Customer_Name || '-'}</td>
+                        <td class="px-8 py-4 text-slate-500 text-sm font-medium">${item.Material_Code || '-'}</td>
+                        <td class="px-8 py-4 text-right font-bold text-slate-800">${formatIDR(osVal)}</td>
+                        <td class="px-8 py-4 text-right font-bold text-red-500">${formatIDR(ovdVal)}</td>
+                        <td class="px-8 py-4 text-center">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${status === 'Lancar' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}">
+                                ${status}
+                            </span>
+                        </td>
+                    </tr>
+                `);
+            });
+
+            document.getElementById('totalOS').textContent = formatIDR(stats.os);
+            document.getElementById('totalOverdue').textContent = formatIDR(stats.ovd);
+            document.getElementById('totalPenalty').textContent = formatIDR(stats.penalty);
+            document.getElementById('overdueCount').textContent = stats.count;
+
+            renderCharts(leasingMap, agingMap);
+        }
+
+        function renderCharts(lData, aData) {
+            if (chartAgingObj) chartAgingObj.destroy();
+            if (chartLeasingObj) chartLeasingObj.destroy();
+
+            chartAgingObj = new ApexCharts(document.querySelector("#chartAging"), {
+                chart: { type: 'bar', height: 300, toolbar: {show:false} },
+                colors: ['#6366f1'],
+                series: [{ name: 'Outstanding', data: Object.values(aData) }],
+                xaxis: { categories: Object.keys(aData) },
+                plotOptions: { bar: { borderRadius: 8 } }
+            });
+            chartAgingObj.render();
+
+            chartLeasingObj = new ApexCharts(document.querySelector("#chartLeasing"), {
+                chart: { type: 'donut', height: 300 },
+                series: Object.values(lData),
+                labels: Object.keys(lData),
+                colors: ['#6366f1', '#f59e0b', '#10b981', '#f43f5e'],
+                legend: { position: 'bottom' }
+            });
+            chartLeasingObj.render();
+        }
+
+        function formatIDR(val) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+        }
+
+        document.getElementById('globalSearch').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = fullData.filter(i => 
+                (i.Customer_Name || '').toLowerCase().includes(val) || 
+                (i.Material_Code || '').toLowerCase().includes(val)
+            );
+            processAndRender(filtered);
+        });
+
+        window.onload = loadData;
+    </script>
 </body>
 </html>
