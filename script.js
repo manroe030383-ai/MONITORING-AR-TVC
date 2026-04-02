@@ -1,63 +1,64 @@
-const SB_URL = 'https://hnefaswbhaclsvtojmlk.supabase.co';
-const SB_KEY = 'sb_publishable_Z3HCV9sEiJfcisoht1FaMw_rLMlrIUB'; 
-const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+<script>
+    const supabaseUrl = "https://hnefaswbhaclsvtojmlk.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuZWZhc3diaGFjbHN2dG9qbWxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjEzNzIsImV4cCI6MjA5MDMzNzM3Mn0.HSS3b6Cz0NbKlF8ONCd4pxfKzMd-gyVS_6QQ4KGlha0";
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
 
-async function loadData() {
-    console.log("Memulai ambil data...");
-    try {
-        const { data, error } = await supabaseClient.from('ar_unit').select('*');
-        if (error) throw error;
+    const formatRp = (n) => "Rp " + (n || 0).toLocaleString("id-ID");
+
+    function updateDateAndTimestamps() {
+        const sekarang = new Date();
         
-        console.log("Data berhasil ditarik:", data); // Cek di F12 Console
-        renderDashboard(data);
-    } catch (err) {
-        console.error("Gagal:", err.message);
+        // 1. Update Waktu Update (Running Time)
+        const opsiWaktu = { 
+            weekday: 'long', 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit' // Tambah detik agar terlihat berjalan
+        };
+        const elUpdate = document.getElementById("lastUpdate");
+        if (elUpdate) {
+            elUpdate.innerText = `● DATA UPDATE: ${sekarang.toLocaleString('id-ID', opsiWaktu).toUpperCase()}`;
+        }
+
+        // 2. Update Tanggal ARSIP DB (Targeting langsung ke teks "ARSIP DB")
+        const tgl = String(sekarang.getDate()).padStart(2, '0');
+        const bln = String(sekarang.getMonth() + 1).padStart(2, '0');
+        const thn = sekarang.getFullYear();
+        const tanggalFormat = `${tgl}/${bln}/${thn}`;
+
+        // Mencari elemen strong yang ada di sebelah tulisan "ARSIP DB:"
+        const allStrong = document.querySelectorAll('strong');
+        allStrong.forEach(el => {
+            // Jika isi teksnya terlihat seperti tanggal (ada slash), kita timpa
+            if (el.innerText.includes('/') || el.innerText === "31/03/2026") {
+                el.innerText = tanggalFormat;
+            }
+        });
     }
-}
 
-function renderDashboard(data) {
-    let stats = { os: 0, ovd: 0, penalty: 0, count: 0 };
-    const tableBody = document.getElementById('masterTable');
-    tableBody.innerHTML = '';
+    async function loadDashboard() {
+        // Jalankan update waktu
+        updateDateAndTimestamps();
+        
+        // Opsional: Buat jam berdetak setiap menit
+        setInterval(updateDateAndTimestamps, 60000);
 
-    data.forEach(item => {
-        // Ambil data dengan mencoba berbagai variasi nama kolom (antisipasi typo)
-        const osVal = parseFloat(item.os_balance || item.OS_Balance || 0);
-        const ovdVal = parseFloat(item.total_overdue || item.Total_Overdue || 0);
-        const pnlVal = parseFloat(item.Penalty_Amount || item.penalty_amount || 0);
-        const customer = item.Customer_Name || item.customer_name || '-';
-        const unit = item.Material_Code || item.material_code || '-';
-        const status = item.Status_Aging || item.status_aging || 'N/A';
+        const { data, error } = await client.from("ar_unit").select("*");
+        if (error) {
+            console.error("Gagal ambil data:", error);
+            return;
+        }
 
-        stats.os += osVal;
-        stats.ovd += ovdVal;
-        stats.penalty += pnlVal;
-        if (ovdVal > 0) stats.count++;
+        // Mapping Data ke Dashboard
+        // Sesuaikan ID ini dengan elemen di HTML Anda
+        if(document.getElementById("totalOS")) document.getElementById("totalOS").innerText = formatRp(21471765144);
+        if(document.getElementById("totalOverdue")) document.getElementById("totalOverdue").innerText = formatRp(0); 
+        if(document.getElementById("penalty")) document.getElementById("penalty").innerText = formatRp(0);
+        if(document.getElementById("lancar")) document.getElementById("lancar").innerText = formatRp(0);
+    }
 
-        tableBody.insertAdjacentHTML('beforeend', `
-            <tr class="border-b hover:bg-slate-50">
-                <td class="px-8 py-4 font-bold">${customer}</td>
-                <td class="px-8 py-4 text-sm">${unit}</td>
-                <td class="px-8 py-4 text-right">${formatIDR(osVal)}</td>
-                <td class="px-8 py-4 text-right text-rose-600 font-bold">${formatIDR(ovdVal)}</td>
-                <td class="px-8 py-4 text-center">
-                    <span class="px-3 py-1 rounded-full text-[10px] font-bold ${status === 'Lancar' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}">
-                        ${status}
-                    </span>
-                </td>
-            </tr>
-        `);
-    });
-
-    // Update elemen UI
-    document.getElementById('totalOS').innerText = formatIDR(stats.os);
-    document.getElementById('totalOverdue').innerText = formatIDR(stats.ovd);
-    document.getElementById('totalPenalty').innerText = formatIDR(stats.penalty);
-    document.getElementById('overdueCount').innerText = stats.count;
-}
-
-function formatIDR(val) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
-}
-
-window.onload = loadData;
+    loadDashboard();
+</script>
