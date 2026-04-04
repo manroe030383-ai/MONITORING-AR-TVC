@@ -1,75 +1,83 @@
 import { getPangkalanBunData, formatRupiah } from './configs.js';
 
 async function syncDashboard() {
-    // Beri efek loading pada angka agar user tahu data sedang ditarik
-    const elements = ['total-os', 'total-overdue', 'total-penalty', 'total-lancar'];
-    elements.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.innerText = "Loading...";
-    });
-
+    console.log("--- Memulai Sinkronisasi Dashboard ---");
+    
     try {
         const data = await getPangkalanBunData();
 
+        // 1. Cek Koneksi & Isi Data
         if (!data || data.length === 0) {
-            console.error("Data kosong atau RLS belum aktif.");
+            console.error("DATA KOSONG! Cek 2 hal: 1. Apakah tabel ar_unit ada isinya? 2. Apakah RLS Policy sudah 'true'?");
+            alert("Data dari Supabase kosong. Pastikan RLS Policy sudah Aktif!");
             return;
         }
 
-        console.log("Data diterima:", data);
+        console.log("Data diterima dari Supabase:", data);
 
-        // LOGIKA PERHITUNGAN (Mengantisipasi huruf besar/kecil di Supabase)
-        const totalOS = data.reduce((sum, item) => sum + (Number(item.Os_Balance || item.os_balance || 0)), 0);
-        const totalOverdue = data.reduce((sum, item) => sum + (Number(item.Total_Overdue || item.total_overdue || 0)), 0);
-        const totalLancar = data.reduce((sum, item) => sum + (Number(item.Lancar || item.lancar || 0)), 0);
-        const totalPenalty = data.reduce((sum, item) => sum + (Number(item.Penalty_Amount || item.penalty_amount || 0)), 0);
+        // FUNGSI PEMBANTU: Mencari kolom tanpa peduli huruf besar/kecil (Pangkalan Bun Standard)
+        const getVal = (obj, key) => {
+            const realKey = Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase());
+            const val = realKey ? obj[realKey] : 0;
+            return Number(val) || 0;
+        };
 
-        // FILTER METODE PEMBAYARAN
-        const cashData = data.filter(item => String(item.Metode_Pembayaran || item.metode_pembayaran || '').toLowerCase() === 'cash');
-        const leasingData = data.filter(item => String(item.Metode_Pembayaran || item.metode_pembayaran || '').toLowerCase() === 'leasing');
+        const getStr = (obj, key) => {
+            const realKey = Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase());
+            return realKey ? String(obj[realKey] || '').toLowerCase() : '';
+        };
 
-        const sumCash = cashData.reduce((sum, item) => sum + (Number(item.Os_Balance || item.os_balance || 0)), 0);
-        const sumLeasing = leasingData.reduce((sum, item) => sum + (Number(item.Os_Balance || item.os_balance || 0)), 0);
+        // 2. Kalkulasi Data (Menghitung baris per baris)
+        const totalOS = data.reduce((sum, item) => sum + getVal(item, 'Os_Balance'), 0);
+        const totalOverdue = data.reduce((sum, item) => sum + getVal(item, 'Total_Overdue'), 0);
+        const totalLancar = data.reduce((sum, item) => sum + getVal(item, 'Lancar'), 0);
+        const totalPenalty = data.reduce((sum, item) => sum + getVal(item, 'Penalty_Amount'), 0);
 
-        // UPDATE UI
-        document.getElementById('total-os').innerText = formatRupiah(totalOS);
-        document.getElementById('total-overdue').innerText = formatRupiah(totalOverdue);
-        document.getElementById('total-penalty').innerText = formatRupiah(totalPenalty);
-        document.getElementById('total-lancar').innerText = formatRupiah(totalLancar);
+        // 3. Filter Metode Pembayaran
+        const cashData = data.filter(item => getStr(item, 'Metode_Pembayaran') === 'cash');
+        const leasingData = data.filter(item => getStr(item, 'Metode_Pembayaran') === 'leasing');
 
-        const overdueCount = data.filter(item => (Number(item.Total_Overdue || item.total_overdue || 0)) > 0).length;
-        document.getElementById('count-overdue').innerText = `${overdueCount} SPK Lewat TOP`;
-        document.getElementById('count-penalty').innerText = `Dari ${overdueCount} SPK`;
+        const sumCash = cashData.reduce((sum, item) => sum + getVal(item, 'Os_Balance'), 0);
+        const sumLeasing = leasingData.reduce((sum, item) => sum + getVal(item, 'Os_Balance'), 0);
 
-        document.getElementById('val-cash').innerText = formatRupiah(sumCash);
-        document.getElementById('val-leasing').innerText = formatRupiah(sumLeasing);
-        document.getElementById('unit-cash').innerText = cashData.length;
-        document.getElementById('unit-leasing').innerText = leasingData.length;
-        document.getElementById('total-all-unit').innerText = `${data.length} Unit`;
+        // 4. Update Tampilan HTML (Gunakan ID yang ada di admin.html)
+        const updateText = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+        };
 
-        // UPDATE PROGRESS BAR & PERCENTAGE
+        updateText('total-os', formatRupiah(totalOS));
+        updateText('total-overdue', formatRupiah(totalOverdue));
+        updateText('total-penalty', formatRupiah(totalPenalty));
+        updateText('total-lancar', formatRupiah(totalLancar));
+
+        // 5. Update Detail & Unit
+        const overdueCount = data.filter(item => getVal(item, 'Total_Overdue') > 0).length;
+        updateText('count-overdue', `${overdueCount} SPK Lewat TOP`);
+        updateText('count-penalty', `Dari ${overdueCount} SPK`);
+        updateText('val-cash', formatRupiah(sumCash));
+        updateText('val-leasing', formatRupiah(sumLeasing));
+        updateText('unit-cash', cashData.length);
+        updateText('unit-leasing', leasingData.length);
+        updateText('total-all-unit', `${data.length} Unit`);
+
+        // 6. Update Progress Bar
         if (totalOS > 0) {
             const cashPct = (sumCash / totalOS) * 100;
-            const leasingPct = 100 - cashPct;
-
-            document.getElementById('pct-cash').innerText = `${cashPct.toFixed(1)}%`;
-            document.getElementById('pct-leasing').innerText = `${leasingPct.toFixed(1)}%`;
-            document.getElementById('bar-cash').style.width = `${cashPct}%`;
-            document.getElementById('bar-leasing').style.width = `${leasingPct}%`;
+            const barCash = document.getElementById('bar-cash');
+            const barLeasing = document.getElementById('bar-leasing');
+            if (barCash) barCash.style.width = `${cashPct}%`;
+            if (barLeasing) barLeasing.style.width = `${100 - cashPct}%`;
+            
+            updateText('pct-cash', `${cashPct.toFixed(1)}%`);
+            updateText('pct-leasing', `${(100 - cashPct).toFixed(1)}%`);
         }
 
-    } catch (error) {
-        console.error("Gagal sinkronisasi:", error);
+        console.log("SINKRONISASI BERHASIL!");
+
+    } catch (err) {
+        console.error("Terjadi Kesalahan Fatal:", err);
     }
 }
 
-// Jalankan saat load pertama
-document.addEventListener('DOMContentLoaded', () => {
-    syncDashboard();
-
-    // Jalankan saat tombol sync diklik
-    const btnSync = document.getElementById('btn-sync');
-    if (btnSync) {
-        btnSync.addEventListener('click', syncDashboard);
-    }
-});
+document.addEventListener('DOMContentLoaded', syncDashboard);
