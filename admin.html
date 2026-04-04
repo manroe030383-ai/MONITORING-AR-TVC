@@ -16,6 +16,8 @@
         .sidebar-dark { background-color: #1a1c2e; }
         .stat-icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
         .rounded-super { border-radius:24px; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
     </style>
 </head>
 
@@ -26,13 +28,17 @@
         <div class="h-9 w-9 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/40">
             <i class="fas fa-chart-line text-white"></i>
         </div>
-        <span class="text-white font-bold text-xl">AR Pangkalan Bun</span>
+        <span class="text-white font-bold text-xl uppercase tracking-tight">AR Pangkalan Bun</span>
     </div>
 
     <nav class="flex-1 px-4 space-y-2 mt-4">
-        <a href="#" class="flex items-center space-x-3 px-4 py-3 bg-indigo-600/10 text-indigo-400 border-r-4 border-indigo-600 font-semibold">
+        <a href="#" class="flex items-center space-x-3 px-4 py-3 bg-indigo-600/10 text-indigo-400 border-r-4 border-indigo-600 font-semibold transition-all">
             <i class="fas fa-th-large"></i>
             <span>Dashboard Unit</span>
+        </a>
+        <a href="index.html" class="flex items-center space-x-3 px-4 py-3 hover:text-white transition-all">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
         </a>
     </nav>
 
@@ -41,72 +47,76 @@
             <div id="statusDot" class="h-2 w-2 rounded-full bg-slate-500"></div>
             <span class="text-xs text-slate-300 font-medium">Status: <span id="syncStatus">Idle</span></span>
         </div>
-        <p class="text-[10px] text-slate-500 ml-4">Terakhir: <span id="syncTime">-</span></p>
+        <p class="text-[10px] text-slate-500 ml-4 italic">Auto-sync: <span id="syncTime">-</span></p>
     </div>
 </aside>
 
 <main class="flex-1 flex flex-col overflow-hidden">
-    <header class="h-20 bg-white border-b flex items-center justify-between px-8">
+    <header class="h-20 bg-white border-b flex items-center justify-between px-8 shrink-0">
         <div>
-            <h2 class="text-xl font-bold text-slate-800">Monitoring AR Unit</h2>
-            <p id="updateTime" class="text-xs text-slate-500">Memuat data...</p>
+            <h2 class="text-xl font-extrabold text-slate-800">Monitoring AR Unit</h2>
+            <p id="updateTime" class="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Memuat data...</p>
         </div>
         <div class="flex items-center space-x-4">
-            <button onclick="loadData()" class="h-10 w-10 rounded-full bg-indigo-600 text-white shadow-lg hover:rotate-180 transition-all duration-500">
-                <i class="fas fa-sync-alt"></i>
+            <div class="relative">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="tableSearch" placeholder="Cari nama konsumen..." 
+                       class="bg-slate-100 rounded-full pl-10 pr-6 py-2 text-xs w-64 focus:ring-2 focus:ring-indigo-500 outline-none border-none transition-all">
+            </div>
+            <button onclick="loadData()" class="h-10 w-10 rounded-full bg-indigo-600 text-white shadow-lg hover:rotate-180 transition-all duration-500 flex items-center justify-center">
+                <i class="fas fa-sync-alt text-sm"></i>
             </button>
         </div>
     </header>
 
     <div class="flex-1 overflow-y-auto p-8 space-y-8">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="bg-white p-6 rounded-super shadow-sm flex space-x-4">
-                <div class="stat-icon bg-blue-50 text-blue-500"><i class="fas fa-wallet"></i></div>
-                <div><p class="text-xs text-slate-400">Total O/S</p><h3 id="totalOS" class="text-2xl font-bold">Rp 0</h3></div>
+            <div class="bg-white p-6 rounded-super shadow-sm border border-slate-100 flex space-x-4">
+                <div class="stat-icon bg-blue-50 text-blue-500 shadow-inner"><i class="fas fa-wallet"></i></div>
+                <div><p class="text-[10px] text-slate-400 font-bold uppercase">Total O/S</p><h3 id="totalOS" class="text-xl font-bold">Rp 0</h3></div>
             </div>
-            <div class="bg-white p-6 rounded-super shadow-sm flex space-x-4">
-                <div class="stat-icon bg-red-50 text-red-500"><i class="fas fa-clock"></i></div>
-                <div><p class="text-xs text-slate-400">Overdue</p><h3 id="totalOverdue" class="text-2xl font-bold text-red-600">Rp 0</h3></div>
+            <div class="bg-white p-6 rounded-super shadow-sm border border-slate-100 flex space-x-4">
+                <div class="stat-icon bg-red-50 text-red-500 shadow-inner"><i class="fas fa-clock"></i></div>
+                <div><p class="text-[10px] text-slate-400 font-bold uppercase">Overdue</p><h3 id="totalOverdue" class="text-xl font-bold text-red-600">Rp 0</h3></div>
             </div>
-            <div class="bg-white p-6 rounded-super shadow-sm flex space-x-4">
-                <div class="stat-icon bg-amber-50 text-amber-500"><i class="fas fa-file-invoice"></i></div>
-                <div><p class="text-xs text-slate-400">Case Overdue</p><h3 id="overdueCount" class="text-2xl font-bold">0</h3></div>
+            <div class="bg-white p-6 rounded-super shadow-sm border border-slate-100 flex space-x-4">
+                <div class="stat-icon bg-amber-50 text-amber-500 shadow-inner"><i class="fas fa-file-invoice"></i></div>
+                <div><p class="text-[10px] text-slate-400 font-bold uppercase">Case OVD</p><h3 id="overdueCount" class="text-xl font-bold">0</h3></div>
             </div>
-            <div class="bg-white p-6 rounded-super shadow-sm flex space-x-4">
-                <div class="stat-icon bg-emerald-50 text-emerald-500"><i class="fas fa-coins"></i></div>
-                <div><p class="text-xs text-slate-400">Potensi Penalti</p><h3 id="totalPenalty" class="text-2xl font-bold">Rp 0</h3></div>
+            <div class="bg-white p-6 rounded-super shadow-sm border border-slate-100 flex space-x-4">
+                <div class="stat-icon bg-emerald-50 text-emerald-500 shadow-inner"><i class="fas fa-coins"></i></div>
+                <div><p class="text-[10px] text-slate-400 font-bold uppercase">Penalti</p><h3 id="totalPenalty" class="text-xl font-bold">Rp 0</h3></div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="bg-white p-8 rounded-super shadow-sm">
-                <h4 class="font-bold mb-6">Metode Pembayaran (Outstanding)</h4>
+            <div class="bg-white p-8 rounded-super shadow-sm border border-slate-100">
+                <h4 class="font-bold mb-6 text-sm text-slate-500 uppercase tracking-wider">Metode Pembayaran</h4>
                 <div id="chartMetode"></div>
             </div>
-            <div class="bg-white p-8 rounded-super shadow-sm">
-                <h4 class="font-bold mb-6">Status Aging</h4>
+            <div class="bg-white p-8 rounded-super shadow-sm border border-slate-100">
+                <h4 class="font-bold mb-6 text-sm text-slate-500 uppercase tracking-wider">Status Aging</h4>
                 <div id="chartAging"></div>
             </div>
         </div>
 
-        <div class="bg-white rounded-super shadow-sm overflow-hidden">
-            <div class="px-8 py-6 border-b flex justify-between items-center">
-                <h3 class="font-bold">Detail Data Unit</h3>
-                <span id="loadCount" class="text-xs bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full">0 Data</span>
+        <div class="bg-white rounded-super shadow-sm border border-slate-100 overflow-hidden">
+            <div class="px-8 py-6 border-b flex justify-between items-center bg-slate-50/50">
+                <h3 class="font-bold text-slate-800">Detail Master Data</h3>
+                <span id="loadCount" class="text-[10px] font-bold bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full uppercase">0 Data</span>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-slate-50 text-xs text-slate-400 uppercase">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 text-[10px] text-slate-400 uppercase font-bold tracking-widest">
                         <tr>
-                            <th class="px-8 py-4">Customer</th>
-                            <th class="px-8 py-4">Billing / SPK</th>
-                            <th class="px-8 py-4 text-right">O/S Balance</th>
-                            <th class="px-8 py-4 text-right">Overdue</th>
-                            <th class="px-8 py-4 text-center">Status</th>
+                            <th class="px-8 py-4 border-b">Customer</th>
+                            <th class="px-8 py-4 border-b">Billing / SPK</th>
+                            <th class="px-8 py-4 border-b text-right">O/S Balance</th>
+                            <th class="px-8 py-4 border-b text-right text-red-400">Overdue</th>
+                            <th class="px-8 py-4 border-b text-center">Status</th>
                         </tr>
                     </thead>
-                    <tbody id="masterTable" class="text-sm">
-                        </tbody>
+                    <tbody id="masterTable" class="text-sm"></tbody>
                 </table>
             </div>
         </div>
@@ -114,28 +124,21 @@
 </main>
 
 <script>
-// KONFIGURASI DATABASE PANGKALAN BUN
 const SB_URL = "https://ahaoznkudusajtzfbnqj.supabase.co"; 
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s";
 
 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
-
 let fullData = [];
 let chartMetodeObj, chartAgingObj;
 
 async function loadData() {
     const statusDot = document.getElementById("statusDot");
     const syncStatus = document.getElementById("syncStatus");
-    
     syncStatus.textContent = "Syncing...";
     statusDot.className = "h-2 w-2 rounded-full bg-amber-500 animate-pulse";
 
     try {
-        // Tarik data dari tabel ar_unit
-        const { data, error } = await supabaseClient
-            .from("ar_unit")
-            .select("*");
-
+        const { data, error } = await supabaseClient.from("ar_unit").select("*");
         if (error) throw error;
 
         fullData = data || [];
@@ -145,10 +148,9 @@ async function loadData() {
         statusDot.className = "h-2 w-2 rounded-full bg-emerald-500";
         document.getElementById("syncTime").textContent = new Date().toLocaleTimeString("id-ID");
         document.getElementById("loadCount").textContent = `${fullData.length} Data AR`;
-        
     } catch (err) {
-        console.error("Gagal Tarik Data:", err.message);
-        syncStatus.textContent = "Error Access";
+        console.error("Fetch Error:", err.message);
+        syncStatus.textContent = "Error";
         statusDot.className = "h-2 w-2 rounded-full bg-red-500";
     }
 }
@@ -156,12 +158,11 @@ async function loadData() {
 function renderDashboard(data) {
     let tOS = 0, tOvd = 0, tPnl = 0, ovdCount = 0;
     let metodeMap = {}, agingMap = {};
-
     const tableBody = document.getElementById("masterTable");
     tableBody.innerHTML = "";
 
     data.forEach(item => {
-        // PENCOCOKAN KOLOM (Huruf Kapital sesuai Database Anda)
+        // Kolom sesuai Table Editor Supabase
         const osVal = Number(item.Os_Balance) || 0;
         const ovdVal = Number(item.Total_Overdue) || 0;
         const pnlVal = Number(item.Penalty_Amount) || 0;
@@ -171,6 +172,76 @@ function renderDashboard(data) {
         tPnl += pnlVal;
         if (ovdVal > 0) ovdCount++;
 
-        // Mapping Chart
         const metode = item.Metode_Pembayaran || "Lainnya";
-        met
+        metodeMap[metode] = (metodeMap[metode] || 0) + osVal;
+
+        const aging = item.Lancar || "N/A";
+        agingMap[aging] = (agingMap[aging] || 0) + osVal;
+
+        tableBody.innerHTML += `
+            <tr class="border-b hover:bg-indigo-50/30 transition-all cursor-default">
+                <td class="px-8 py-4 font-bold text-slate-700">${item.Customer_Name || '-'}</td>
+                <td class="px-8 py-4 text-[11px] text-slate-500 font-medium">
+                    <div>SPK: ${item.No_SPK || '-'}</div>
+                    <div>Bill: ${item.No_Billing || '-'}</div>
+                </td>
+                <td class="px-8 py-4 text-right font-bold text-indigo-600">${formatIDR(osVal)}</td>
+                <td class="px-8 py-4 text-right font-bold text-red-500">${formatIDR(ovdVal)}</td>
+                <td class="px-8 py-4 text-center">
+                    <span class="px-3 py-1 rounded-full bg-slate-100 text-[9px] font-extrabold uppercase tracking-tighter">${aging}</span>
+                </td>
+            </tr>
+        `;
+    });
+
+    document.getElementById("totalOS").textContent = formatIDR(tOS);
+    document.getElementById("totalOverdue").textContent = formatIDR(tOvd);
+    document.getElementById("totalPenalty").textContent = formatIDR(tPnl);
+    document.getElementById("overdueCount").textContent = ovdCount;
+
+    updateCharts(metodeMap, agingMap);
+}
+
+function updateCharts(metMap, agMap) {
+    if (chartMetodeObj) chartMetodeObj.destroy();
+    if (chartAgingObj) chartAgingObj.destroy();
+
+    chartMetodeObj = new ApexCharts(document.querySelector("#chartMetode"), {
+        chart: { type: 'donut', height: 280 },
+        series: Object.values(metMap),
+        labels: Object.keys(metMap),
+        colors: ['#6366f1', '#f59e0b', '#10b981', '#f43f5e'],
+        dataLabels: { enabled: false },
+        legend: { position: 'bottom', fontSize: '10px' }
+    });
+    chartMetodeObj.render();
+
+    chartAgingObj = new ApexCharts(document.querySelector("#chartAging"), {
+        chart: { type: 'bar', height: 280, toolbar: {show: false} },
+        series: [{ name: 'Outstanding', data: Object.values(agMap) }],
+        xaxis: { categories: Object.keys(agMap), labels: {style: {fontSize: '10px'}} },
+        colors: ['#6366f1'],
+        plotOptions: { bar: { borderRadius: 6, columnWidth: '40%' }}
+    });
+    chartAgingObj.render();
+}
+
+function formatIDR(val) {
+    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(val);
+}
+
+// Fitur Search
+document.getElementById("tableSearch").addEventListener("input", (e) => {
+    const val = e.target.value.toLowerCase();
+    const filtered = fullData.filter(i => (i.Customer_Name || "").toLowerCase().includes(val));
+    renderDashboard(filtered);
+});
+
+window.onload = () => {
+    loadData();
+    const now = new Date();
+    document.getElementById("updateTime").textContent = `Last Update: ${now.toLocaleDateString('id-ID')} - ${now.getHours()}:${now.getMinutes()} WIB`;
+};
+</script>
+</body>
+</html>
