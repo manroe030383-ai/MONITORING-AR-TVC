@@ -4,15 +4,25 @@ async function syncDashboard() {
     console.log("--- Memulai Sinkronisasi Dashboard Pangkalan Bun ---");
     
     try {
+        // --- 1. UPDATE TANGGAL OTOMATIS (KEKURANGAN POIN 1 & 2) ---
+        const now = new Date();
+        const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        const dateStr = now.toLocaleDateString('id-ID', options).toUpperCase();
+        const timeStr = now.getHours().toString().padStart(2, '0') + "." + now.getMinutes().toString().padStart(2, '0');
+        
+        const elTglUpdate = document.getElementById('tgl-update-text');
+        const elTglArsip = document.getElementById('arsip-db-text');
+        
+        if (elTglUpdate) elTglUpdate.innerText = `DATA UPDATE: ${dateStr} - ${timeStr} WIB`;
+        if (elTglArsip) elTglArsip.innerText = `ARSIP DB: ${now.toLocaleDateString('id-ID')}`;
+
         const data = await getPangkalanBunData();
 
-        // 1. Validasi Data
         if (!data || data.length === 0) {
             console.error("DATA KOSONG! Cek tabel ar_unit di Supabase.");
             return;
         }
 
-        // FUNGSI PEMBANTU: Ambil nilai tanpa peduli huruf besar/kecil kolom
         const getVal = (obj, key) => {
             const realKey = Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase());
             return realKey ? Number(obj[realKey]) || 0 : 0;
@@ -29,31 +39,17 @@ async function syncDashboard() {
         const totalPenalty = data.reduce((sum, item) => sum + getVal(item, 'Penalty_Amount'), 0);
         const totalLancar = totalOS - totalOverdue;
 
-        // 3. Filter Metode Pembayaran (Cash vs Leasing)
         const cashData = data.filter(item => getStr(item, 'Metode_Pembayaran') === 'cash');
         const leasingData = data.filter(item => getStr(item, 'Metode_Pembayaran') === 'leasing');
 
         const sumCash = cashData.reduce((sum, item) => sum + getVal(item, 'Os_Balance'), 0);
         const sumLeasing = leasingData.reduce((sum, item) => sum + getVal(item, 'Os_Balance'), 0);
+        
+        // Kalkulasi Unit
+        const unitCash = cashData.length;
+        const unitLeasing = leasingData.length;
 
-        // 4. Kalkulasi Aging untuk Bar Chart
-        let agingMap = { "LANCAR": 0, "1-30 HR": 0, "31-60 HR": 0, ">60 HR": 0 };
-        data.forEach(item => {
-            const status = getStr(item, 'Lancar').toUpperCase() || "LANCAR";
-            // Normalisasi teks agar cocok dengan map (misal: "> 60 hari" jadi ">60 HR")
-            let key = status;
-            if (status.includes(">60")) key = ">60 HR";
-            if (status.includes("31-60")) key = "31-60 HR";
-            if (status.includes("1-30")) key = "1-30 HR";
-            
-            if (agingMap.hasOwnProperty(key)) {
-                agingMap[key] += getVal(item, 'Os_Balance');
-            } else {
-                agingMap["LANCAR"] += getVal(item, 'Os_Balance');
-            }
-        });
-
-        // 5. Update Tampilan Teks HTML
+        // 3. Update Tampilan Teks (Sesuaikan dengan ID di HTML)
         const updateText = (id, val) => {
             const el = document.getElementById(id);
             if (el) el.innerText = val;
@@ -65,20 +61,34 @@ async function syncDashboard() {
         updateText('total-lancar', formatRupiah(totalLancar));
         updateText('val-cash', formatRupiah(sumCash));
         updateText('val-leasing', formatRupiah(sumLeasing));
-        
-        const overdueCount = data.filter(item => getVal(item, 'Total_Overdue') > 0).length;
-        updateText('count-overdue', `${overdueCount} SPK Lewat TOP`);
+        updateText('unit-cash', unitCash);
+        updateText('unit-leasing', unitLeasing);
+        updateText('total-all-unit', `${unitCash + unitLeasing} UNIT`);
 
-        // 6. Update Progress Bar
+        // Update Persentase
         if (totalOS > 0) {
-            const cashPct = (sumCash / totalOS) * 100;
+            const pctCash = ((sumCash / totalOS) * 100).toFixed(0) + "%";
+            const pctLeasing = ((sumLeasing / totalOS) * 100).toFixed(0) + "%";
+            updateText('pct-cash', pctCash);
+            updateText('pct-leasing', pctLeasing);
+            
             const barCash = document.getElementById('bar-cash');
             const barLeasing = document.getElementById('bar-leasing');
-            if (barCash) barCash.style.width = `${cashPct}%`;
-            if (barLeasing) barLeasing.style.width = `${100 - cashPct}%`;
+            if (barCash) barCash.style.width = pctCash;
+            if (barLeasing) barLeasing.style.width = pctLeasing;
         }
 
-        // 7. PANGGIL FUNGSI VISUAL (GRAFIK)
+        // 4. Kalkulasi Aging (KEKURANGAN POIN 3)
+        let agingMap = { "BELUM JT": 0, "1-30 HR": 0, "31-60 HR": 0, ">60 HR": 0 };
+        data.forEach(item => {
+            const status = getStr(item, 'Lancar').toUpperCase();
+            if (status.includes("BELUM") || status.includes("LANCAR")) agingMap["BELUM JT"] += getVal(item, 'Os_Balance');
+            else if (status.includes("1-30")) agingMap["1-30 HR"] += getVal(item, 'Os_Balance');
+            else if (status.includes("31-60")) agingMap["31-60 HR"] += getVal(item, 'Os_Balance');
+            else if (status.includes(">60")) agingMap[">60 HR"] += getVal(item, 'Os_Balance');
+        });
+
+        // 5. Panggil Fungsi Visual (KEKURANGAN POIN 4)
         renderVisuals(sumCash, sumLeasing, agingMap);
 
         console.log("SINKRONISASI BERHASIL!");
@@ -88,38 +98,34 @@ async function syncDashboard() {
     }
 }
 
-// FUNGSI UNTUK MENGGAMBAR GRAFIK (ApexCharts)
 function renderVisuals(cash, leasing, agingData) {
-    // Grafik Donut (Komposisi)
-    const donutOptions = {
-        series: [cash, leasing],
-        chart: { type: 'donut', height: 280 },
-        labels: ['CASH', 'LEASING'],
-        colors: ['#10b981', '#6366f1'],
-        plotOptions: { pie: { donut: { size: '70%' } } },
-        dataLabels: { enabled: false },
-        legend: { position: 'bottom', fontFamily: 'Plus Jakarta Sans' }
-    };
-    
-    const donutEl = document.querySelector("#donutChart");
+    // Grafik Donut (Komposisi) - ID disesuaikan: #chart-donut-komposisi
+    const donutEl = document.querySelector("#chart-donut-komposisi");
     if (donutEl) {
-        donutEl.innerHTML = ''; // Bersihkan chart lama
+        donutEl.innerHTML = ''; 
+        const donutOptions = {
+            series: [cash, leasing],
+            chart: { type: 'donut', height: 220 },
+            labels: ['CASH', 'LEASING'],
+            colors: ['#10b981', '#3b82f6'],
+            plotOptions: { pie: { donut: { size: '70%', labels: { show: true, total: { show: true, label: 'COMP' } } } } },
+            dataLabels: { enabled: false },
+            legend: { show: false }
+        };
         new ApexCharts(donutEl, donutOptions).render();
     }
 
-    // Grafik Bar (Aging)
-    const barOptions = {
-        series: [{ name: 'Outstanding', data: Object.values(agingData) }],
-        chart: { type: 'bar', height: 280, toolbar: { show: false } },
-        plotOptions: { bar: { borderRadius: 8, columnWidth: '50%' } },
-        xaxis: { categories: Object.keys(agingData) },
-        colors: ['#6366f1'],
-        dataLabels: { enabled: false }
-    };
-
-    const barEl = document.querySelector("#barAging");
+    // Grafik Bar (Aging Mini di Card Potensi Penalti)
+    const barEl = document.querySelector("#chart-aging-mini");
     if (barEl) {
-        barEl.innerHTML = ''; // Bersihkan chart lama
+        barEl.innerHTML = '';
+        const barOptions = {
+            series: [{ name: 'O/S', data: Object.values(agingData) }],
+            chart: { type: 'bar', height: 80, sparkline: { enabled: true } },
+            colors: ['#3b82f6'],
+            plotOptions: { bar: { borderRadius: 2, columnWidth: '60%' } },
+            tooltip: { fixed: { enabled: false } }
+        };
         new ApexCharts(barEl, barOptions).render();
     }
 }
