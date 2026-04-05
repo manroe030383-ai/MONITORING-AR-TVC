@@ -3,65 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Overview AR Unit - Terpadu</title>
+    <title>Dashboard Overview AR Unit - Pangkalan Bun</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Public Sans', sans-serif; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+        /* Hide scrollbar but keep functionality */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
 <body class="bg-[#F4F7FE]">
     <div class="flex min-h-screen">
         
-        <aside class="w-64 bg-[#0A1629] text-[#A3AED0] flex flex-col p-6 sticky top-0 h-screen">
+        <aside class="w-64 bg-[#0A1629] text-[#A3AED0] flex flex-col p-6 sticky top-0 h-screen z-50">
             <div class="mb-10 text-white">
-                <h1 class="text-2xl font-black">BC</h1>
-                <p class="text-xs uppercase tracking-wider text-[#A3AED0]">Pangkalan Bun</p>
+                <h1 class="text-2xl font-black tracking-tighter">AUTO2000</h1>
+                <p class="text-[10px] uppercase tracking-widest text-[#A3AED0] font-bold">Pangkalan Bun Branch</p>
             </div>
             
             <nav class="flex-1 space-y-3">
                 <p class="text-[10px] uppercase text-[#707EAE] font-bold tracking-widest px-3">Master Portal</p>
-                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5">
-                    <i class="fa-solid fa-layer-group text-sm"></i> <span>Ekosistem Aplikasi</span>
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition">
+                    <i class="fa-solid fa-layer-group text-sm"></i> <span class="text-sm">Ekosistem Aplikasi</span>
                 </a>
 
                 <p class="text-[10px] uppercase text-[#707EAE] font-bold tracking-widest px-3 mt-6">AR Kendaraan (Unit)</p>
-                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-red-600 text-white font-bold">
-                    <i class="fa-solid fa-chart-pie"></i> <span>Dashboard Unit</span>
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-red-600 text-white font-bold shadow-lg shadow-red-900/20">
+                    <i class="fa-solid fa-chart-pie"></i> <span class="text-sm">Dashboard Unit</span>
                 </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5">
-                    <i class="fa-solid fa-file-invoice"></i> <span>Data AR Unit</span>
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition">
+                    <i class="fa-solid fa-file-invoice"></i> <span class="text-sm">Data AR Unit</span>
                 </a>
 
                 <p class="text-[10px] uppercase text-[#707EAE] font-bold tracking-widest px-3 mt-6">AR Service GR</p>
-                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5">
-                    <i class="fa-solid fa-screwdriver-wrench text-sm"></i> <span>Dashboard GR</span>
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition">
+                    <i class="fa-solid fa-screwdriver-wrench text-sm"></i> <span class="text-sm">Dashboard GR</span>
                 </a>
             </nav>
 
-            <button class="bg-[#111C44] border border-white/10 text-emerald-400 w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm">
+            <button onclick="location.reload()" class="bg-[#111C44] border border-white/10 text-emerald-400 w-full py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold hover:bg-[#1b254b] transition active:scale-95">
                 <i class="fa-solid fa-sync"></i> SYNC DATA AKTIF
             </button>
         </aside>
 
-        <main class="flex-1 p-10">
+        <main class="flex-1 p-10 overflow-y-auto">
             
             <header class="flex justify-between items-start mb-8">
                 <div>
-                    <p class="text-[10px] text-red-500 font-bold uppercase tracking-wider mb-1">
-                        Data Update: MINGGU, 5 APRIL 2026 - 22.42 WIB
+                    <p id="tgl-update-text" class="text-[10px] text-red-500 font-bold uppercase tracking-wider mb-1">
+                        MENYINKRONKAN DATA SUPABASE...
                     </p>
                     <h2 class="text-3xl font-black text-[#1B2559]">Overview AR Unit</h2>
                     <div class="flex items-center gap-2 mt-2">
                         <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                        <p class="text-xs text-[#707EAE] italic">Mode: Supabase Database (Realtime)</p>
+                        <p class="text-xs text-[#707EAE] italic font-medium">Mode: Realtime Database Connection</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="bg-white px-4 py-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3 text-[#A3AED0]">
                         <i class="fa-solid fa-calendar-alt text-lg"></i>
-                        <span class="text-sm font-bold text-[#1B2559]">Arsip DB: 5/4/2026</span>
+                        <span id="arsip-db-text" class="text-sm font-bold text-[#1B2559]">DB: --/--/----</span>
                     </div>
                     <button class="bg-red-50 text-red-600 px-6 py-2.5 rounded-2xl font-bold text-sm flex items-center gap-2 hover:bg-red-100 transition">
                         <i class="fa-solid fa-download"></i> DOWNLOAD
@@ -72,142 +76,18 @@
             <div class="grid grid-cols-1 md:grid-cols-[2fr,1fr] gap-6 mb-8">
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                        <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-4 flex justify-between items-center">Total O/S <i class="fa-solid fa-file-invoice text-[#A3AED0]"></i></h3>
-                        <p class="text-2xl font-black text-[#1B2559]">Rp 21.471.765.144</p>
-                        <div class="w-full h-1 bg-slate-100 rounded-full mt-4 flex overflow-hidden"><div class="bg-emerald-500 h-full" style="width: 46%"></div><div class="bg-blue-500 h-full" style="width: 54%"></div></div>
-                        <div class="flex justify-between text-[10px] mt-2 font-black uppercase text-[#707EAE] italic"><span class="text-emerald-500">Cash</span><span class="text-blue-500">Leasing</span></div>
-                    </div>
-                    <div class="bg-white p-6 rounded-[2rem] border border-rose-100 shadow-sm">
-                        <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-4 flex justify-between items-center">Total Overdue <i class="fa-solid fa-exclamation-circle text-red-400"></i></h3>
-                        <p class="text-2xl font-black text-red-600">Rp 1.649.686.394</p>
-                        <p class="text-xs font-bold text-[#707EAE] mt-1 uppercase">0 SPK Lewat TOP</p>
-                    </div>
                     <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden">
-                        <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-4 flex justify-between items-center">Potensi Penalti <i class="fa-solid fa-exclamation-triangle text-orange-400"></i></h3>
-                        <p class="text-2xl font-black text-orange-500">Rp 4.102.712</p>
-                        <p class="text-xs font-bold text-[#707EAE] mt-1 uppercase">Dari 0 SPK</p>
+                        <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-4 flex justify-between items-center">Total O/S <i class="fa-solid fa-file-invoice text-[#A3AED0]"></i></h3>
+                        <p id="total-os" class="text-2xl font-black text-[#1B2559]">Rp 0</p>
+                        <div class="w-full h-1.5 bg-slate-100 rounded-full mt-5 flex overflow-hidden">
+                            <div class="bg-emerald-500 h-full" style="width: 50%"></div>
+                            <div class="bg-blue-500 h-full" style="width: 50%"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] mt-2 font-black uppercase text-[#707EAE]">
+                            <span class="text-emerald-500">Cash Basis</span>
+                            <span class="text-blue-500">Leasing Basis</span>
+                        </div>
                     </div>
-                    <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                        <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-4 flex justify-between items-center">Belum Jatuh Tempo <i class="fa-solid fa-calendar-check text-[#A3AED0]"></i></h3>
-                        <p class="text-2xl font-black text-[#1B2559]">Rp 19.822.078.750</p>
-                        <p class="text-xs font-bold text-[#707EAE] mt-1 uppercase italic">O/S Lancar</p>
-                    </div>
-                </div>
 
-                <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between">
-                    <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-4">Aging Analysis (Umur Piutang)</h3>
-                    <div id="chart-aging"></div>
-                </div>
-            </div>
-
-            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm mb-8">
-                <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-6 flex items-center gap-2"><i class="fa-solid fa-tachometer-alt text-purple-400"></i> Speed of Payment (Avg Days)</h3>
-                <div class="space-y-4">
-                    <div class="flex items-center gap-4">
-                        <span class="w-10 text-xs font-bold text-[#1B2559]">ACC</span>
-                        <div class="flex-1 h-2.5 bg-purple-100 rounded-full overflow-hidden"><div class="bg-purple-600 h-full rounded-full" style="width: 100%"></div></div>
-                        <span class="text-xs font-black text-[#1B2559]">28 Hari</span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <span class="w-10 text-xs font-bold text-[#1B2559]">-</span>
-                        <div class="flex-1 h-2.5 bg-purple-100 rounded-full overflow-hidden"><div class="bg-purple-600 h-full rounded-full" style="width: 40%"></div></div>
-                        <span class="text-xs font-black text-[#1B2559]">11 Hari</span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <span class="w-10 text-xs font-bold text-[#1B2559]">TAFS</span>
-                        <div class="flex-1 h-2.5 bg-purple-100 rounded-full overflow-hidden"><div class="bg-purple-600 h-full rounded-full" style="width: 45%"></div></div>
-                        <span class="text-xs font-black text-[#1B2559]">13 Hari</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm mb-8">
-                <h3 class="text-xs font-bold text-[#707EAE] uppercase tracking-widest mb-6 text-center">Komposisi & Breakdown Penjualan</h3>
-                <div class="flex items-center justify-between gap-6 px-4">
-                    <div class="flex-1 bg-emerald-50 p-6 rounded-3xl border border-emerald-100 text-center">
-                        <p class="text-[10px] font-black text-emerald-600 mb-1 uppercase tracking-wider">Total Cash (46%)</p>
-                        <p class="text-2xl font-black text-[#1B2559]">Rp 9.970.806.000</p>
-                        <p class="text-xs font-bold text-[#1B2559] mt-1 uppercase italic">36 Unit</p>
-                    </div>
-                    <div class="w-56 h-56 flex items-center justify-center relative flex-shrink-0">
-                        <img src="path/to/donut_chart_image.png" alt="Komposisi Donut Chart" class="w-full h-full object-contain">
-                    </div>
-                    <div class="flex-1 bg-blue-50 p-6 rounded-3xl border border-blue-100 text-center">
-                        <p class="text-[10px] font-black text-blue-600 mb-1 uppercase tracking-wider">Total Leasing (54%)</p>
-                        <p class="text-2xl font-black text-[#1B2559]">Rp 11.500.959.144</p>
-                        <p class="text-xs font-bold text-[#1B2559] mt-1 uppercase italic">38 Unit</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mt-8">
-                
-                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                    <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-4 flex items-center gap-2"><i class="fa-solid fa-user-tag text-red-400"></i> Top 5 Salesman</h3>
-                    <div class="space-y-3.5">
-                        <div class="flex justify-between items-center text-sm"><span class="font-bold text-[#1B2559]">YUKE PRATAMA</span> <span class="text-emerald-500 font-bold">11,2 M</span></div>
-                        <div class="flex justify-between items-center text-sm"><span class="font-bold text-[#1B2559]">DAVID SUPR...</span> <span class="text-emerald-500 font-bold">8,9 M</span></div>
-                        <div class="flex justify-between items-center text-sm"><span class="font-bold text-[#1B2559]">HENDRA RI...</span> <span class="text-emerald-500 font-bold">3,1 M</span></div>
-                        <div class="flex justify-between items-center text-sm"><span class="font-bold text-[#1B2559]">KUSWANTO</span> <span class="text-emerald-500 font-bold">1,8 M</span></div>
-                        <div class="flex justify-between items-center text-sm"><span class="font-bold text-[#1B2559]">BUDI SANTOSO</span> <span class="text-emerald-500 font-bold">1,0 M</span></div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                    <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-4 flex items-center gap-2"><i class="fa-solid fa-truck text-emerald-400"></i> Breakdown Leasing TVC</h3>
-                    <p class="text-[10px] text-[#A3AED0] mb-3">Total Unit Tgl Sudah Kirim / Belum Bayar</p>
-                    <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 text-center mb-4">
-                        <p class="text-sm font-bold text-emerald-700">TOTAL LEASING (TVC)</p>
-                        <p class="text-2xl font-black text-emerald-800">112 Unit</p>
-                    </div>
-                    <div class="space-y-3.5">
-                        <div class="flex justify-between items-center text-sm"><span class="font-bold text-[#1B2559]">ACC</span> <span class="text-emerald-600 font-bold">10 Unit</span></div>
-                        <div class="flex justify-between items-center text-sm"><span class="font-bold text-[#1B2559]">TAFS</span> <span class="text-emerald-600 font-bold">5 Unit</span></div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                    <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-4 flex items-center gap-2"><i class="fa-solid fa-user-clock text-orange-400"></i> Top 5 Overdue</h3>
-                        <p class="text-[10px] text-[#A3AED0] mb-3">Customer dengan tunggakan terbesar</p>
-                    <div class="space-y-3.5">
-                        <div class="flex justify-between gap-3 text-sm"><span class="font-bold text-[#1B2559] truncate flex-1">PT MULTINASIONAL SEJATI</span> <span class="text-red-500 font-bold whitespace-nowrap">Rp 12,3 M</span></div>
-                        <div class="flex justify-between gap-3 text-sm"><span class="font-bold text-[#1B2559] truncate flex-1">PT ABADI MAKMUR JAYA</span> <span class="text-red-500 font-bold whitespace-nowrap">Rp 6,1 M</span></div>
-                        <div class="flex justify-between gap-3 text-sm"><span class="font-bold text-[#1B2559] truncate flex-1">BUDI SULISTYO</span> <span class="text-red-500 font-bold whitespace-nowrap">Rp 800 Jt</span></div>
-                        <div class="flex justify-between gap-3 text-sm"><span class="font-bold text-[#1B2559] truncate flex-1">PT ABADI MAKMUR JAYA</span> <span class="text-red-500 font-bold whitespace-nowrap">Rp 600 Jt</span></div>
-                        <div class="flex justify-between gap-3 text-sm"><span class="font-bold text-[#1B2559] truncate flex-1">CV MAKMUR JAYA JAYA</span> <span class="text-red-500 font-bold whitespace-nowrap">Rp 400 Jt</span></div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                    <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-4 flex items-center gap-2"><i class="fa-solid fa-users text-blue-400"></i> Top SPV AR Distribution</h3>
-                    <div class="space-y-4">
-                        <div class="space-y-1"><p class="text-sm font-bold text-[#1B2559]">HUFRON</p><div class="h-1.5 bg-blue-100 rounded-full overflow-hidden"><div class="bg-blue-600 h-full" style="width: 100%"></div></div><p class="text-right text-[10px] font-bold text-blue-600">11,2 M / 4 Unit</p></div>
-                        <div class="space-y-1"><p class="text-sm font-bold text-[#1B2559]">DANIEL DUDI TRIMA... </p><div class="h-1.5 bg-blue-100 rounded-full overflow-hidden"><div class="bg-blue-600 h-full" style="width: 50%"></div></div><p class="text-right text-[10px] font-bold text-blue-600">5,8 M / 2 Unit</p></div>
-                        <div class="space-y-1"><p class="text-sm font-bold text-[#1B2559]">MANDOR GALIH MU... </p><div class="h-1.5 bg-blue-100 rounded-full overflow-hidden"><div class="bg-blue-600 h-full" style="width: 20%"></div></div><p class="text-right text-[10px] font-bold text-blue-600">3,1 M / 1 Unit</p></div>
-                        <div class="space-y-1"><p class="text-sm font-bold text-[#1B2559]">YUNITA NINGSIH</p><div class="h-1.5 bg-blue-100 rounded-full overflow-hidden"><div class="bg-blue-600 h-full" style="width: 10%"></div></div><p class="text-right text-[10px] font-bold text-blue-600">1,8 M / 0 Unit</p></div>
-                    </div>
-                </div>
-            </div>
-
-        </main>
-    </div>
-
-    <script>
-        var options = {
-            series: [{
-                name: 'Outstanding',
-                data: [11200000000, 8900000000, 3100000000, 1800000000] // Nilai dalam Rupiah (Dummy)
-            }],
-            chart: { type: 'bar', height: 180, toolbar: { show: false } },
-            plotOptions: { bar: { borderRadius: 4, distributed: true, columnWidth: '40%' } },
-            colors: ['#22c55e', '#f59e0b', '#f97316', '#ef4444'], // Hijau, Orange, Jingga, Merah
-            xaxis: { categories: ['LANCAR', '1-30 Hari', '31-60 Hari', '>60 Hari'], labels: { show: false } },
-            yaxis: { labels: { show: false } },
-            dataLabels: { enabled: false },
-            tooltip: { y: { formatter: function(val) { return "Rp " + (val / 1000000000).toFixed(1) + " M"; } } }
-        };
-        new ApexCharts(document.querySelector("#chart-aging"), options).render();
-    </script>
-</body>
-</html>
+                    <div class="bg-white p-6 rounded-[2rem] border border-rose-100 shadow-sm">
+                        <h3 class="text-xs font-
