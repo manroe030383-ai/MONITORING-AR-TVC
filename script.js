@@ -1,113 +1,109 @@
-import { getPangkalanBunData, formatRupiah } from './configs.js';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// Variabel global untuk menyimpan instance chart agar bisa di-update/destroy
-let agingChart, donutChart;
+const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s'
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-async function syncDashboard() {
-    try {
-        const data = await getPangkalanBunData();
-        if (!data || data.length === 0) return;
+// Instance Chart agar bisa di-update/destroy jika perlu
+let donutChart, barChart;
 
-        const getVal = (obj, key) => {
-            const realKey = Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase());
-            return realKey ? Number(obj[realKey]) || 0 : 0;
-        };
-        const getStr = (obj, key) => {
-            const realKey = Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase());
-            return realKey ? String(obj[realKey] || '').trim() : '';
-        };
-
-        // --- 1. TANGGAL & HEADER ---
-        const now = new Date();
-        const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-        document.getElementById('tgl-update-text').innerText = `DATA UPDATE: ${now.toLocaleDateString('id-ID', options).toUpperCase()} - ${now.getHours().toString().padStart(2, '0')}.${now.getMinutes().toString().padStart(2, '0')} WIB`;
-        document.getElementById('arsip-db-text').innerText = `ARSIP DB: ${now.toLocaleDateString('id-ID')}`;
-
-        // --- 2. KALKULASI KPI ---
-        const totalOS = data.reduce((sum, item) => sum + getVal(item, 'Os_Balance'), 0);
-        const totalOverdue = data.reduce((sum, item) => sum + getVal(item, 'Total_Overdue'), 0);
-        const sumCash = data.filter(item => getStr(item, 'Metode_Pembayaran').toLowerCase() === 'cash')
-                            .reduce((sum, item) => sum + getVal(item, 'Os_Balance'), 0);
-        const sumLeasing = data.filter(item => getStr(item, 'Metode_Pembayaran').toLowerCase() === 'leasing')
-                               .reduce((sum, item) => sum + getVal(item, 'Os_Balance'), 0);
-
-        document.getElementById('total-os').innerText = formatRupiah(totalOS);
-        document.getElementById('total-overdue').innerText = formatRupiah(totalOverdue);
-        document.getElementById('val-cash').innerText = formatRupiah(sumCash);
-        document.getElementById('val-leasing').innerText = formatRupiah(sumLeasing);
-
-        // --- 3. AGING ANALYSIS ---
-        let agingMap = { "LANCAR": 0, "1-30 HR": 0, "31-60 HR": 0, ">60 HR": 0 };
-        data.forEach(item => {
-            const st = getStr(item, 'Lancar').toUpperCase();
-            const val = getVal(item, 'Os_Balance');
-            if (st.includes("BELUM") || st.includes("LANCAR")) agingMap["LANCAR"] += val;
-            else if (st.includes("1-30")) agingMap["1-30 HR"] += val;
-            else if (st.includes("31-60")) agingMap["31-60 HR"] += val;
-            else if (st.includes(">60")) agingMap[">60 HR"] += val;
-        });
-
-        // --- 4. TOP 5 SALESMAN ---
-        const salesMap = {};
-        data.forEach(item => {
-            const sName = getStr(item, 'Salesman') || 'TANPA NAMA';
-            salesMap[sName] = (salesMap[sName] || 0) + getVal(item, 'Os_Balance');
-        });
-        const topSales = Object.entries(salesMap).sort((a,b) => b[1] - a[1]).slice(0,5);
-        
-        document.getElementById('sales-list').innerHTML = topSales.map(([name, val]) => `
-            <div class="flex justify-between items-center py-1 border-b border-slate-50 last:border-0">
-                <span class="text-[#1B2559] text-[10px] font-bold uppercase truncate mr-2">${name}</span>
-                <span class="text-emerald-500 text-[10px] font-black whitespace-nowrap">${formatRupiah(val)}</span>
-            </div>
-        `).join('');
-
-        // --- 5. TOP 5 OVERDUE ---
-        const overdueCust = data.filter(item => getVal(item, 'Total_Overdue') > 0)
-            .sort((a,b) => getVal(b, 'Total_Overdue') - getVal(a, 'Total_Overdue')).slice(0,5);
-
-        document.getElementById('overdue-cust-list').innerHTML = overdueCust.map(item => `
-            <div class="flex justify-between items-center py-1 border-b border-slate-50 last:border-0">
-                <span class="text-[#1B2559] text-[10px] font-bold uppercase truncate mr-2">${getStr(item, 'Nama_Customer')}</span>
-                <span class="text-red-500 text-[10px] font-black">${formatRupiah(getVal(item, 'Total_Overdue'))}</span>
-            </div>
-        `).join('');
-
-        renderCharts(sumCash, sumLeasing, agingMap);
-
-    } catch (err) { console.error("Sync Error:", err); }
+function updateDateTime() {
+    const now = new Date();
+    const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
+    const months = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
+    const dateStr = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}.${now.getMinutes().toString().padStart(2, '0')} WIB`;
+    document.getElementById('tgl-update-text').innerText = `DATA UPDATE: ${dateStr} - ${timeStr}`;
+    document.getElementById('arsip-db-text').innerText = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
 }
 
-function renderCharts(cash, leasing, aging) {
-    // Hapus chart lama jika sudah ada (mencegah penumpukan visual)
-    if(agingChart) agingChart.destroy();
-    if(donutChart) donutChart.destroy();
+async function loadData() {
+    try {
+        const { data, error } = await supabase.from('ar_unit').select('*');
+        if (error) throw error;
 
-    // Aging Chart
-    agingChart = new ApexCharts(document.querySelector("#chart-aging-asli"), {
-        series: [{ name: 'O/S', data: Object.values(aging) }],
-        chart: { type: 'bar', height: 200, toolbar: {show:false} },
-        colors: ['#10b981', '#f59e0b', '#f97316', '#ef4444'],
-        plotOptions: { bar: { distributed: true, borderRadius: 6, columnWidth: '60%' } },
-        xaxis: { categories: Object.keys(aging), labels: { style: { fontSize: '9px', fontWeight: 700 } } },
-        yaxis: { labels: { show: false } },
-        dataLabels: { enabled: false },
-        tooltip: { y: { formatter: (val) => formatRupiah(val) } }
+        document.getElementById('db-status-dot').className = "w-2 h-2 rounded-full bg-emerald-500";
+        document.getElementById('db-status-text').innerText = "Status: Terhubung (Realtime)";
+        
+        processData(data);
+    } catch (err) {
+        console.error(err);
+        document.getElementById('db-status-dot').className = "w-2 h-2 rounded-full bg-red-600";
+        document.getElementById('db-status-text').innerText = "Status: Gagal Sinkronisasi!";
+    }
+}
+
+function processData(data) {
+    const formatIDR = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
+
+    // KATEGORI DATA BERDASARKAN KOLOM ASLI SUPABASE ANDA
+    const cashData = data.filter(d => String(d.leasing_name || '').toUpperCase() === 'CASH');
+    const leasingData = data.filter(d => String(d.leasing_name || '').toUpperCase() !== 'CASH');
+    const overdueData = data.filter(d => (Number(d.total_overdue) || 0) > 0);
+
+    const totalCash = cashData.reduce((sum, d) => sum + (Number(d.os_balance) || 0), 0);
+    const totalLeasing = leasingData.reduce((sum, d) => sum + (Number(d.os_balance) || 0), 0);
+    const totalOS = totalCash + totalLeasing;
+    const totalOverdue = overdueData.reduce((sum, d) => sum + (Number(d.total_overdue) || 0), 0);
+
+    // Update Card UI
+    document.getElementById('total-os').innerText = formatIDR(totalOS);
+    document.getElementById('total-overdue').innerText = formatIDR(totalOverdue);
+    document.getElementById('count-overdue').innerText = `${overdueData.length} UNIT TERLAMBAT`;
+    document.getElementById('val-cash').innerText = formatIDR(totalCash);
+    document.getElementById('unit-cash').innerText = `${cashData.length} UNIT`;
+    document.getElementById('val-leasing').innerText = formatIDR(totalLeasing);
+    document.getElementById('unit-leasing').innerText = `${leasingData.length} UNIT`;
+
+    // Progress Bar
+    if(totalOS > 0) {
+        document.getElementById('bar-cash').style.width = (totalCash / totalOS * 100) + "%";
+        document.getElementById('bar-leasing').style.width = (totalLeasing / totalOS * 100) + "%";
+    }
+
+    // AGING BUCKETS (Menggunakan kolom 'hari_overdue' atau 'status_aging')
+    const agingBuckets = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
+    data.forEach(d => {
+        const status = String(d.status_aging || '').toUpperCase();
+        const os = Number(d.os_balance) || 0;
+        
+        if (status.includes("BELUM") || status.includes("LANCAR")) agingBuckets['LANCAR'] += os;
+        else if (status.includes("1-30")) agingBuckets['1-30 H'] += os;
+        else if (status.includes("31-60")) agingBuckets['31-60 H'] += os;
+        else agingBuckets['>60 H'] += os;
     });
-    agingChart.render();
 
-    // Donut Chart
-    donutChart = new ApexCharts(document.querySelector("#chart-donut-pusat"), {
-        series: [cash, leasing],
-        chart: { type: 'donut', height: 250 },
-        labels: ['CASH', 'LEASING'],
-        colors: ['#10b981', '#3b82f6'],
-        stroke: { show: false },
-        plotOptions: { pie: { donut: { size: '75%', labels: { show: true, total: { show: true, label: 'TOTAL O/S', fontSize: '10px', formatter: () => formatRupiah(cash + leasing) } } } } },
-        legend: { position: 'bottom', fontSize: '10px', fontWeight: 700 }
+    renderCharts(cashData.length, leasingData.length, Object.values(agingBuckets));
+}
+
+function renderCharts(cashUnit, leasingUnit, agingValues) {
+    if (donutChart) donutChart.destroy();
+    if (barChart) barChart.destroy();
+
+    // Donut Chart (Berdasarkan Jumlah Unit)
+    donutChart = new ApexCharts(document.querySelector("#chart-donut-main"), {
+        series: [cashUnit, leasingUnit],
+        labels: ['Cash', 'Leasing'],
+        chart: { type: 'donut', height: 280 },
+        colors: ['#10B981', '#3B82F6'],
+        plotOptions: { pie: { donut: { size: '75%', labels: { show: true, total: { show: true, label: 'TOTAL UNIT', formatter: () => cashUnit + leasingUnit } } } } },
+        dataLabels: { enabled: false }
     });
     donutChart.render();
+
+    // Bar Chart (Aging berdasarkan Nominal OS)
+    barChart = new ApexCharts(document.querySelector("#chart-aging-nominal"), {
+        series: [{ name: 'Nominal O/S', data: agingValues }],
+        chart: { type: 'bar', height: 280, toolbar: { show: false } },
+        colors: ['#6366F1'],
+        plotOptions: { bar: { borderRadius: 8, columnWidth: '50%', distributed: true } },
+        xaxis: { categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] },
+        yaxis: { labels: { formatter: (v) => 'Rp ' + (v/1000000).toFixed(0) + ' Jt' } },
+        legend: { show: false }
+    });
+    barChart.render();
 }
 
-// Jalankan sync saat tombol ditekan (jika ada) atau saat load
-document.addEventListener('DOMContentLoaded', syncDashboard);
+updateDateTime();
+loadData();
+setInterval(updateDateTime, 60000);
