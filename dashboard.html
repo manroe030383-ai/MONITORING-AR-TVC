@@ -9,198 +9,275 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Public Sans', sans-serif; background-color: #F4F7FE; zoom: 0.85; }
-        .card-shadow { box-shadow: 0px 10px 30px rgba(112, 144, 176, 0.08); }
-        ::-webkit-scrollbar { width: 0px; }
+        body { font-family: 'Public Sans', sans-serif; background-color: #F4F7FE; zoom: 0.8; }
+        .card-shadow { box-shadow: 0px 10px 30px rgba(112, 144, 176, 0.1); }
     </style>
 </head>
-<body class="flex min-h-screen overflow-x-hidden">
+<body class="flex min-h-screen bg-[#F4F7FE]">
 
     <aside class="w-64 bg-[#0A1629] text-[#A3AED0] flex flex-col p-5 sticky top-0 h-screen z-50">
         <div class="mb-8 text-white">
-            <h1 class="text-xl font-black tracking-tighter uppercase">Auto2000</h1>
+            <h1 class="text-xl font-black tracking-tighter uppercase">AUTO2000</h1>
             <p class="text-[9px] uppercase tracking-widest text-[#A3AED0] font-bold">Monitoring Portal AR</p>
         </div>
         <nav class="flex-1 space-y-2">
-            <p class="text-[9px] uppercase text-[#707EAE] font-bold tracking-widest px-3 mb-2">Main Menu</p>
-            <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl bg-red-600 text-white font-bold shadow-md text-sm">
-                <i class="fa-solid fa-chart-pie w-5"></i> <span>Dashboard Unit</span>
-            </a>
+            <div class="px-3 py-2 rounded-xl bg-red-600 text-white font-bold shadow-md text-sm flex items-center gap-3">
+                <i class="fa-solid fa-chart-pie"></i> <span>Dashboard Unit</span>
+            </div>
         </nav>
-        <button onclick="window.location.reload()" class="bg-[#111C44] border border-white/10 text-emerald-400 w-full py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold hover:bg-[#1b254b] transition active:scale-95">
+        <button onclick="location.reload()" class="bg-[#111C44] text-emerald-400 w-full py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold border border-white/10 hover:bg-[#1b254b]">
             <i class="fa-solid fa-sync"></i> REFRESH DASHBOARD
         </button>
     </aside>
 
-    <main class="flex-1 p-8">
+    <main class="flex-1 p-6">
         <div class="flex justify-between items-start mb-6">
             <div>
-                <p id="tgl-update-text" class="text-[9px] text-red-500 font-bold uppercase tracking-widest mb-1">DATA UPDATE: LOADING...</p>
-                <h2 class="text-2xl font-black text-[#1B2559]">Overview AR Unit</h2>
-                <div class="flex items-center gap-2 mt-1">
-                    <div id="db-status-dot" class="w-2 h-2 rounded-full bg-orange-400"></div>
-                    <p id="db-status-text" class="text-[10px] text-[#707EAE] font-medium italic">Menghubungkan ke Supabase...</p>
-                </div>
+                <p id="tgl-update-text" class="text-[10px] text-red-500 font-bold uppercase tracking-widest mb-1">DATA UPDATE: LOADING...</p>
+                <h2 class="text-3xl font-black text-[#1B2559]">Overview AR Unit</h2>
+                <p id="summary-desc" class="text-xs text-[#707EAE] font-medium mt-1 uppercase tracking-tight">
+                    TOTAL OUTSTANDING SAAT INI SEBANYAK <span class="text-blue-600 font-bold" id="total-unit-desc">0</span> UNIT DENGAN NOMINAL <span class="text-red-600 font-bold" id="total-os-desc">Rp 0</span>
+                </p>
             </div>
-            <div class="bg-white px-4 py-2 rounded-xl border border-slate-100 card-shadow flex items-center gap-3">
-                <i class="fa-solid fa-calendar-check text-[#A3AED0] text-sm"></i>
-                <div class="flex flex-col text-right">
-                    <span class="text-[8px] font-bold text-[#707EAE] uppercase leading-none">Arsip DB:</span>
-                    <span id="arsip-db-text" class="text-xs font-black text-[#1B2559]">--/--/----</span>
+            <div class="bg-white px-4 py-2 rounded-2xl border border-slate-100 card-shadow flex items-center gap-3">
+                <i class="fa-solid fa-calendar-alt text-slate-400"></i>
+                <div class="text-right">
+                    <p class="text-[9px] font-bold text-[#707EAE] uppercase">Arsip DB:</p>
+                    <p id="arsip-db-text" class="text-sm font-black text-[#1B2559]">--/--/----</p>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white p-5 rounded-3xl border border-slate-100 card-shadow">
-                <span class="text-[9px] font-bold text-[#707EAE] uppercase">Total O/S Balance</span>
-                <p id="total-os" class="text-xl font-black text-[#1B2559] mt-1">Rp 0</p>
-                <div class="w-full h-1.5 bg-slate-100 rounded-full mt-4 flex overflow-hidden">
-                    <div id="bar-cash" class="bg-emerald-500 h-full" style="width: 0%"></div>
-                    <div id="bar-leasing" class="bg-blue-500 h-full" style="width: 0%"></div>
+        <div class="grid grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-5 rounded-3xl card-shadow">
+                <span class="text-[10px] font-bold text-[#707EAE] uppercase">Total O/S Balance</span>
+                <h3 id="total-os" class="text-2xl font-black text-[#1B2559] mt-1">Rp 0</h3>
+                <div class="w-full h-2 bg-slate-100 rounded-full mt-4 flex overflow-hidden">
+                    <div id="bar-os-pct" class="bg-blue-500 h-full w-full transition-all duration-1000"></div>
                 </div>
             </div>
-            <div class="bg-white p-5 rounded-3xl border border-slate-100 card-shadow border-l-4 border-l-red-500">
-                <span class="text-[9px] font-bold text-red-500 uppercase">Total Overdue</span>
-                <p id="total-overdue" class="text-xl font-black text-red-600 mt-1">Rp 0</p>
-                <p id="count-overdue" class="text-[10px] font-bold text-slate-400 mt-2 uppercase">0 Unit Terlambat</p>
+            <div class="bg-white p-5 rounded-3xl card-shadow border-l-4 border-l-red-500">
+                <span class="text-[10px] font-bold text-red-500 uppercase">Total Overdue (> TOP)</span>
+                <h3 id="total-overdue" class="text-2xl font-black text-red-600 mt-1">Rp 0</h3>
+                <p id="count-overdue" class="text-[10px] font-bold text-slate-400 mt-1 uppercase">0 Unit Terlambat</p>
             </div>
-            <div class="bg-white p-5 rounded-3xl border border-slate-100 card-shadow border-l-4 border-l-emerald-500">
-                <span class="text-[9px] font-bold text-emerald-600 uppercase">Total Cash</span>
-                <p id="val-cash" class="text-xl font-black text-emerald-600 mt-1">Rp 0</p>
-                <p id="unit-cash" class="text-[10px] font-bold text-slate-400 mt-2 uppercase">0 Unit</p>
+            <div class="bg-white p-5 rounded-3xl card-shadow border-l-4 border-l-orange-400">
+                <span class="text-[10px] font-bold text-orange-500 uppercase">Potensi Penalti</span>
+                <h3 id="total-penalty" class="text-2xl font-black text-orange-600 mt-1">Rp 0</h3>
+                <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase">Estimasi Denda</p>
             </div>
-            <div class="bg-white p-5 rounded-3xl border border-slate-100 card-shadow border-l-4 border-l-blue-500">
-                <span class="text-[9px] font-bold text-blue-600 uppercase">Total Leasing</span>
-                <p id="val-leasing" class="text-xl font-black text-blue-600 mt-1">Rp 0</p>
-                <p id="unit-leasing" class="text-[10px] font-bold text-slate-400 mt-2 uppercase">0 Unit</p>
+            <div class="bg-white p-5 rounded-3xl card-shadow border-l-4 border-l-emerald-500">
+                <span class="text-[10px] font-bold text-emerald-600 uppercase">Belum Jatuh Tempo</span>
+                <h3 id="total-lancar" class="text-2xl font-black text-emerald-600 mt-1">Rp 0</h3>
+                <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase">O/S Lancar</p>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-white p-6 rounded-[2rem] border border-slate-100 card-shadow">
-                <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-6">Komposisi Penjualan (Unit)</h3>
-                <div id="chart-donut-main"></div>
-            </div>
-            <div class="bg-white p-6 rounded-[2rem] border border-slate-100 card-shadow">
-                <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-6">Aging Piutang (Berdasarkan Nominal O/S)</h3>
+        <div class="grid grid-cols-12 gap-6 mb-6">
+            <div class="col-span-4 bg-white p-6 rounded-[2rem] card-shadow">
+                <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-6 tracking-widest">Aging Analysis</h3>
                 <div id="chart-aging-nominal"></div>
+            </div>
+            <div class="col-span-8 bg-white p-6 rounded-[2rem] card-shadow">
+                <h3 class="text-xs font-bold text-[#707EAE] uppercase mb-6 tracking-widest">Komposisi & Breakdown Penjualan</h3>
+                <div class="grid grid-cols-12 items-center">
+                    <div class="col-span-4"><div id="chart-donut-main"></div></div>
+                    <div id="leasing-breakdown-list" class="col-span-8 px-6 space-y-4"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-6">
+            <div class="bg-white p-6 rounded-[2rem] card-shadow">
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="fa-solid fa-trophy text-orange-400 text-xs"></i>
+                    <h3 class="text-[10px] font-bold text-[#707EAE] uppercase">Top 5 Salesman</h3>
+                </div>
+                <div id="list-salesman" class="space-y-4"></div>
+            </div>
+            <div class="bg-white p-6 rounded-[2rem] card-shadow">
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="fa-solid fa-building-columns text-blue-400 text-xs"></i>
+                    <h3 class="text-[10px] font-bold text-[#707EAE] uppercase">TVC Breakdown</h3>
+                </div>
+                <div id="list-tvc" class="space-y-4"></div>
+            </div>
+            <div class="bg-white p-6 rounded-[2rem] card-shadow">
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="fa-solid fa-clock text-red-500 text-xs"></i>
+                    <h3 class="text-[10px] font-bold text-red-500 uppercase">Top Overdue</h3>
+                </div>
+                <div id="list-overdue" class="space-y-4"></div>
+            </div>
+            <div class="bg-white p-6 rounded-[2rem] card-shadow">
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="fa-solid fa-user-tie text-purple-400 text-xs"></i>
+                    <h3 class="text-[10px] font-bold text-[#707EAE] uppercase">Top Supervisor</h3>
+                </div>
+                <div id="list-spv" class="space-y-4"></div>
             </div>
         </div>
     </main>
 
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+        
+        // Konfigurasi Client
+        const supabase = createClient('https://ahaoznkudusajtzfbnqj.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s')
 
-        const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co'
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s'
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+        const formatJuta = (n) => (Number(n)/1000000).toFixed(1) + ' Jt';
+        const formatIDR = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
 
-        let donutChart, barChart;
-
-        function updateDateTime() {
-            const now = new Date();
-            const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
-            const months = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
-            const dateStr = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
-            const timeStr = `${now.getHours().toString().padStart(2, '0')}.${now.getMinutes().toString().padStart(2, '0')} WIB`;
-            document.getElementById('tgl-update-text').innerText = `DATA UPDATE: ${dateStr} - ${timeStr}`;
-            document.getElementById('arsip-db-text').innerText = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
-        }
-
-        async function loadData() {
+        async function fetchData() {
             try {
+                // Ganti 'ar_unit' dengan nama tabel Bapak jika berbeda
                 const { data, error } = await supabase.from('ar_unit').select('*');
-                if (error) throw error;
-
-                document.getElementById('db-status-dot').className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]";
-                document.getElementById('db-status-text').innerText = "Status: Terhubung (Realtime Aktif)";
                 
+                if (error) {
+                    console.error("Supabase Error:", error.message);
+                    alert("Gagal ambil data: " + error.message);
+                    return;
+                }
+
+                if (!data || data.length === 0) {
+                    console.warn("Data kosong di tabel ar_unit");
+                    document.getElementById('summary-desc').innerHTML = "DATA TIDAK DITEMUKAN DI DATABASE";
+                    return;
+                }
+
+                console.log("Data berhasil dimuat:", data.length, "baris");
                 processData(data);
             } catch (err) {
-                console.error(err);
-                document.getElementById('db-status-dot').className = "w-2 h-2 rounded-full bg-red-600";
-                document.getElementById('db-status-text').innerText = "Status: Koneksi Terputus!";
+                console.error("System Error:", err);
             }
         }
 
         function processData(data) {
-            const formatIDR = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
+            // Kalkulasi Nominal (Pastikan nama kolom sesuai: os_balance, lancar, total_overdue, penalty_amount)
+            const totalOS = data.reduce((s, d) => s + Number(d.os_balance || 0), 0);
+            const totalLancar = data.reduce((s, d) => s + Number(d.lancar || 0), 0);
+            const totalOverdue = data.reduce((s, d) => s + Number(d.total_overdue || 0), 0);
+            const totalPenalty = data.reduce((s, d) => s + Number(d.penalty_amount || 0), 0);
 
-            // Filter Berdasarkan Kolom di Supabase (leasing_name & os_balance)
-            const cashData = data.filter(d => String(d.leasing_name || '').toUpperCase() === 'CASH');
-            const leasingData = data.filter(d => String(d.leasing_name || '').toUpperCase() !== 'CASH');
-            const overdueData = data.filter(d => (Number(d.total_overdue) || 0) > 0);
-
-            const totalCash = cashData.reduce((sum, d) => sum + (Number(d.os_balance) || 0), 0);
-            const totalLeasing = leasingData.reduce((sum, d) => sum + (Number(d.os_balance) || 0), 0);
-            const totalOS = totalCash + totalLeasing;
-            const totalOverdue = overdueData.reduce((sum, d) => sum + (Number(d.total_overdue) || 0), 0);
-
-            // Update Cards
+            // Update Header & KPI
+            document.getElementById('total-unit-desc').innerText = data.length;
+            document.getElementById('total-os-desc').innerText = formatIDR(totalOS);
             document.getElementById('total-os').innerText = formatIDR(totalOS);
             document.getElementById('total-overdue').innerText = formatIDR(totalOverdue);
-            document.getElementById('count-overdue').innerText = `${overdueData.length} UNIT TERLAMBAT`;
-            document.getElementById('val-cash').innerText = formatIDR(totalCash);
-            document.getElementById('unit-cash').innerText = `${cashData.length} UNIT`;
-            document.getElementById('val-leasing').innerText = formatIDR(totalLeasing);
-            document.getElementById('unit-leasing').innerText = `${leasingData.length} UNIT`;
+            document.getElementById('total-lancar').innerText = formatIDR(totalLancar);
+            document.getElementById('total-penalty').innerText = formatIDR(totalPenalty);
+            
+            const ovdCount = data.filter(d => Number(d.total_overdue) > 0).length;
+            document.getElementById('count-overdue').innerText = `${ovdCount} UNIT TERLAMBAT`;
 
-            if(totalOS > 0) {
-                document.getElementById('bar-cash').style.width = (totalCash / totalOS * 100) + "%";
-                document.getElementById('bar-leasing').style.width = (totalLeasing / totalOS * 100) + "%";
-            }
+            // Charts & Ranking
+            const agingData = [
+                totalLancar, 
+                data.reduce((s,d) => s + Number(d.hari_1_30 || 0), 0),
+                data.reduce((s,d) => s + Number(d.hari_31_60 || 0), 0),
+                data.reduce((s,d) => s + Number(d.lebih_60_hari || 0), 0)
+            ];
 
-            // Aging Nominal Berdasarkan kolom status_aging
-            const agingBuckets = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
-            data.forEach(d => {
-                const status = String(d.status_aging || '').toUpperCase();
-                const os = Number(d.os_balance) || 0;
-                
-                if (status.includes("BELUM") || status.includes("LANCAR")) agingBuckets['LANCAR'] += os;
-                else if (status.includes("1-30")) agingBuckets['1-30 H'] += os;
-                else if (status.includes("31-60")) agingBuckets['31-60 H'] += os;
-                else agingBuckets['>60 H'] += os;
-            });
-
-            renderCharts(cashData.length, leasingData.length, Object.values(agingBuckets));
+            renderCharts(data, agingData, totalOS);
+            renderRankings(data);
         }
 
-        function renderCharts(cashUnit, leasingUnit, agingValues) {
-            if (donutChart) donutChart.destroy();
-            if (barChart) barChart.destroy();
-
-            donutChart = new ApexCharts(document.querySelector("#chart-donut-main"), {
-                series: [cashUnit, leasingUnit],
-                labels: ['Cash', 'Leasing'],
-                chart: { type: 'donut', height: 280 },
-                colors: ['#10B981', '#3B82F6'],
-                plotOptions: { pie: { donut: { size: '75%', labels: { show: true, total: { show: true, label: 'TOTAL UNIT', formatter: () => cashUnit + leasingUnit } } } } },
+        function renderCharts(data, aging, totalOS) {
+            // Aging Chart
+            new ApexCharts(document.querySelector("#chart-aging-nominal"), {
+                series: [{ name: 'Nominal', data: aging }],
+                chart: { type: 'bar', height: 250, toolbar: {show: false} },
+                colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
+                plotOptions: { bar: { distributed: true, borderRadius: 6 } },
+                xaxis: { categories: ['LANCAR', '1-30', '31-60', '>60'] },
                 dataLabels: { enabled: false }
-            });
-            donutChart.render();
+            }).render();
 
-            barChart = new ApexCharts(document.querySelector("#chart-aging-nominal"), {
-                series: [{ name: 'Nominal O/S', data: agingValues }],
-                chart: { type: 'bar', height: 280, toolbar: { show: false } },
-                colors: ['#6366F1'],
-                plotOptions: { bar: { borderRadius: 8, columnWidth: '50%', distributed: true } },
-                xaxis: { categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] },
-                yaxis: { labels: { formatter: (v) => 'Rp ' + (v/1000000).toFixed(0) + ' Jt' } },
-                legend: { show: false }
+            // Donut Composition
+            const leasingMap = {};
+            data.forEach(d => {
+                const name = d.leasing_name || 'N/A';
+                if (!leasingMap[name]) leasingMap[name] = 0;
+                leasingMap[name] += Number(d.os_balance || 0);
             });
-            barChart.render();
+
+            const cashVal = leasingMap['CASH'] || 0;
+            const totalVal = Object.values(leasingMap).reduce((a,b)=>a+b,0);
+
+            new ApexCharts(document.querySelector("#chart-donut-main"), {
+                series: [cashVal, totalVal - cashVal],
+                labels: ['Cash', 'Leasing'],
+                chart: { type: 'donut', height: 220 },
+                colors: ['#10B981', '#3B82F6'],
+                legend: { position: 'bottom' }
+            }).render();
+
+            // List Breakdown
+            document.getElementById('leasing-breakdown-list').innerHTML = Object.entries(leasingMap)
+                .sort((a,b) => b[1] - a[1])
+                .slice(0, 4)
+                .map(([name, val]) => `
+                    <div class="flex justify-between text-[10px] font-bold uppercase">
+                        <span>${name}</span>
+                        <span>${formatJuta(val)}</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-100 rounded-full mb-2 overflow-hidden">
+                        <div class="bg-blue-500 h-full" style="width: ${(val/totalOS*100)}%"></div>
+                    </div>
+                `).join('');
         }
 
-        // Setup Realtime Subscription
-        supabase.channel('custom-all-channel')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'ar_unit' }, () => {
-            loadData();
-        }).subscribe();
+        function renderRankings(data) {
+            const getTop = (key, valKey) => {
+                const map = {};
+                data.forEach(d => {
+                    const k = d[key] || '-';
+                    if (!map[k]) map[k] = 0;
+                    map[k] += Number(d[valKey] || 0);
+                });
+                return Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            };
 
-        updateDateTime();
-        loadData();
-        setInterval(updateDateTime, 60000);
+            const fillList = (id, list, colorClass) => {
+                document.getElementById(id).innerHTML = list.map((item, i) => `
+                    <div class="flex justify-between items-center text-[10px] font-bold border-b border-slate-50 pb-1">
+                        <span class="text-[#1B2559] truncate w-32"><span class="text-slate-300 mr-1">${i+1}</span>${item[0]}</span>
+                        <span class="${colorClass}">${formatJuta(item[1])}</span>
+                    </div>
+                `).join('');
+            };
+
+            fillList('list-salesman', getTop('salesman_name', 'os_balance'), 'text-blue-600');
+            fillList('list-spv', getTop('supervisor_name', 'os_balance'), 'text-purple-600');
+
+            // TVC Logic
+            const tvcSum = data.filter(d => ['ACC', 'TAFS'].includes(d.leasing_name))
+                               .reduce((s,d) => s + Number(d.os_balance || 0), 0);
+            document.getElementById('list-tvc').innerHTML = `
+                <div class="bg-blue-50 p-4 rounded-2xl text-center">
+                    <p class="text-[9px] font-bold text-blue-500 uppercase">Total O/S TVC</p>
+                    <p class="text-xl font-black text-blue-900">${formatJuta(tvcSum)}</p>
+                </div>
+            `;
+
+            // Overdue
+            const topOvd = data.filter(d => Number(d.total_overdue) > 0)
+                               .sort((a,b) => b.total_overdue - a.total_overdue)
+                               .slice(0, 5);
+            document.getElementById('list-overdue').innerHTML = topOvd.map((d, i) => `
+                <div class="flex justify-between items-center text-[10px]">
+                    <div class="flex flex-col"><span class="font-bold text-[#1B2559] truncate w-24">${d.customer_name}</span><span class="text-[8px] text-red-500 font-bold uppercase">${d.hari_overdue || 0} HARI</span></div>
+                    <span class="font-black text-red-600">${formatJuta(d.total_overdue)}</span>
+                </div>
+            `).join('');
+        }
+
+        // Initialize Header
+        const now = new Date();
+        document.getElementById('arsip-db-text').innerText = now.toLocaleDateString('id-ID');
+        document.getElementById('tgl-update-text').innerText = `DATA UPDATE: ${now.toLocaleTimeString('id-ID')} WIB`;
+
+        fetchData();
     </script>
 </body>
 </html>
