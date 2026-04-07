@@ -1,35 +1,124 @@
-// --- TOP SALESMAN (Unit di Kanan Bawah Angka) ---
-document.getElementById('list-salesman').innerHTML = topSales.map((item, i) => `
-    <div class="flex justify-between items-start border-b border-slate-50 pb-2">
-        <div class="flex flex-col">
-            <span class="text-[10px] font-black text-[#1B2559] uppercase">
-                <span class="text-slate-300 mr-2">${i+1}.</span>${item[0]}
-            </span>
-        </div>
-        <div class="text-right flex flex-col">
-            <span class="text-[11px] font-black text-red-500">${formatJuta(item[1].nominal)}</span>
-            <span class="text-[8px] text-slate-400 font-bold uppercase">${item[1].unit} Unit</span>
-        </div>
-    </div>
-`).join('');
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Portal AR Unit - Auto2000 Pangkalan Bun</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Public Sans', sans-serif; background-color: #F4F7FE; zoom: 0.8; }
+        .card-shadow { box-shadow: 0px 10px 30px rgba(112, 144, 176, 0.1); }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex min-h-screen bg-[#F4F7FE]">
 
-// --- TOP SPV (Unit di Kanan Bawah Angka) ---
-document.getElementById('list-spv').innerHTML = topSPV.map((item, i) => {
-    const percent = ((item[1].nominal / totalGlobalOS) * 100).toFixed(1);
-    return `
-    <div class="mb-4">
-        <div class="flex justify-between items-start mb-1">
-            <span class="text-[10px] font-black text-[#1B2559] uppercase">
-                <span class="text-slate-300 mr-1">${i+1}.</span>${item[0]}
-            </span>
-            <div class="text-right flex flex-col">
-                <span class="text-[10px] font-black text-purple-600">${formatJuta(item[1].nominal)}</span>
-                <span class="text-[7px] text-slate-400 font-bold uppercase">${item[1].unit} Unit</span>
+    <aside class="w-64 bg-[#0A1629] text-[#A3AED0] flex flex-col p-5 sticky top-0 h-screen z-50">
+        <div class="mb-8 text-white text-center">
+            <h1 class="text-xl font-black tracking-tighter uppercase">AUTO2000</h1>
+            <p class="text-[9px] uppercase tracking-widest text-[#A3AED0] font-bold">Pangkalan Bun</p>
+        </div>
+        <nav class="flex-1 space-y-2">
+            <div class="px-4 py-3 rounded-xl bg-red-600 text-white font-bold shadow-md text-sm flex items-center gap-3 cursor-pointer">
+                <i class="fa-solid fa-chart-pie"></i> <span>Dashboard Unit</span>
+            </div>
+        </nav>
+        <button onclick="location.reload()" class="bg-[#111C44] text-emerald-400 w-full py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold border border-white/10 hover:bg-[#1b254b] transition-all">
+            <i class="fa-solid fa-sync"></i> REFRESH DASHBOARD
+        </button>
+    </aside>
+
+    <main class="flex-1 p-8">
+        <div class="flex justify-between items-start mb-8">
+            <div>
+                <p id="tgl-update-text" class="text-[10px] text-red-500 font-black uppercase mb-1">DATA UPDATE: LOADING...</p>
+                <h2 class="text-3xl font-black text-[#1B2559]">Branch Control Center</h2>
+                <p class="text-xs text-[#707EAE] font-medium mt-1 uppercase">Monitoring piutang unit secara realtime dan akurat.</p>
+            </div>
+            <div class="bg-white px-5 py-3 rounded-2xl border border-slate-100 card-shadow flex items-center gap-4">
+                <i class="fa-solid fa-calendar-check text-blue-500 text-xl"></i>
+                <div class="text-right">
+                    <p class="text-[9px] font-bold text-[#707EAE] uppercase">Arsip DB:</p>
+                    <p id="arsip-db-text" class="text-sm font-black text-[#1B2559]">--/--/----</p>
+                </div>
             </div>
         </div>
-        <div class="w-full bg-slate-100 rounded-full h-1.5 mb-1">
-            <div class="bg-purple-500 h-1.5 rounded-full" style="width: ${percent}%"></div>
+
+        <div class="grid grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-3xl card-shadow border-b-4 border-blue-500">
+                <span class="text-[10px] font-bold text-[#707EAE] uppercase font-black">Total O/S Balance</span>
+                <h3 id="total-os" class="text-2xl font-black text-[#1B2559] mt-1">Rp 0</h3>
+            </div>
+            <div class="bg-white p-6 rounded-3xl card-shadow border-b-4 border-red-500">
+                <span class="text-[10px] font-bold text-red-500 uppercase font-black">Total Overdue (> TOP)</span>
+                <h3 id="total-overdue" class="text-2xl font-black text-red-600 mt-1">Rp 0</h3>
+                <p id="count-overdue" class="text-[10px] font-black text-slate-500 mt-2 uppercase">0 Unit Terlambat</p>
+            </div>
+            <div class="bg-white p-6 rounded-3xl card-shadow border-b-4 border-emerald-500">
+                <span class="text-[10px] font-bold text-emerald-600 uppercase font-black">Status Lancar</span>
+                <h3 id="total-lancar" class="text-2xl font-black text-emerald-600 mt-1">Rp 0</h3>
+            </div>
+            <div class="bg-white p-6 rounded-3xl card-shadow border-b-4 border-orange-400">
+                <span class="text-[10px] font-bold text-orange-500 uppercase font-black">Potensi Penalti</span>
+                <h3 id="total-penalty" class="text-2xl font-black text-orange-600 mt-1">Rp 0</h3>
+            </div>
         </div>
-        <p class="text-[7px] font-bold text-slate-400 uppercase text-right">${percent}% Global Kontribusi</p>
-    </div>`;
-}).join('');
+
+        <div class="grid grid-cols-12 gap-6 mb-8">
+            <div class="col-span-4 bg-white p-6 rounded-[2.5rem] card-shadow">
+                <h3 class="text-[11px] font-black text-[#1B2559] uppercase mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-bar text-blue-500"></i> Aging Analysis (Jt)
+                </h3>
+                <div id="chart-aging-nominal"></div>
+            </div>
+            <div class="col-span-8 bg-white p-6 rounded-[2.5rem] card-shadow">
+                <h3 class="text-[11px] font-black text-[#1B2559] uppercase mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-pie-chart text-emerald-500"></i> Komposisi Leasing vs Cash
+                </h3>
+                <div id="chart-donut-main"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-6 items-start">
+            <div class="bg-white p-6 rounded-[2rem] card-shadow min-h-[420px]">
+                <div class="flex items-center gap-2 mb-6 text-orange-500">
+                    <i class="fa-solid fa-trophy"></i>
+                    <h3 class="text-[11px] font-black text-[#1B2559] uppercase">Top 5 Salesman</h3>
+                </div>
+                <div id="list-salesman" class="space-y-4"></div>
+            </div>
+
+            <div class="bg-white p-6 rounded-[2rem] card-shadow min-h-[420px]">
+                <div class="flex items-center gap-2 mb-6 text-blue-500">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <h3 class="text-[11px] font-black text-[#1B2559] uppercase">TVC Breakdown</h3>
+                </div>
+                <div id="list-tvc"></div>
+            </div>
+
+            <div class="bg-white p-6 rounded-[2rem] card-shadow border-2 border-red-50 min-h-[420px]">
+                <div class="flex items-center gap-2 mb-6 text-red-600">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <h3 class="text-[11px] font-black uppercase">Top 5 Overdue</h3>
+                </div>
+                <div id="list-overdue" class="space-y-5"></div>
+            </div>
+
+            <div class="bg-white p-6 rounded-[2rem] card-shadow min-h-[420px]">
+                <div class="flex items-center gap-2 mb-6 text-purple-600">
+                    <i class="fa-solid fa-users-viewfinder"></i>
+                    <h3 class="text-[11px] font-black uppercase">Top SPV AR Distribution</h3>
+                </div>
+                <div id="list-spv" class="space-y-5"></div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
