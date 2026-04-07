@@ -12,21 +12,23 @@
     <style>
         body { font-family: 'Public Sans', sans-serif; background-color: #F4F7FE; zoom: 0.8; }
         .card-shadow { box-shadow: 0px 10px 30px rgba(112, 144, 176, 0.1); }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="flex min-h-screen">
+<body class="flex min-h-screen bg-[#F4F7FE]">
 
-    <aside class="w-64 bg-[#0A1629] text-[#A3AED0] flex flex-col p-5 sticky top-0 h-screen">
+    <aside class="w-64 bg-[#0A1629] text-[#A3AED0] flex flex-col p-5 sticky top-0 h-screen z-50">
         <div class="mb-8 text-white text-center">
             <h1 class="text-xl font-black tracking-tighter uppercase">AUTO2000</h1>
-            <p class="text-[9px] uppercase tracking-widest font-bold">Pangkalan Bun</p>
+            <p class="text-[9px] uppercase tracking-widest text-[#A3AED0] font-bold">Pangkalan Bun</p>
         </div>
-        <nav class="flex-1">
-            <div class="px-4 py-3 rounded-xl bg-red-600 text-white font-bold shadow-md text-sm flex items-center gap-3">
+        <nav class="flex-1 space-y-2">
+            <div class="px-4 py-3 rounded-xl bg-red-600 text-white font-bold shadow-md text-sm flex items-center gap-3 cursor-pointer">
                 <i class="fa-solid fa-chart-pie"></i> <span>Dashboard Unit</span>
             </div>
         </nav>
-        <button onclick="location.reload()" class="bg-[#111C44] text-emerald-400 w-full py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold border border-white/10 hover:bg-[#1b254b]">
+        <button onclick="location.reload()" class="bg-[#111C44] text-emerald-400 w-full py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold border border-white/10 hover:bg-[#1b254b] transition-all">
             <i class="fa-solid fa-sync"></i> REFRESH DASHBOARD
         </button>
     </aside>
@@ -83,23 +85,23 @@
         </div>
 
         <div class="grid grid-cols-4 gap-6 items-start">
-            <div class="bg-white p-6 rounded-[2rem] card-shadow min-h-[400px]">
-                <div class="flex items-center gap-2 mb-6">
-                    <i class="fa-solid fa-user-tag text-orange-500"></i>
+            <div class="bg-white p-6 rounded-[2rem] card-shadow min-h-[420px]">
+                <div class="flex items-center gap-2 mb-6 text-orange-500">
+                    <i class="fa-solid fa-trophy"></i>
                     <h3 class="text-[11px] font-black text-[#1B2559] uppercase">Top 5 Salesman</h3>
                 </div>
                 <div id="list-salesman" class="space-y-4"></div>
             </div>
 
-            <div class="bg-white p-6 rounded-[2rem] card-shadow min-h-[400px]">
-                <div class="flex items-center gap-2 mb-6">
-                    <i class="fa-solid fa-building-columns text-blue-500"></i>
-                    <h3 class="text-[11px] font-black text-[#1B2559] uppercase">Breakdown Leasing TVC</h3>
+            <div class="bg-white p-6 rounded-[2rem] card-shadow min-h-[420px]">
+                <div class="flex items-center gap-2 mb-6 text-blue-500">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <h3 class="text-[11px] font-black text-[#1B2559] uppercase">TVC Breakdown</h3>
                 </div>
                 <div id="list-tvc"></div>
             </div>
 
-            <div class="bg-white p-6 rounded-[2rem] card-shadow min-h-[400px]">
+            <div class="bg-white p-6 rounded-[2rem] card-shadow border-2 border-red-50 min-h-[420px]">
                 <div class="flex items-center gap-2 mb-6 text-red-600">
                     <i class="fa-solid fa-circle-exclamation"></i>
                     <h3 class="text-[11px] font-black uppercase">Top 5 Overdue</h3>
@@ -107,7 +109,7 @@
                 <div id="list-overdue" class="space-y-5"></div>
             </div>
 
-            <div class="bg-white p-6 rounded-[2rem] card-shadow min-h-[400px]">
+            <div class="bg-white p-6 rounded-[2rem] card-shadow min-h-[420px]">
                 <div class="flex items-center gap-2 mb-6 text-purple-600">
                     <i class="fa-solid fa-users-viewfinder"></i>
                     <h3 class="text-[11px] font-black uppercase">Top SPV AR Distribution</h3>
