@@ -10,9 +10,9 @@ const formatJT = (val) => (val / 1000000).toFixed(1);
 // 3. Main Function
 async function fetchAndRenderDashboard() {
     try {
-        // Ganti 'data_ar_unit' dengan nama tabel asli kamu di Supabase
+        // Ganti 'ar_unit' dengan nama tabel asli kamu di Supabase
         const { data, error } = await supabase
-            .from('data_ar_unit') 
+            .from('ar_unit') 
             .select('*');
 
         if (error) throw error;
