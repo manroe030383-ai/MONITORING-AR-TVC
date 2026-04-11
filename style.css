@@ -1,69 +1,132 @@
-<div class="filter-tabs" style="display:flex; gap:10px; margin-bottom:25px;">
-    <button class="tab active" style="background:#1a1c2d; color:white; border:none; padding:8px 20px; border-radius:8px; font-weight:600; font-size:12px;">Ringkasan</button>
-    <button class="tab" style="background:white; color:#888; border:1px solid #ddd; padding:8px 20px; border-radius:8px; font-weight:600; font-size:12px;">Leasing</button>
-    <button class="tab" style="background:white; color:#888; border:1px solid #ddd; padding:8px 20px; border-radius:8px; font-weight:600; font-size:12px;">Overdue</button>
-    <button class="tab" style="background:white; color:#888; border:1px solid #ddd; padding:8px 20px; border-radius:8px; font-weight:600; font-size:12px;">Database Lengkap</button>
-</div>
-
-<div class="grid4">
-    <div class="card" style="border-top: 4px solid #0061ff;">
-        <div class="label" style="font-size:10px; color:#888; font-weight:700;">TOTAL O/S</div>
-        <div class="val" style="color:#0061ff; font-size:24px; font-weight:800; margin-top:10px;" id="totalOS">Rp 0</div>
-    </div>
-    <div class="card" style="border-top: 4px solid #d00000;">
-        <div class="label" style="font-size:10px; color:#888; font-weight:700;">TOTAL OVERDUE</div>
-        <div class="val" style="color:#d00000; font-size:24px; font-weight:800; margin-top:10px;" id="totalOverdue">Rp 0</div>
-    </div>
-    <div class="card" style="border-top: 4px solid #f59e0b;">
-        <div class="label" style="font-size:10px; color:#888; font-weight:700;">POTENSI PENALTI</div>
-        <div class="val" style="color:#f59e0b; font-size:24px; font-weight:800; margin-top:10px;" id="penalty">Rp 0</div>
-    </div>
-    <div class="card dark" style="background:#1a1c2d; color:white; position:relative;">
-        <div class="label" style="font-size:10px; color:#94a3b8; font-weight:700;">BELUM JATUH TEMPO</div>
-        <div class="val" style="font-size:24px; font-weight:800; margin-top:10px;" id="lancar">Rp 0</div>
-        <div style="position:absolute; right:15px; bottom:15px; opacity:0.1; font-size:40px;">✓</div>
-    </div>
-</div>
-
-<script>
-// Pastikan bagian renderTables diubah menjadi seperti ini:
-function renderTables(salesMap, spvMap, rawData) {
-    // Salesman dengan satuan Jt Merah
-    let topSales = Object.entries(salesMap).sort((a,b) => b[1]-a[1]).slice(0,5);
-    document.getElementById("salesTable").innerHTML = `
-        <div style="font-size:9px; color:#aaa; margin-bottom:10px;">BERDASARKAN TOTAL O/S TERTINGGI</div>
-        ${topSales.map((s, i) => `
-            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f4f7fa; font-size:11px;">
-                <span style="font-weight:600; color:#444;">${i+1}. ${s[0]}</span>
-                <span style="color:#d00000; font-weight:800;">${(s[1]/1000000).toFixed(1)} Jt</span>
-            </div>
-        `).join('')}
-    `;
-
-    // Overdue dengan Badge Merah
-    let topOverdue = rawData.sort((a,b) => b.total_overdue - a.total_overdue).slice(0,1);
-    document.getElementById("overdueTable").innerHTML = topOverdue.map(o => `
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-                <div style="font-weight:700; color:#444; font-size:11px;">${o.customer_name}</div>
-                <div style="background:#ffeeee; color:#d00000; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:4px;">MAX ${o.overdue_days || 56} HARI</div>
-            </div>
-            <div style="font-weight:800; color:#444; font-size:12px;">${formatRupiah(o.total_overdue)}</div>
-        </div>
-    `).join('');
-
-    // SPV dengan Progress Bar Ungu
-    let topSPV = Object.entries(spvMap).sort((a,b) => b[1]-a[1]).slice(0,1);
-    document.getElementById("spvTable").innerHTML = topSPV.map(s => `
-        <div style="margin-top:10px;">
-            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:8px;">
-                <span>${s[0]}</span>
-                <span style="color:#a855f7;">${(s[1]/1000000).toFixed(1)} Jt</span>
-            </div>
-            <div style="width:100%; height:6px; background:#f1f5f9; border-radius:10px;">
-                <div style="width:85%; height:100%; background:#a855f7; border-radius:10px;"></div>
-            </div>
-        </div>
-    `).join('');
+body {
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:#f4f6f9;
 }
-</script>
+
+/* header */
+
+.header{
+    background:white;
+    padding:15px 25px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:1px solid #ddd;
+}
+
+.header h1{
+    margin:0;
+}
+
+.header p{
+    margin:5px 0 0;
+    color:#666;
+}
+
+.btn{
+    padding:8px 12px;
+    border:none;
+    background:#e5e7eb;
+    border-radius:6px;
+    cursor:pointer;
+    margin-left:5px;
+}
+
+.download{
+    background:#2563eb;
+    color:white;
+}
+
+/* loading */
+
+.loading{
+    display:none;
+    text-align:center;
+    padding:10px;
+    background:yellow;
+}
+
+/* summary */
+
+.summary{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:15px;
+    padding:20px;
+}
+
+.card{
+    padding:20px;
+    border-radius:10px;
+    color:white;
+}
+
+.card p{
+    font-size:22px;
+    margin-top:10px;
+}
+
+.blue{background:#2563eb;}
+.red{background:#dc2626;}
+.orange{background:#f59e0b;}
+.green{background:#16a34a;}
+
+/* grid */
+
+.grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    padding:20px;
+}
+
+.grid-single{
+    padding:20px;
+}
+
+.panel{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+}
+
+/* list */
+
+.list div{
+    padding:8px 0;
+    border-bottom:1px solid #eee;
+    display:flex;
+    justify-content:space-between;
+}
+
+/* tvc */
+
+.tvc{
+    display:flex;
+    justify-content:space-around;
+    margin-top:20px;
+}
+
+.tvc-item span{
+    display:block;
+    color:#666;
+}
+
+.tvc-item b{
+    font-size:22px;
+}
+
+/* responsive */
+
+@media(max-width:900px){
+
+    .summary{
+        grid-template-columns:1fr 1fr;
+    }
+
+    .grid{
+        grid-template-columns:1fr;
+    }
+
+}
