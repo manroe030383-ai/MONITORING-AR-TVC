@@ -18,19 +18,15 @@
             <span>Branch Control</span>
             <small>Tanjung Api-Api</small>
         </div>
-        
         <nav class="sidebar-nav">
             <div class="nav-label">MASTER PORTAL</div>
             <a href="#" class="nav-item"><i class="fas fa-layer-group"></i> Ekosistem Aplikasi</a>
             <div class="nav-label">AR KENDARAAN (UNIT)</div>
             <a href="#" class="nav-item active"><i class="fas fa-chart-line"></i> Dashboard Unit</a>
             <a href="#" class="nav-item"><i class="fas fa-file-invoice-dollar"></i> Data AR Unit</a>
-            
             <div class="nav-label">AR SERVICE GR</div>
             <a href="#" class="nav-item"><i class="fas fa-wrench"></i> Dashboard GR</a>
-            <a href="#" class="nav-item"><i class="fas fa-clipboard-list"></i> Data WIP GR</a>
         </nav>
-
         <div class="sidebar-footer">
             <button class="btn-sync"><i class="fas fa-sync-alt"></i> Sync Data Aktif</button>
             <div class="creator">
@@ -43,11 +39,15 @@
 
     <main class="main-content">
         <header class="main-header">
-            <div class="header-title">
+            <div class="header-left">
+                <div class="data-meta">
+                    <span class="meta-item">DATA UPDATE: <strong id="update_time">...</strong></span>
+                    <span class="meta-item">ARSIP DB: <strong id="db_date">...</strong></span>
+                </div>
                 <h1>Overview AR Unit</h1>
                 <p>Mode: Supabase Database (Realtime)</p>
             </div>
-            <div class="header-tools">
+            <div class="header-right">
                 <div class="tab-pills">
                     <button class="pill active"><i class="fas fa-th-large"></i> Ringkasan</button>
                     <button class="pill"><i class="fas fa-handshake"></i> Leasing</button>
@@ -58,37 +58,43 @@
             </div>
         </header>
 
-        <div id="loading" class="loading-bar">Mengambil data dari dashboard...</div>
-
         <section class="stats-container">
             <div class="stat-card">
                 <div class="stat-info">
                     <span class="label">TOTAL O/S</span>
                     <h2 id="total_os">Rp 0</h2>
+                    <div class="progress-container">
+                        <div class="progress-bar-bg">
+                            <div id="os_progress_cash" class="bar-fill green"></div>
+                            <div id="os_progress_leasing" class="bar-fill blue"></div>
+                        </div>
+                        <div class="progress-labels">
+                            <small>Cash</small>
+                            <small>Leasing</small>
+                        </div>
+                    </div>
                 </div>
-                <i class="fas fa-wallet icon-bg"></i>
             </div>
-            <div class="stat-card border-red">
+            <div class="stat-card">
                 <div class="stat-info">
-                    <span class="label">TOTAL OVERDUE (>TOP)</span>
+                    <span class="label text-red">TOTAL OVERDUE (>TOP)</span>
                     <h2 id="total_overdue" class="text-red">Rp 0</h2>
                     <p id="overdue_count" class="sub-label">0 SPK Lewat TOP</p>
                 </div>
-                <i class="fas fa-exclamation-triangle icon-bg red"></i>
             </div>
             <div class="stat-card">
                 <div class="stat-info">
-                    <span class="label">POTENSI PENALTI</span>
+                    <span class="label text-orange">POTENSI PENALTI</span>
                     <h2 id="total_penalty" class="text-orange">Rp 0</h2>
+                    <p class="sub-label">Dari Total Overdue</p>
                 </div>
-                <i class="fas fa-hand-holding-usd icon-bg orange"></i>
             </div>
             <div class="stat-card">
                 <div class="stat-info">
-                    <span class="label">BELUM JATUH TEMPO</span>
+                    <span class="label text-green">BELUM JATUH TEMPO</span>
                     <h2 id="belum_tempo" class="text-green">Rp 0</h2>
+                    <p class="sub-label">O/S Lancar</p>
                 </div>
-                <i class="fas fa-check-circle icon-bg green"></i>
             </div>
         </section>
 
@@ -99,21 +105,44 @@
             </div>
             <div class="panel">
                 <div class="panel-header">Komposisi & Breakdown Penjualan</div>
-                <div class="sales-comp">
+                <div class="sales-breakdown-layout">
                     <div id="salesDonutChart"></div>
-                    <div id="leasing_list" class="mini-list"></div>
+                    <div id="leasing_breakdown" class="breakdown-list"></div>
                 </div>
             </div>
         </section>
 
-        <section class="grid-2">
+        <section class="grid-4">
             <div class="panel">
-                <div class="panel-header"><i class="fas fa-medal"></i> TOP 5 SALESMAN</div>
+                <div class="panel-header">TOP 5 SALESMAN</div>
                 <div id="top_salesman" class="data-list"></div>
             </div>
             <div class="panel">
-                <div class="panel-header"><i class="fas fa-user-clock"></i> TOP 5 OVERDUE</div>
+                <div class="panel-header">BREAKDOWN LEASING TVC</div>
+                <div class="tvc-container">
+                    <div class="tvc-main-val">
+                        <span id="tvc_total">0</span>
+                        <small>TOTAL UNIT</small>
+                    </div>
+                    <div class="tvc-grid">
+                        <div class="tvc-box green">
+                            <small>SUDAH GI / TAGIH</small>
+                            <strong id="tvc_gi">0</strong>
+                        </div>
+                        <div class="tvc-box orange">
+                            <small>BELUM GI / TAGIH</small>
+                            <strong id="tvc_belum">0</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">TOP 5 OVERDUE</div>
                 <div id="top_overdue" class="data-list"></div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">TOP SPV AR DISTRIBUTION</div>
+                <div id="top_spv" class="data-list"></div>
             </div>
         </section>
     </main>
