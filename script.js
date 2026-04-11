@@ -53,4 +53,80 @@ async function fetchAndRenderDashboard() {
         renderOverdueList(overdueData);
 
         // Update Timestamp
-        document.getElementById('tgl-update-text').innerText = `DATA UPDATE: ${
+        document.getElementById('tgl-update-text').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
+
+    } catch (err) {
+        console.error('Gagal memuat data:', err.message);
+        document.getElementById('tgl-update-text').innerText = "DATA UPDATE: ERROR CONNECTION";
+    }
+}
+
+// 4. Chart Renderers
+function renderAgingChart(data) {
+    // Pengelompokan umur piutang (Contoh logika)
+    const aging = {
+        lancar: data.filter(i => i.days_overdue <= 0).reduce((a, b) => a + (b.nominal || 0), 0),
+        top1_30: data.filter(i => i.days_overdue > 0 && i.days_overdue <= 30).reduce((a, b) => a + (b.nominal || 0), 0),
+        top31_60: data.filter(i => i.days_overdue > 30 && i.days_overdue <= 60).reduce((a, b) => a + (b.nominal || 0), 0),
+        top60up: data.filter(i => i.days_overdue > 60).reduce((a, b) => a + (b.nominal || 0), 0)
+    };
+
+    const options = {
+        series: [{ name: 'Nominal (Juta)', data: [formatJT(aging.lancar), formatJT(aging.top1_30), formatJT(aging.top31_60), formatJT(aging.top60up)] }],
+        chart: { type: 'bar', height: 350, toolbar: { show: false } },
+        colors: ['#10B981', '#F59E0B', '#EF4444', '#7F1D1D'],
+        plotOptions: { bar: { borderRadius: 10, columnWidth: '50%', distributed: true } },
+        xaxis: { categories: ['LANCAR', '1-30 HR', '31-60 HR', '> 60 HR'] },
+        dataLabels: { enabled: true, formatter: (val) => val + "M" }
+    };
+    new ApexCharts(document.querySelector("#chart-aging-nominal"), options).render();
+}
+
+function renderDonutChart(cash, leasing) {
+    const options = {
+        series: [cash, leasing],
+        chart: { type: 'donut', height: 220 },
+        labels: ['Cash', 'Leasing'],
+        colors: ['#10B981', '#422AFB'],
+        legend: { show: false },
+        dataLabels: { enabled: false }
+    };
+    new ApexCharts(document.querySelector("#chart-donut-main"), options).render();
+}
+
+// 5. List Renderers
+function renderSalesmanList(data) {
+    const container = document.getElementById('list-salesman');
+    // Grouping by Salesman Name
+    const salesMap = {};
+    data.forEach(item => {
+        salesMap[item.sales_name] = (salesMap[item.sales_name] || 0) + (item.nominal || 0);
+    });
+
+    const sortedSales = Object.entries(salesMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
+    
+    container.innerHTML = sortedSales.map(([name, val], idx) => `
+        <div class="flex justify-between items-center text-[10px] font-bold">
+            <span class="text-slate-500">${idx+1}. ${name}</span>
+            <span class="text-red-500">${formatJT(val)} JT</span>
+        </div>
+    `).join('');
+}
+
+function renderOverdueList(overdueData) {
+    const container = document.getElementById('list-overdue');
+    const sorted = overdueData.sort((a,b) => b.nominal - a.nominal).slice(0, 5);
+
+    container.innerHTML = sorted.map((item, idx) => `
+        <div class="flex justify-between items-center text-[10px] font-bold border-b border-slate-50 pb-2">
+            <div>
+                <p class="text-[#1B2559] uppercase">${item.customer_name || 'No Name'}</p>
+                <p class="text-red-500 text-[8px]">Max ${item.days_overdue} Hari</p>
+            </div>
+            <span class="text-[#1B2559]">${formatJT(item.nominal)} JT</span>
+        </div>
+    `).join('');
+}
+
+// Inisialisasi saat halaman siap
+document.addEventListener('DOMContentLoaded', fetchAndRenderDashboard);
