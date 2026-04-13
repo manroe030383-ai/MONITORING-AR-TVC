@@ -54,90 +54,98 @@ async function loadData() {
 }
 
 // ==========================================
-// 4. PENGOLAHAN LOGIKA DASHBOARD (PERBAIKAN KRITIKAL)
+// 4. PENGOLAHAN LOGIKA DASHBOARD (PERBAIKAN TOTAL)
 // ==========================================
 function processDashboard(data) {
     let totalOS = 0, totalOverdue = 0, totalPenalty = 0, totalLancar = 0;
     let cashNominal = 0, leasingNominal = 0, tvcNominal = 0;
     let cashUnit = 0, leasingUnit = 0;
 
+    // Reset Buckets agar tidak menumpuk
     const buckets = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
 
     data.forEach(d => {
         const os = Number(d.os_balance) || 0;
-        const overdue = Number(d.total_overdue) || 0;
         const penalty = Number(d.penalty_amount) || 0;
         
-        // Pembersihan string agar pencocokan data akurat
-        const agingStr = (d.status_aging || '').toUpperCase().trim();
-        const leasingName = (d.leasing_name || '').toUpperCase().trim();
+        // Membersihkan data teks dari spasi liar dan memaksa ke huruf kapital
+        const agingStr = (d.status_aging || '').toString().toUpperCase().trim();
+        const leasingName = (d.leasing_name || '').toString().toUpperCase().trim();
         const noSpk = String(d.no_spk || '').trim();
 
         totalOS += os;
 
-        // Perbaikan Pinalty: Tidak hitung jika SPK adalah "0" atau Kosong
+        // 1. Logika Potensi Penalty (Hanya jika SPK valid)
         if (noSpk !== "0" && noSpk !== "") {
             totalPenalty += penalty;
         }
 
-        // Perbaikan Aging & Belum Jatuh Tempo
+        // 2. Logika Aging & Pembagian (Lancar vs Overdue)
         if (agingStr === "LANCAR") {
-            totalLancar += os;
+            totalLancar += os; // Akumulasi Rp 12.8M Anda
             buckets['LANCAR'] += os / 1000000;
         } else {
-            // Jika bukan lancar, masuk ke Overdue
+            // Semua yang TIDAK "LANCAR" masuk ke Overdue (Akumulasi Rp 6.7M Anda)
             totalOverdue += os; 
             
+            // Masukkan ke bucket grafik sesuai teksnya
             if (agingStr.includes("1-30")) {
                 buckets['1-30 H'] += os / 1000000;
             } else if (agingStr.includes("31-60")) {
                 buckets['31-60 H'] += os / 1000000;
-            } else {
+            } else if (agingStr.includes(">60") || agingStr.includes("LEBIH")) {
                 buckets['>60 H'] += os / 1000000;
             }
         }
 
-        // Komposisi Cash vs Leasing
+        // 3. Logika Komposisi & Breakdown Leasing
         if (leasingName === "CASH") {
             cashNominal += os;
             cashUnit++;
         } else {
             leasingNominal += os;
             leasingUnit++;
-            // Perbaikan TVC: Hanya ACC dan TAFS
+            
+            // Breakdown TVC (ACC + TAFS) -> Menuju Rp 10.08M Anda
             if (leasingName.includes("ACC") || leasingName.includes("TAFS")) {
                 tvcNominal += os;
             }
         }
     });
 
-    // --- Update UI ---
+    // --- Update UI Header ---
     updateText('total-os', formatIDR(totalOS));
     updateText('total-overdue', formatIDR(totalOverdue));
     updateText('total-penalty', formatIDR(totalPenalty));
     updateText('total-lancar', formatIDR(totalLancar));
 
+    // --- Update UI Breakdown ---
     updateText('val-total-cash', formatIDR(cashNominal));
     updateText('unit-cash', cashUnit + " Unit");
-    updateText('val-total-leasing', formatIDR(tvcNominal)); // Tampilkan nominal TVC saja
-    updateText('unit-leasing', leasingUnit + " Unit"); // Total semua unit leasing
+    
+    // Menampilkan total khusus TVC (ACC + TAFS) di label leasing
+    updateText('val-total-leasing', formatIDR(tvcNominal)); 
+    updateText('unit-leasing', leasingUnit + " Unit");
 
-    const overdueCount = data.filter(d => (d.status_aging || '').toUpperCase().trim() !== "LANCAR").length;
+    // Count unit yang benar-benar overdue
+    const overdueCount = data.filter(d => (d.status_aging || '').toString().toUpperCase().trim() !== "LANCAR").length;
     updateText('count-overdue', overdueCount + " Unit Terlambat");
 
+    // Persentase
     const totalUnit = cashUnit + leasingUnit;
     if (totalUnit > 0) {
         updateText('pct-cash', ((cashUnit / totalUnit) * 100).toFixed(1) + "%");
         updateText('pct-leasing', ((leasingUnit / totalUnit) * 100).toFixed(1) + "%");
     }
 
+    // --- Render Grafik ---
     renderCharts(cashNominal, leasingNominal, Object.values(buckets));
     renderSalesList(data);
     renderTopSPV(data, totalOS);
 }
 
 // ==========================================
-// 5. VISUALISASI
+// 5. VISUALISASI (CHARTS)
 // ==========================================
 function renderCharts(cash, leasing, agingData) {
     if (donutChart) donutChart.destroy();
@@ -146,16 +154,17 @@ function renderCharts(cash, leasing, agingData) {
         labels: ['Cash', 'Leasing'],
         chart: { type: 'donut', height: 230 },
         colors: ['#10B981', '#422AFB'],
-        legend: { position: 'bottom' }
+        legend: { position: 'bottom' },
+        dataLabels: { enabled: false }
     });
     donutChart.render();
 
     if (barChart) barChart.destroy();
     barChart = new ApexCharts(document.querySelector("#chart-aging-nominal"), {
         series: [{ name: 'Nominal (Juta)', data: agingData }],
-        chart: { type: 'bar', height: 300 },
+        chart: { type: 'bar', height: 300, toolbar: { show: false } },
         colors: ['#10B981', '#FFD700', '#FF8C00', '#EF4444'],
-        plotOptions: { bar: { distributed: true, borderRadius: 6 } },
+        plotOptions: { bar: { distributed: true, borderRadius: 6, columnWidth: '60%' } },
         xaxis: { categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] },
         dataLabels: { enabled: true, formatter: (v) => v.toFixed(1) + " Jt" }
     });
@@ -172,8 +181,8 @@ function renderSalesList(data) {
     const listEl = document.getElementById('list-salesman');
     if (listEl) {
         listEl.innerHTML = sorted.map((s, i) => `
-            <div class="flex justify-between items-center py-1 border-b">
-                <span class="text-[10px] font-bold">${i + 1}. ${s[0]}</span>
+            <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                <span class="text-[10px] font-bold text-gray-600">${i + 1}. ${s[0]}</span>
                 <span class="text-blue-600 font-black text-[10px]">${formatJuta(s[1])}</span>
             </div>`).join('');
     }
@@ -204,6 +213,7 @@ function renderTopSPV(data, totalOS) {
     }
 }
 
+// Inisialisasi
 updateDateTime();
 loadData();
 setInterval(updateDateTime, 60000);
