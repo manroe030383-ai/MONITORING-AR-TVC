@@ -5,99 +5,109 @@ const supabaseUrl = 'https://ahaoznkudusajtzfbnqj.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s'
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-// Inisialisasi Chart sebagai variabel global agar bisa diupdate
 let chartAging, chartDonut;
 
-// 2. Fungsi Utama Ambil Data
 async function loadDashboardData() {
     try {
-        const { data: arData, error } = await supabase
-            .from('ar_unit')
-            .select('*');
-
+        const { data: arData, error } = await supabase.from('ar_unit').select('*');
         if (error) throw error;
-
-        // Proses perhitungan data
         processData(arData);
-        
     } catch (err) {
         console.error("Gagal mengambil data:", err.message);
     }
 }
 
-// 3. Logika Perhitungan Dashboard
 function processData(data) {
     let totalOS = 0, totalLancar = 0, totalOverdue = 0, totalPenalty = 0;
     let cashNominal = 0, leasingNominal = 0, cashUnit = 0, leasingUnit = 0;
-    
-    // Kategori Aging
+    let penaltyCount = 0, tafsCount = 0, accCount = 0;
     let aging = { lancar: 0, h1_30: 0, h31_60: 0, over60: 0 };
 
     data.forEach(item => {
         const nominal = parseFloat(item.os_balance) || 0;
+        const penaltyVal = parseFloat(item.penalty_amount) || 0;
+        const leasingName = (item.leasing_name || "").toUpperCase().trim();
+        const statusAging = (item.status_aging || "").toUpperCase().trim();
+
         totalOS += nominal;
 
-        // Hitung Cash vs Leasing (Berdasarkan kolom payment_type / sejenisnya di tabel Anda)
-        if (item.leasing_name === 'CASH') {
+        if (leasingName === 'CASH') {
             cashNominal += nominal;
             cashUnit++;
         } else {
             leasingNominal += nominal;
             leasingUnit++;
+            if (leasingName === 'TAFS') tafsCount++;
+            if (leasingName === 'ACC') accCount++;
         }
 
-        // Klasifikasi Aging (Gunakan kolom status_aging Anda)
-        if (item.status_aging === 'Lancar') {
+        // Klasifikasi Aging dengan Normalisasi Teks
+        if (statusAging === 'LANCAR') {
             totalLancar += nominal;
             aging.lancar += nominal;
         } else {
             totalOverdue += nominal;
-            if (item.status_aging === '1-30 HR') aging.h1_30 += nominal;
-            else if (item.status_aging === '31-60 HR') aging.h31_60 += nominal;
+            if (statusAging === '1-30 HR' || statusAging === '1-30 H') aging.h1_30 += nominal;
+            else if (statusAging === '31-60 HR' || statusAging === '31-60 H') aging.h31_60 += nominal;
             else aging.over60 += nominal;
         }
-        
-        totalPenalty += parseFloat(item.penalty_amount) || 0;
+
+        if (penaltyVal > 0) {
+            totalPenalty += penaltyVal;
+            penaltyCount++;
+        }
     });
 
-    updateUI(totalOS, totalOverdue, totalPenalty, totalLancar, cashNominal, leasingNominal, cashUnit, leasingUnit);
+    updateUI(totalOS, totalOverdue, totalPenalty, totalLancar, cashNominal, leasingNominal, cashUnit, leasingUnit, penaltyCount, tafsCount, accCount);
     renderCharts(aging, [cashNominal, leasingNominal]);
     updateSalesmanList(data);
 }
 
-// 4. Update Angka di HTML
-function updateUI(os, overdue, penalty, lancar, cNom, lNom, cUnit, lUnit) {
-    const fmt = (v) => "Rp " + v.toLocaleString('id-ID');
+function updateUI(os, overdue, penalty, lancar, cNom, lNom, cUnit, lUnit, pCount, tCount, aCount) {
+    const fmt = (v) => "Rp " + Math.round(v).toLocaleString('id-ID');
     
     document.getElementById('total-os').innerText = fmt(os);
     document.getElementById('total-overdue').innerText = fmt(overdue);
     document.getElementById('total-penalty').innerText = fmt(penalty);
+    
+    // Sinkronisasi: Lancar di kartu hijau (Belum Jatuh Tempo)
     document.getElementById('total-lancar').innerText = fmt(lancar);
+    
+    const labelPenalty = document.querySelector('.bg-white:has(#total-penalty) p.text-slate-400');
+    if(labelPenalty) labelPenalty.innerText = `DARI ${pCount} SPK`;
     
     document.getElementById('val-total-cash').innerText = fmt(cNom);
     document.getElementById('val-total-leasing').innerText = fmt(lNom);
     document.getElementById('unit-cash').innerText = cUnit + " Unit";
     document.getElementById('unit-leasing').innerText = lUnit + " Unit";
 
-    // Update Progress Bar O/S
-    const total = cNom + lNom;
-    const pCash = (cNom / total * 100) || 0;
+    if(document.getElementById('total-unit-leasing-tvc')) 
+        document.getElementById('total-unit-leasing-tvc').innerText = (tCount + aCount) + " Unit";
+    if(document.getElementById('unit-tafs')) document.getElementById('unit-tafs').innerText = tCount + " Unit";
+    if(document.getElementById('unit-acc')) document.getElementById('unit-acc').innerText = aCount + " Unit";
+
+    const pCash = (cNom / (cNom + lNom) * 100) || 0;
     document.getElementById('bar-cash').style.width = pCash + "%";
     document.getElementById('bar-leasing').style.width = (100 - pCash) + "%";
 }
 
-// 5. Render Grafik (Pastikan ID sesuai HTML)
 function renderCharts(aging, donutSeries) {
-    // Bersihkan chart lama jika ada agar tidak tumpang tindih
     if (chartAging) chartAging.destroy();
     if (chartDonut) chartDonut.destroy();
 
+    // 100% Fix: Sinkronisasi Warna & Format Label (Tanpa .0 Jt)
     chartAging = new ApexCharts(document.querySelector("#chart-aging-nominal"), {
         series: [{ name: 'Nominal', data: [aging.lancar, aging.h1_30, aging.h31_60, aging.over60] }],
         chart: { type: 'bar', height: 250, toolbar: {show: false} },
-        colors: ['#10B981', '#FBBF24', '#F97316', '#EF4444'],
-        plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
-        xaxis: { categories: ['LANCAR', '1-30 HR', '31-60 HR', '>60 HR'] }
+        colors: ['#10B981', '#FBBF24', '#F97316', '#EF4444'], // Hijau, Kuning, Oranye, Merah
+        plotOptions: { bar: { borderRadius: 6, dataLabels: { position: 'top' } } },
+        xaxis: { categories: ['LANCAR', '1-30 HR', '31-60 HR', '>60 HR'] },
+        dataLabels: { 
+            enabled: true, 
+            formatter: (val) => Math.round(val/1000000).toLocaleString('id-ID') + " Jt",
+            style: { fontSize: '10px', colors: ["#334155"] },
+            offsetY: -20
+        }
     });
     chartAging.render();
 
@@ -106,41 +116,31 @@ function renderCharts(aging, donutSeries) {
         chart: { type: 'donut', height: 250 },
         labels: ['CASH', 'LEASING'],
         colors: ['#10B981', '#2563EB'],
-        legend: { position: 'bottom' }
+        plotOptions: { pie: { donut: { labels: { show: true, total: { show: true, label: 'TOTAL UNIT', formatter: () => donutSeries[0] + donutSeries[1] } } } } }
     });
     chartDonut.render();
 }
 
-// 6. Update List Salesman (Top 5)
 function updateSalesmanList(data) {
     const list = document.getElementById('list-salesman');
-    list.innerHTML = ""; // Bersihkan list lama
-
-    // Logika pengelompokan per salesman
+    if(!list) return;
+    list.innerHTML = "";
     const salesData = data.reduce((acc, curr) => {
         acc[curr.salesman] = (acc[curr.salesman] || 0) + (parseFloat(curr.os_balance) || 0);
         return acc;
     }, {});
 
-    Object.entries(salesData)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .forEach(([name, val], i) => {
-            list.innerHTML += `
-                <div class="flex justify-between items-center text-[10px]">
-                    <span class="font-bold text-slate-600">${i+1}. ${name}</span>
-                    <span class="font-black text-red-600">${(val/1000000).toFixed(1)} Jt</span>
-                </div>`;
-        });
+    Object.entries(salesData).sort((a, b) => b[1] - a[1]).slice(0, 5).forEach(([name, val], i) => {
+        list.innerHTML += `<div class="flex justify-between items-center text-[10px] py-1 border-b border-slate-50">
+            <span class="font-bold text-slate-600">${i+1}. ${name}</span>
+            <span class="font-black text-red-600">${Math.round(val/1000000).toLocaleString('id-ID')} Jt</span>
+        </div>`;
+    });
 }
 
-// 7. REALTIME SUBSCRIBE (Dashboard otomatis update saat data Supabase berubah)
-supabase
-    .channel('public:ar_unit')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'ar_unit' }, () => {
-        loadDashboardData();
-    })
-    .subscribe();
+// Subscribe Realtime
+supabase.channel('public:ar_unit').on('postgres_changes', { event: '*', schema: 'public', table: 'ar_unit' }, () => {
+    loadDashboardData();
+}).subscribe();
 
-// Jalankan saat pertama load
 loadDashboardData();
