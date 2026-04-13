@@ -31,8 +31,14 @@ function updateDateTime() {
     const time = now.getHours().toString().padStart(2, '0') + "." + now.getMinutes().toString().padStart(2, '0');
     const textEl = document.getElementById('tgl-update-text');
     if (textEl) {
-        textEl.innerText = `DATA UPDATE: ${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} - ${time} WIB`;
+        textEl.innerText = `DATA UPDATE: ${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} - ${time} WIB`;
     }
+}
+
+// Helper untuk update teks jika ID ada
+function updateText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = value;
 }
 
 // ==========================================
@@ -57,13 +63,14 @@ async function loadData() {
 }
 
 // ==========================================
-// 4. PENGOLAHAN LOGIKA DASHBOARD
+// 4. PENGOLAHAN LOGIKA DASHBOARD (FULL UPDATED)
 // ==========================================
 function processDashboard(data) {
     // Variabel Penampung
     let totalOS = 0, totalOverdue = 0, totalPenalty = 0, totalLancar = 0;
     let cashNominal = 0, leasingNominal = 0;
     let cashUnit = 0, leasingUnit = 0;
+    let tvcNominal = 0; // Gabungan ACC + TAFS
 
     const buckets = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
 
@@ -73,28 +80,44 @@ function processDashboard(data) {
         const penalty = Number(d.penalty_amount) || 0;
         const agingStr = (d.status_aging || '').toUpperCase();
         const leasingName = (d.leasing_name || '').toUpperCase();
+        const noSpk = String(d.no_spk || '').trim();
 
+        // 1. Total OS (Semua Data)
         totalOS += os;
-        totalOverdue += overdue;
-        totalPenalty += penalty;
 
-        // KPI Header - Status Lancar
-        if (agingStr.includes("LANCAR")) totalLancar += os;
+        // 2. Potensi Penalty (Hanya jika No SPK bukan 0 dan tidak kosong)
+        if (noSpk !== "0" && noSpk !== "") {
+            totalPenalty += penalty;
+        }
 
-        // Komposisi Cash vs Leasing
+        // 3. Logika Aging Analysis & Belum Jatuh Tempo
+        if (agingStr.includes("LANCAR")) {
+            totalLancar += os; // Ini adalah Nominal Belum Jatuh Tempo
+            buckets['LANCAR'] += os / 1000000;
+        } else if (agingStr.includes("1-30")) {
+            totalOverdue += os; 
+            buckets['1-30 H'] += os / 1000000;
+        } else if (agingStr.includes("31-60")) {
+            totalOverdue += os;
+            buckets['31-60 H'] += os / 1000000;
+        } else if (agingStr.includes(">60") || agingStr.includes("LEBIH")) {
+            totalOverdue += os;
+            buckets['>60 H'] += os / 1000000;
+        }
+
+        // 4. Komposisi & Breakdown Leasing
         if (leasingName === "CASH") {
             cashNominal += os;
             cashUnit++;
         } else {
             leasingNominal += os;
             leasingUnit++;
+            
+            // Filter Khusus TVC (Hanya ACC dan TAFS)
+            if (leasingName.includes("ACC") || leasingName.includes("TAFS")) {
+                tvcNominal += os;
+            }
         }
-
-        // Pengelompokan Grafik Bar (dalam Juta)
-        if (agingStr.includes("LANCAR")) buckets['LANCAR'] += os / 1000000;
-        else if (agingStr.includes("1-30")) buckets['1-30 H'] += os / 1000000;
-        else if (agingStr.includes("31-60")) buckets['31-60 H'] += os / 1000000;
-        else buckets['>60 H'] += os / 1000000;
     });
 
     // --- Update Elemen UI (KPI) ---
@@ -103,12 +126,15 @@ function processDashboard(data) {
     updateText('total-penalty', formatIDR(totalPenalty));
     updateText('total-lancar', formatIDR(totalLancar));
 
-    // Update Detail Unit
-    const overdueCount = data.filter(d => Number(d.total_overdue) > 0).length;
+    // Update Detail Breakdown
+    const overdueCount = data.filter(d => (d.status_aging || '').toUpperCase().includes("1-30") || (d.status_aging || '').toUpperCase().includes("31-60") || (d.status_aging || '').toUpperCase().includes(">60")).length;
+    
     updateText('count-overdue', overdueCount + " Unit Terlambat");
     updateText('val-total-cash', formatIDR(cashNominal));
     updateText('unit-cash', cashUnit + " Unit");
-    updateText('val-total-leasing', formatIDR(leasingNominal));
+    
+    // Menampilkan Total TVC (ACC + TAFS) sesuai permintaan
+    updateText('val-total-leasing', formatIDR(tvcNominal)); 
     updateText('unit-leasing', leasingUnit + " Unit");
 
     // Persentase
@@ -124,17 +150,10 @@ function processDashboard(data) {
     renderTopSPV(data, totalOS);
 }
 
-// Helper untuk update teks jika ID ada
-function updateText(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.innerText = value;
-}
-
 // ==========================================
 // 5. VISUALISASI (CHARTS & LISTS)
 // ==========================================
 function renderCharts(cash, leasing, agingData) {
-    // Donut Chart - Komposisi
     if (donutChart) donutChart.destroy();
     donutChart = new ApexCharts(document.querySelector("#chart-donut-main"), {
         series: [cash, leasing],
@@ -146,7 +165,6 @@ function renderCharts(cash, leasing, agingData) {
     });
     donutChart.render();
 
-    // Bar Chart - Aging
     if (barChart) barChart.destroy();
     barChart = new ApexCharts(document.querySelector("#chart-aging-nominal"), {
         series: [{ name: 'Nominal (Juta)', data: agingData }],
@@ -210,6 +228,5 @@ function renderTopSPV(data, totalOS) {
 updateDateTime();
 loadData();
 
-// Refresh Otomatis
-setInterval(updateDateTime, 60000); // Update jam tiap menit
-setInterval(loadData, 300000);      // Tarik data baru tiap 5 menit
+setInterval(updateDateTime, 60000); 
+setInterval(loadData, 300000);
