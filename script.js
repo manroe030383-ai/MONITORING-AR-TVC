@@ -31,11 +31,10 @@ function updateDateTime() {
     const time = now.getHours().toString().padStart(2, '0') + "." + now.getMinutes().toString().padStart(2, '0');
     const textEl = document.getElementById('tgl-update-text');
     if (textEl) {
-        textEl.innerText = `DATA UPDATE: ${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} - ${time} WIB`;
+        textEl.innerText = `DATA UPDATE: ${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} - ${time} WIB`;
     }
 }
 
-// Helper untuk update teks jika ID ada
 function updateText(id, value) {
     const el = document.getElementById(id);
     if (el) el.innerText = value;
@@ -45,32 +44,22 @@ function updateText(id, value) {
 // 3. FUNGSI UTAMA (LOAD DATA)
 // ==========================================
 async function loadData() {
-    console.log("Memulai sinkronisasi data...");
     try {
-        const { data, error } = await supabase
-            .from('ar_unit')
-            .select('*');
-
+        const { data, error } = await supabase.from('ar_unit').select('*');
         if (error) throw error;
-
-        if (data) {
-            console.log("Data berhasil ditarik:", data.length, "baris.");
-            processDashboard(data);
-        }
+        if (data) processDashboard(data);
     } catch (err) {
         console.error("Gagal menarik data:", err.message);
     }
 }
 
 // ==========================================
-// 4. PENGOLAHAN LOGIKA DASHBOARD (FULL UPDATED)
+// 4. PENGOLAHAN LOGIKA DASHBOARD (PERBAIKAN KRITIKAL)
 // ==========================================
 function processDashboard(data) {
-    // Variabel Penampung
     let totalOS = 0, totalOverdue = 0, totalPenalty = 0, totalLancar = 0;
-    let cashNominal = 0, leasingNominal = 0;
+    let cashNominal = 0, leasingNominal = 0, tvcNominal = 0;
     let cashUnit = 0, leasingUnit = 0;
-    let tvcNominal = 0; // Gabungan ACC + TAFS
 
     const buckets = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
 
@@ -78,80 +67,77 @@ function processDashboard(data) {
         const os = Number(d.os_balance) || 0;
         const overdue = Number(d.total_overdue) || 0;
         const penalty = Number(d.penalty_amount) || 0;
-        const agingStr = (d.status_aging || '').toUpperCase();
-        const leasingName = (d.leasing_name || '').toUpperCase();
+        
+        // Pembersihan string agar pencocokan data akurat
+        const agingStr = (d.status_aging || '').toUpperCase().trim();
+        const leasingName = (d.leasing_name || '').toUpperCase().trim();
         const noSpk = String(d.no_spk || '').trim();
 
-        // 1. Total OS (Semua Data)
         totalOS += os;
 
-        // 2. Potensi Penalty (Hanya jika No SPK bukan 0 dan tidak kosong)
+        // Perbaikan Pinalty: Tidak hitung jika SPK adalah "0" atau Kosong
         if (noSpk !== "0" && noSpk !== "") {
             totalPenalty += penalty;
         }
 
-        // 3. Logika Aging Analysis & Belum Jatuh Tempo
-        if (agingStr.includes("LANCAR")) {
-            totalLancar += os; // Ini adalah Nominal Belum Jatuh Tempo
+        // Perbaikan Aging & Belum Jatuh Tempo
+        if (agingStr === "LANCAR") {
+            totalLancar += os;
             buckets['LANCAR'] += os / 1000000;
-        } else if (agingStr.includes("1-30")) {
+        } else {
+            // Jika bukan lancar, masuk ke Overdue
             totalOverdue += os; 
-            buckets['1-30 H'] += os / 1000000;
-        } else if (agingStr.includes("31-60")) {
-            totalOverdue += os;
-            buckets['31-60 H'] += os / 1000000;
-        } else if (agingStr.includes(">60") || agingStr.includes("LEBIH")) {
-            totalOverdue += os;
-            buckets['>60 H'] += os / 1000000;
+            
+            if (agingStr.includes("1-30")) {
+                buckets['1-30 H'] += os / 1000000;
+            } else if (agingStr.includes("31-60")) {
+                buckets['31-60 H'] += os / 1000000;
+            } else {
+                buckets['>60 H'] += os / 1000000;
+            }
         }
 
-        // 4. Komposisi & Breakdown Leasing
+        // Komposisi Cash vs Leasing
         if (leasingName === "CASH") {
             cashNominal += os;
             cashUnit++;
         } else {
             leasingNominal += os;
             leasingUnit++;
-            
-            // Filter Khusus TVC (Hanya ACC dan TAFS)
+            // Perbaikan TVC: Hanya ACC dan TAFS
             if (leasingName.includes("ACC") || leasingName.includes("TAFS")) {
                 tvcNominal += os;
             }
         }
     });
 
-    // --- Update Elemen UI (KPI) ---
+    // --- Update UI ---
     updateText('total-os', formatIDR(totalOS));
     updateText('total-overdue', formatIDR(totalOverdue));
     updateText('total-penalty', formatIDR(totalPenalty));
     updateText('total-lancar', formatIDR(totalLancar));
 
-    // Update Detail Breakdown
-    const overdueCount = data.filter(d => (d.status_aging || '').toUpperCase().includes("1-30") || (d.status_aging || '').toUpperCase().includes("31-60") || (d.status_aging || '').toUpperCase().includes(">60")).length;
-    
-    updateText('count-overdue', overdueCount + " Unit Terlambat");
     updateText('val-total-cash', formatIDR(cashNominal));
     updateText('unit-cash', cashUnit + " Unit");
-    
-    // Menampilkan Total TVC (ACC + TAFS) sesuai permintaan
-    updateText('val-total-leasing', formatIDR(tvcNominal)); 
-    updateText('unit-leasing', leasingUnit + " Unit");
+    updateText('val-total-leasing', formatIDR(tvcNominal)); // Tampilkan nominal TVC saja
+    updateText('unit-leasing', leasingUnit + " Unit"); // Total semua unit leasing
 
-    // Persentase
+    const overdueCount = data.filter(d => (d.status_aging || '').toUpperCase().trim() !== "LANCAR").length;
+    updateText('count-overdue', overdueCount + " Unit Terlambat");
+
     const totalUnit = cashUnit + leasingUnit;
     if (totalUnit > 0) {
         updateText('pct-cash', ((cashUnit / totalUnit) * 100).toFixed(1) + "%");
         updateText('pct-leasing', ((leasingUnit / totalUnit) * 100).toFixed(1) + "%");
     }
 
-    // --- Render Grafik & List ---
     renderCharts(cashNominal, leasingNominal, Object.values(buckets));
     renderSalesList(data);
     renderTopSPV(data, totalOS);
 }
 
 // ==========================================
-// 5. VISUALISASI (CHARTS & LISTS)
+// 5. VISUALISASI
 // ==========================================
 function renderCharts(cash, leasing, agingData) {
     if (donutChart) donutChart.destroy();
@@ -160,15 +146,14 @@ function renderCharts(cash, leasing, agingData) {
         labels: ['Cash', 'Leasing'],
         chart: { type: 'donut', height: 230 },
         colors: ['#10B981', '#422AFB'],
-        legend: { position: 'bottom' },
-        dataLabels: { enabled: false }
+        legend: { position: 'bottom' }
     });
     donutChart.render();
 
     if (barChart) barChart.destroy();
     barChart = new ApexCharts(document.querySelector("#chart-aging-nominal"), {
         series: [{ name: 'Nominal (Juta)', data: agingData }],
-        chart: { type: 'bar', height: 300, toolbar: { show: false } },
+        chart: { type: 'bar', height: 300 },
         colors: ['#10B981', '#FFD700', '#FF8C00', '#EF4444'],
         plotOptions: { bar: { distributed: true, borderRadius: 6 } },
         xaxis: { categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] },
@@ -183,16 +168,14 @@ function renderSalesList(data) {
         const name = d.salesman_name || "UNKNOWN";
         map[name] = (map[name] || 0) + (Number(d.os_balance) || 0);
     });
-
     const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const listEl = document.getElementById('list-salesman');
     if (listEl) {
         listEl.innerHTML = sorted.map((s, i) => `
-            <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                <span class="text-[10px] font-bold text-gray-600">${i + 1}. ${s[0]}</span>
+            <div class="flex justify-between items-center py-1 border-b">
+                <span class="text-[10px] font-bold">${i + 1}. ${s[0]}</span>
                 <span class="text-blue-600 font-black text-[10px]">${formatJuta(s[1])}</span>
-            </div>
-        `).join('');
+            </div>`).join('');
     }
 }
 
@@ -202,7 +185,6 @@ function renderTopSPV(data, totalOS) {
         const name = d.supervisor_name || "OTHERS";
         map[name] = (map[name] || 0) + (Number(d.os_balance) || 0);
     });
-
     const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const listEl = document.getElementById('list-spv');
     if (listEl) {
@@ -222,11 +204,7 @@ function renderTopSPV(data, totalOS) {
     }
 }
 
-// ==========================================
-// 6. INISIALISASI AKHIR
-// ==========================================
 updateDateTime();
 loadData();
-
-setInterval(updateDateTime, 60000); 
+setInterval(updateDateTime, 60000);
 setInterval(loadData, 300000);
