@@ -1,215 +1,81 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-
-// ==========================================
-// 1. KONFIGURASI SUPABASE
-// ==========================================
-const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-let donutChart;
-let barChart;
-
-// ==========================================
-// 2. HELPER / FORMATTER
-// ==========================================
-const formatIDR = (n) =>
-    new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        maximumFractionDigits: 0
-    }).format(n || 0);
-
-const formatJuta = (n) =>
-    (Number(n) / 1000000).toFixed(1) + " Jt";
-
-function updateDateTime() {
-    const now = new Date();
-    const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
-    const months = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
+function processData(data) {
+    let totalOS = 0, totalLancar = 0, totalOverdue = 0, totalPenalty = 0;
+    let cashNominal = 0, leasingNominal = 0, cashUnit = 0, leasingUnit = 0;
     
-    const time = now.getHours().toString().padStart(2, '0') + "." + now.getMinutes().toString().padStart(2, '0');
-    const textEl = document.getElementById('tgl-update-text');
-    if (textEl) {
-        textEl.innerText = `DATA UPDATE: ${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} - ${time} WIB`;
-    }
-}
+    // Counter Unit untuk detail
+    let penaltyCount = 0;
+    let tafsCount = 0;
+    let accCount = 0;
+    
+    // Kategori Aging
+    let aging = { lancar: 0, h1_30: 0, h31_60: 0, over60: 0 };
 
-// ==========================================
-// 3. FUNGSI UTAMA (LOAD DATA)
-// ==========================================
-async function loadData() {
-    console.log("Memulai sinkronisasi data...");
-    try {
-        const { data, error } = await supabase
-            .from('ar_unit')
-            .select('*');
+    data.forEach(item => {
+        const nominal = parseFloat(item.os_balance) || 0;
+        const penalty = parseFloat(item.penalty_amount) || 0;
+        totalOS += nominal;
 
-        if (error) throw error;
-
-        if (data) {
-            console.log("Data berhasil ditarik:", data.length, "baris.");
-            processDashboard(data);
-        }
-    } catch (err) {
-        console.error("Gagal menarik data:", err.message);
-    }
-}
-
-// ==========================================
-// 4. PENGOLAHAN LOGIKA DASHBOARD
-// ==========================================
-function processDashboard(data) {
-    // Variabel Penampung
-    let totalOS = 0, totalOverdue = 0, totalPenalty = 0, totalLancar = 0;
-    let cashNominal = 0, leasingNominal = 0;
-    let cashUnit = 0, leasingUnit = 0;
-
-    const buckets = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
-
-    data.forEach(d => {
-        const os = Number(d.os_balance) || 0;
-        const overdue = Number(d.total_overdue) || 0;
-        const penalty = Number(d.penalty_amount) || 0;
-        const agingStr = (d.status_aging || '').toUpperCase();
-        const leasingName = (d.leasing_name || '').toUpperCase();
-
-        totalOS += os;
-        totalOverdue += overdue;
-        totalPenalty += penalty;
-
-        // KPI Header - Status Lancar
-        if (agingStr.includes("LANCAR")) totalLancar += os;
-
-        // Komposisi Cash vs Leasing
-        if (leasingName === "CASH") {
-            cashNominal += os;
+        // 1. Logika Cash vs Leasing
+        if (item.leasing_name === 'CASH') {
+            cashNominal += nominal;
             cashUnit++;
         } else {
-            leasingNominal += os;
+            leasingNominal += nominal;
             leasingUnit++;
+            // Hitung Breakdown Leasing TVC
+            if (item.leasing_name === 'TAFS') tafsCount++;
+            if (item.leasing_name === 'ACC') accCount++;
         }
 
-        // Pengelompokan Grafik Bar (dalam Juta)
-        if (agingStr.includes("LANCAR")) buckets['LANCAR'] += os / 1000000;
-        else if (agingStr.includes("1-30")) buckets['1-30 H'] += os / 1000000;
-        else if (agingStr.includes("31-60")) buckets['31-60 H'] += os / 1000000;
-        else buckets['>60 H'] += os / 1000000;
+        // 2. Logika Aging (Pastikan string di database sama persis)
+        const status = item.status_aging;
+        if (status === 'Lancar') {
+            totalLancar += nominal;
+            aging.lancar += nominal;
+        } else if (status === '1-30 HR') {
+            totalOverdue += nominal;
+            aging.h1_30 += nominal;
+        } else if (status === '31-60 HR') {
+            totalOverdue += nominal;
+            aging.h31_60 += nominal;
+        } else if (status === '>60 HR') {
+            totalOverdue += nominal;
+            aging.over60 += nominal;
+        }
+        
+        // 3. Logika Potensi Penalti
+        if (penalty > 0) {
+            totalPenalty += penalty;
+            penaltyCount++;
+        }
     });
 
-    // --- Update Elemen UI (KPI) ---
-    updateText('total-os', formatIDR(totalOS));
-    updateText('total-overdue', formatIDR(totalOverdue));
-    updateText('total-penalty', formatIDR(totalPenalty));
-    updateText('total-lancar', formatIDR(totalLancar));
-
-    // Update Detail Unit
-    const overdueCount = data.filter(d => Number(d.total_overdue) > 0).length;
-    updateText('count-overdue', overdueCount + " Unit Terlambat");
-    updateText('val-total-cash', formatIDR(cashNominal));
-    updateText('unit-cash', cashUnit + " Unit");
-    updateText('val-total-leasing', formatIDR(leasingNominal));
-    updateText('unit-leasing', leasingUnit + " Unit");
-
-    // Persentase
-    const totalUnit = cashUnit + leasingUnit;
-    if (totalUnit > 0) {
-        updateText('pct-cash', ((cashUnit / totalUnit) * 100).toFixed(1) + "%");
-        updateText('pct-leasing', ((leasingUnit / totalUnit) * 100).toFixed(1) + "%");
-    }
-
-    // --- Render Grafik & List ---
-    renderCharts(cashNominal, leasingNominal, Object.values(buckets));
-    renderSalesList(data);
-    renderTopSPV(data, totalOS);
+    // Update Tampilan Utama
+    updateUI(totalOS, totalOverdue, totalPenalty, totalLancar, cashNominal, leasingNominal, cashUnit, leasingUnit, penaltyCount);
+    
+    // Update Grafik
+    renderCharts(aging, [cashNominal, leasingNominal]);
+    
+    // Update Detail Leasing TVC (Manual Update ke elemen HTML)
+    document.getElementById('total-unit-leasing-tvc').innerText = (tafsCount + accCount) + " Unit";
+    document.getElementById('unit-tafs').innerText = tafsCount + " Unit";
+    document.getElementById('unit-acc').innerText = accCount + " Unit";
 }
 
-// Helper untuk update teks jika ID ada
-function updateText(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.innerText = value;
+// Update fungsi updateUI untuk menerima penaltyCount
+function updateUI(os, overdue, penalty, lancar, cNom, lNom, cUnit, lUnit, pCount) {
+    const fmt = (v) => "Rp " + v.toLocaleString('id-ID');
+    
+    document.getElementById('total-os').innerText = fmt(os);
+    document.getElementById('total-overdue').innerText = fmt(overdue);
+    document.getElementById('total-penalty').innerText = fmt(penalty);
+    document.getElementById('total-lancar').innerText = fmt(lancar);
+    
+    // Perbaikan label SPK Penalti agar tidak 0 SPK lagi
+    document.getElementById('count-penalty-label').innerText = `DARI ${pCount} SPK`;
+    
+    document.getElementById('val-total-cash').innerText = fmt(cNom);
+    document.getElementById('val-total-leasing').innerText = fmt(lNom);
+    document.getElementById('unit-cash').innerText = cUnit + " Unit";
+    document.getElementById('unit-leasing').innerText = lUnit + " Unit";
 }
-
-// ==========================================
-// 5. VISUALISASI (CHARTS & LISTS)
-// ==========================================
-function renderCharts(cash, leasing, agingData) {
-    // Donut Chart - Komposisi
-    if (donutChart) donutChart.destroy();
-    donutChart = new ApexCharts(document.querySelector("#chart-donut-main"), {
-        series: [cash, leasing],
-        labels: ['Cash', 'Leasing'],
-        chart: { type: 'donut', height: 230 },
-        colors: ['#10B981', '#422AFB'],
-        legend: { position: 'bottom' },
-        dataLabels: { enabled: false }
-    });
-    donutChart.render();
-
-    // Bar Chart - Aging
-    if (barChart) barChart.destroy();
-    barChart = new ApexCharts(document.querySelector("#chart-aging-nominal"), {
-        series: [{ name: 'Nominal (Juta)', data: agingData }],
-        chart: { type: 'bar', height: 300, toolbar: { show: false } },
-        colors: ['#10B981', '#FFD700', '#FF8C00', '#EF4444'],
-        plotOptions: { bar: { distributed: true, borderRadius: 6 } },
-        xaxis: { categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] },
-        dataLabels: { enabled: true, formatter: (v) => v.toFixed(1) + " Jt" }
-    });
-    barChart.render();
-}
-
-function renderSalesList(data) {
-    const map = {};
-    data.forEach(d => {
-        const name = d.salesman_name || "UNKNOWN";
-        map[name] = (map[name] || 0) + (Number(d.os_balance) || 0);
-    });
-
-    const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    const listEl = document.getElementById('list-salesman');
-    if (listEl) {
-        listEl.innerHTML = sorted.map((s, i) => `
-            <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                <span class="text-[10px] font-bold text-gray-600">${i + 1}. ${s[0]}</span>
-                <span class="text-blue-600 font-black text-[10px]">${formatJuta(s[1])}</span>
-            </div>
-        `).join('');
-    }
-}
-
-function renderTopSPV(data, totalOS) {
-    const map = {};
-    data.forEach(d => {
-        const name = d.supervisor_name || "OTHERS";
-        map[name] = (map[name] || 0) + (Number(d.os_balance) || 0);
-    });
-
-    const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    const listEl = document.getElementById('list-spv');
-    if (listEl) {
-        listEl.innerHTML = sorted.map((s, i) => {
-            const pct = totalOS > 0 ? (s[1] / totalOS) * 100 : 0;
-            return `
-                <div class="mb-2">
-                    <div class="flex justify-between text-[9px] font-bold mb-1">
-                        <span>${i + 1}. ${s[0]}</span>
-                        <span>${formatJuta(s[1])}</span>
-                    </div>
-                    <div class="w-full bg-gray-100 h-1 rounded-full">
-                        <div class="bg-purple-500 h-1 rounded-full" style="width:${pct}%"></div>
-                    </div>
-                </div>`;
-        }).join('');
-    }
-}
-
-// ==========================================
-// 6. INISIALISASI AKHIR
-// ==========================================
-updateDateTime();
-loadData();
-
-// Refresh Otomatis
-setInterval(updateDateTime, 60000); // Update jam tiap menit
-setInterval(loadData, 300000);      // Tarik data baru tiap 5 menit
