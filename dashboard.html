@@ -33,7 +33,7 @@
     <main class="flex-1 p-6 overflow-x-hidden">
         <div class="flex justify-between items-start mb-4">
             <div>
-                <p id="tgl-update-text" class="text-[8px] font-bold text-red-600 mb-1 uppercase tracking-tighter">DATA UPDATE: SABTU, 11 APRIL 2026 - PUKUL 11.06 WIB</p>
+                <p id="tgl-update-text" class="text-[8px] font-bold text-red-600 mb-1 uppercase tracking-tighter">DATA UPDATE: MEMUAT...</p>
                 <h1 class="text-3xl font-extrabold tracking-tight text-[#1B2559]">Overview AR Unit</h1>
                 <p class="text-[10px] text-slate-400 font-medium">Mode: Supabase Database (Realtime)</p>
             </div>
@@ -62,7 +62,7 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white p-5 rounded-[20px] card-shadow border border-slate-50 relative">
+            <div class="bg-white p-5 rounded-[20px] card-shadow border border-slate-50">
                 <p class="text-[8px] font-bold text-slate-400 uppercase mb-2">TOTAL O/S</p>
                 <h3 id="total-os" class="text-xl font-black text-[#1B2559]">Rp 0</h3>
                 <div class="mt-4 flex h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
@@ -79,14 +79,14 @@
                 <span class="absolute top-4 right-4 text-orange-200">⚠️</span>
                 <p class="text-[8px] font-bold text-slate-400 uppercase mb-2">TOTAL OVERDUE (> TOP)</p>
                 <h3 id="total-overdue" class="text-xl font-black text-red-600">Rp 0</h3>
-                <p id="count-overdue" class="text-[8px] font-bold text-red-400 mt-1 uppercase">0 SPK LEWAT TOP</p>
+                <p id="count-overdue" class="text-[8px] font-bold text-red-400 mt-1 uppercase">0 UNIT TERLAMBAT</p>
             </div>
 
             <div class="bg-white p-5 rounded-[20px] card-shadow border border-slate-50 relative">
                 <span class="absolute top-4 right-4 text-orange-100">💰</span>
                 <p class="text-[8px] font-bold text-slate-400 uppercase mb-2">POTENSI PENALTI</p>
                 <h3 id="total-penalty" class="text-xl font-black text-[#1B2559]">Rp 0</h3>
-                <p class="text-[8px] font-bold text-slate-400 mt-1 uppercase">DARI 0 SPK</p>
+                <p class="text-[8px] font-bold text-slate-400 mt-1 uppercase">UPDATE REALTIME</p>
             </div>
 
             <div class="bg-white p-5 rounded-[20px] card-shadow border border-slate-50 relative">
@@ -127,26 +127,6 @@
             </div>
         </div>
 
-        <div class="bg-white p-6 rounded-[20px] card-shadow border border-slate-50 mb-6">
-            <h4 class="text-[9px] font-extrabold text-[#1B2559] uppercase mb-6 flex items-center gap-2">
-                <span class="text-orange-500">⚡</span> SPEED OF PAYMENT (AVG DAYS)
-            </h4>
-            <div class="space-y-6">
-                <div class="flex items-center gap-4">
-                    <span class="text-[9px] font-bold w-10 text-slate-500">ACC</span>
-                    <div class="flex-1 h-4 bg-indigo-600 rounded-full relative">
-                        <span class="absolute right-[-40px] top-0 text-[9px] font-black text-[#1B2559]">26 Hari</span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-[9px] font-bold w-10 text-slate-500">TAFS</span>
-                    <div class="w-[60%] h-4 bg-indigo-500/80 rounded-full relative">
-                        <span class="absolute right-[-40px] top-0 text-[9px] font-black text-[#1B2559]">15 Hari</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="bg-white p-5 rounded-[20px] card-shadow border border-slate-50">
                 <h4 class="text-[8px] font-black text-[#1B2559] uppercase mb-6 flex items-center gap-2">
@@ -160,17 +140,27 @@
                     <span class="bg-blue-50 p-1 rounded">📊</span> BREAKDOWN LEASING TVC
                 </h4>
                 <div class="bg-blue-50/30 p-4 rounded-xl text-center border border-blue-50 mb-3">
-                    <p class="text-[7px] font-bold text-blue-600 uppercase mb-1">TOTAL PENJUALAN LEASING</p>
-                    <p class="text-xl font-black text-[#1B2559]">87 Unit</p>
+                    <p class="text-[7px] font-bold text-blue-600 uppercase mb-1">TOTAL PENJUALAN LEASING (TVC)</p>
+                    <p id="total-penjualan-leasing" class="text-xl font-black text-[#1B2559]">0 Unit</p>
                 </div>
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-2 gap-2 mb-4">
                     <div class="bg-emerald-50/50 p-2 rounded-lg text-center border border-emerald-50">
-                        <p class="text-[6px] font-bold text-emerald-600 uppercase">SUDAH GI</p>
-                        <p class="text-[10px] font-black text-[#1B2559]">43 Unit</p>
+                        <p class="text-[6px] font-bold text-emerald-600 uppercase">SUDAH GI / TAGIH</p>
+                        <p id="unit-sudah-gi" class="text-[10px] font-black text-[#1B2559]">0 Unit</p>
                     </div>
                     <div class="bg-orange-50/50 p-2 rounded-lg text-center border border-orange-50">
-                        <p class="text-[6px] font-bold text-orange-600 uppercase">R/DELIVERY</p>
-                        <p class="text-[10px] font-black text-[#1B2559]">44 Unit</p>
+                        <p class="text-[6px] font-bold text-orange-600 uppercase">BELUM DELIVERY / TAGIH</p>
+                        <p id="unit-r-delivery" class="text-[10px] font-black text-[#1B2559]">0 Unit</p>
+                    </div>
+                </div>
+                <div class="space-y-2 border-t pt-2">
+                    <div class="flex justify-between items-center text-[10px] font-bold">
+                        <span class="text-slate-500">1. ACC</span>
+                        <span id="unit-acc" class="bg-yellow-400 px-2 py-0.5 rounded text-white">0 Cust</span>
+                    </div>
+                    <div class="flex justify-between items-center text-[10px] font-bold">
+                        <span class="text-slate-500">2. TAFS</span>
+                        <span id="unit-tafs" class="bg-yellow-400 px-2 py-0.5 rounded text-white">0 Cust</span>
                     </div>
                 </div>
             </div>
@@ -180,10 +170,7 @@
                     <span class="bg-red-50 p-1 rounded">⚠️</span> TOP 5 OVERDUE
                 </h4>
                 <div id="list-overdue" class="space-y-4 text-[9px] font-bold text-[#1B2559]">
-                    <div class="flex justify-between items-center border-b border-slate-50 pb-2">
-                        <span>PT PRATAMA MITRA SEJATI <br><span class="bg-red-600 text-white text-[6px] px-1 rounded">MAX 62 HARI</span></span>
-                        <span class="text-right text-slate-700">Rp 5.312,8 <br><span class="text-[7px] text-slate-400">19 Unit</span></span>
-                    </div>
+                    <p class="text-slate-400 text-center italic">Memuat data...</p>
                 </div>
             </div>
 
@@ -191,13 +178,7 @@
                 <h4 class="text-[8px] font-black text-[#1B2559] uppercase mb-6 flex items-center gap-2">
                     <span class="bg-purple-50 p-1 rounded">🏢</span> TOP SPV AR DISTRIBUTION
                 </h4>
-                <div id="list-spv" class="space-y-4">
-                    <div class="text-[8px] font-bold text-slate-500 uppercase flex justify-between">
-                        <span>MUHARDI</span>
-                        <span class="text-[#1B2559]">25638,9 Jt</span>
-                    </div>
-                    <div class="h-1 bg-purple-500 rounded-full w-full"></div>
-                </div>
+                <div id="list-spv" class="space-y-4"></div>
             </div>
         </div>
     </main>
