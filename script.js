@@ -36,7 +36,7 @@ function updateDateTime() {
     const time = now.getHours().toString().padStart(2, '0') + "." + now.getMinutes().toString().padStart(2, '0');
     const textEl = document.getElementById('tgl-update-text');
     if (textEl) {
-        textEl.innerText = `DATA UPDATE: ${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} - ${time} WIB`;
+        textEl.innerText = `DATA UPDATE: ${days[now.getDay()]} , ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} - ${time} WIB`;
     }
 }
 
@@ -60,11 +60,11 @@ async function loadData() {
 // 4. LOGIKA PEMROSESAN (FILTER 29 UNIT)
 // ==========================================
 function processDashboard(data) {
-    let totalOS = 0, totalOverdue = 0, totalPenalty = 0, totalLancarNominal = 0;
+    let totalOS = 0, totalOverdueNominal = 0, totalPenalty = 0, totalLancarNominal = 0;
     let cashNominal = 0, leasingNominal = 0;
     let cashUnit = 0, leasingUnit = 0;
     
-    // Variabel khusus Breakdown Leasing TVC (Hanya Overdue)
+    // Variabel rincian TVC (Hanya yang memiliki hari_overdue > 0)
     let unitACC = 0;
     let unitTAFS = 0;
     let unitSudahGI = 0;
@@ -73,83 +73,85 @@ function processDashboard(data) {
     const buckets = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
 
     data.forEach(d => {
+        // Mapping kolom sesuai screenshot database Supabase Anda
         const os = Number(d.os_balance) || 0;
-        const overdue = Number(d.total_overdue) || 0;
-        const penalty = Number(d.penalty_amount) || 0;
+        const overdueDays = Number(d.hari_overdue) || 0; // Filter utama
+        const overdueNominal = Number(d.total_overd) || 0; // Nominal rupiah overdue
+        
         const vLancar = Number(d.lancar) || 0;
         const v1_30 = Number(d.hari_1_30) || 0;
         const v31_60 = Number(d.hari_31_60) || 0;
         const vOver60 = Number(d.lebih_60_hari) || 0;
-
+        
         const leasingName = (d.leasing_name || '').toUpperCase().trim();
-        const statusUnit = (d.status_unit || '').toUpperCase().trim(); 
+        const statusUnit = (d.func_loc || '').toUpperCase().trim(); 
 
-        // Akumulasi Finansial
+        // Akumulasi Finansial Global
         totalOS += os;
-        totalOverdue += overdue;
-        totalPenalty += penalty;
+        totalOverdueNominal += overdueNominal;
         totalLancarNominal += vLancar;
 
+        // Isi Bucket Grafik (dalam Juta)
         buckets['LANCAR'] += vLancar / 1000000;
         buckets['1-30 H'] += v1_30 / 1000000;
         buckets['31-60 H'] += v31_60 / 1000000;
         buckets['>60 H'] += vOver60 / 1000000;
 
-        // Logika Hitung Unit Cash vs Leasing
+        // Pemisahan Cash vs Leasing
         if (leasingName === "CASH" || leasingName === "") {
             cashNominal += os;
             cashUnit++;
         } else {
             leasingNominal += os;
-            leasingUnit++; // Tetap hitung total (87) untuk summary atas jika diperlukan
-
-            // LOGIKA FILTER 29 UNIT: Hanya hitung jika ada tunggakan (Overdue > 0)
-            if (overdue > 0) {
-                // Rincian per Leasing
+            leasingUnit++; 
+            
+            // LOGIKA FILTER 29 UNIT:
+            // Hanya diproses ke breakdown jika hari_overdue di database > 0
+            if (overdueDays > 0) {
                 if (leasingName.includes("ACC")) unitACC++;
                 if (leasingName.includes("TAFS")) unitTAFS++;
 
-                // Rincian Status (GI vs Delivery)
-                if (statusUnit.includes("GI")) {
+                // Klasifikasi GI vs Delivery berdasarkan kolom func_loc
+                if (statusUnit.includes("T710") || statusUnit.includes("GI")) {
                     unitSudahGI++;
-                } else if (statusUnit.includes("DELIVERY") || statusUnit.includes("R/D")) {
+                } else {
                     unitRDelivery++;
                 }
             }
         }
     });
 
-    // --- UPDATE UI KPI UTAMA ---
+    // --- UPDATE UI KPI ATAS ---
     updateText('total-os', formatIDR(totalOS));
-    updateText('total-overdue', formatIDR(totalOverdue));
-    updateText('total-penalty', formatIDR(totalPenalty));
+    updateText('total-overdue', formatIDR(totalOverdueNominal));
     updateText('total-lancar', formatIDR(totalLancarNominal));
+    
+    // Summary Card Kecil
+    updateText('val-total-cash', formatIDR(cashNominal));
+    updateText('unit-cash', cashUnit + " Unit");
+    updateText('val-total-leasing', formatIDR(leasingNominal));
+    updateText('unit-leasing', leasingUnit + " Unit");
 
     // --- UPDATE BREAKDOWN LEASING TVC (TOTAL 29 UNIT) ---
-    // Menghitung total dari leasing yang overdue (ACC 16 + TAFS 13 = 29)
-    const totalOverdueLeasing = unitACC + unitTAFS; 
-    updateText('total-penjualan-leasing', totalOverdueLeasing + " Unit"); 
+    const totalUnitOverdue = unitACC + unitTAFS; 
+    updateText('total-penjualan-leasing', totalUnitOverdue + " Unit"); 
     
     updateText('unit-sudah-gi', unitSudahGI + " Unit");           
     updateText('unit-r-delivery', unitRDelivery + " Unit");       
     updateText('unit-acc', unitACC + " Unit");
     updateText('unit-tafs', unitTAFS + " Unit");
 
-    // --- UPDATE DETAIL SUMMARY ---
-    const overdueCount = data.filter(d => (Number(d.total_overdue) || 0) > 0).length;
-    updateText('count-overdue', overdueCount + " Unit Terlambat");
-    updateText('val-total-cash', formatIDR(cashNominal));
-    updateText('unit-cash', cashUnit + " Unit");
-    updateText('val-total-leasing', formatIDR(leasingNominal));
-    updateText('unit-leasing', leasingUnit + " Unit");
+    // Unit Terlambat di Ringkasan
+    updateText('count-overdue', totalUnitOverdue + " Unit Terlambat");
 
+    // --- RENDER VISUAL ---
     renderCharts(cashNominal, leasingNominal, Object.values(buckets));
     renderSalesList(data);
     renderTopSPV(data, totalOS);
 }
 
 // ==========================================
-// 5. RENDER GRAFIK & LIST (Tetap Sama)
+// 5. RENDER GRAFIK & LIST
 // ==========================================
 function renderCharts(cash, leasing, agingData) {
     if (donutChart) donutChart.destroy();
@@ -221,4 +223,4 @@ function renderTopSPV(data, totalOS) {
 updateDateTime();
 loadData();
 setInterval(updateDateTime, 60000);
-setInterval(loadData, 300000);
+setInterval(loadData, 300000); // Auto-refresh setiap 5 menit
