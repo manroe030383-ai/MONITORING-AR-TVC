@@ -1,3 +1,7 @@
+/* =========================================
+   DASHBOARD UI - MODERN 3D STYLE
+   ========================================= */
+
 /* Reset & Base Styling */
 * {
     margin: 0;
@@ -8,12 +12,12 @@
 
 body {
     display: flex;
-    background-color: #f8fafc; /* Sedikit lebih terang sesuai gambar */
-    color: #1e293b;
+    background-color: #F4F7FE; /* Warna latar lebih soft sesuai gambar */
+    color: #1B2559;
     min-height: 100vh;
 }
 
-/* Sidebar Styling - Tetap Sesuai Gaya Anda */
+/* Sidebar Styling - Tetap Sesuai Struktur Anda */
 .sidebar {
     width: 260px;
     background-color: #0b1120;
@@ -29,6 +33,7 @@ body {
     padding: 25px;
     color: white;
     border-bottom: 1px solid #1e293b;
+    font-weight: 800;
 }
 
 .nav-item {
@@ -38,6 +43,7 @@ body {
     color: #94a3b8;
     text-decoration: none;
     font-size: 0.85rem;
+    transition: all 0.3s;
 }
 
 .nav-item.active {
@@ -45,37 +51,14 @@ body {
     color: white;
 }
 
-/* Main Layout */
+/* Main Layout Positioning */
 .main-content {
     margin-left: 260px;
     width: calc(100% - 260px);
     padding: 30px;
 }
 
-/* Header & Tab Pills */
-.main-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 25px;
-}
-
-.tab-pills {
-    display: flex;
-    background: #e2e8f0;
-    padding: 4px;
-    border-radius: 10px;
-    gap: 4px;
-}
-
-.pill.active {
-    background: #1e293b; /* Sesuai gambar: Gelap untuk aktif */
-    color: white;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
-/* --- PEMBARUAN KARTU 3D (KPI) --- */
-
+/* Stats Cards - Grid 4 Kolom Utama */
 .stats-container {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -83,46 +66,61 @@ body {
     margin-bottom: 25px;
 }
 
+/* Kotak Utama (Stat Card) dengan Efek 3D */
 .stat-card {
     background: white;
-    padding: 24px 20px;
-    border-radius: 24px; /* Sudut lebih bulat sesuai gambar */
-    position: relative;
-    overflow: hidden;
-    /* Efek Bayangan 3D Halus */
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    padding: 25px;
+    border-radius: 30px; /* Sudut sangat bulat sesuai gambar */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); /* Soft shadow halus */
     border: 1px solid rgba(226, 232, 240, 0.8);
-    transition: transform 0.2s ease;
+    position: relative;
+    overflow: hidden; /* Penting agar garis warna atas tidak bocor */
+    display: flex;
+    flex-direction: column;
+    min-height: 170px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .stat-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
 }
 
-/* Garis Warna di Atas Kartu (Aksen 3D) */
+/* Garis Warna di Bagian Atas Kotak */
 .card-accent {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 6px;
+    height: 8px; /* Ketebalan garis aksen */
+    border-radius: 30px 30px 0 0;
 }
 
-/* Warna Angka & Aksen Spesifik */
-.os-val { color: #4318FF; font-size: 1.8rem; font-weight: 800; }
-.overdue-val { color: #EE5D50; font-size: 1.8rem; font-weight: 800; }
-.penalty-val { color: #FFB547; font-size: 1.8rem; font-weight: 800; }
-.lancar-val { color: #05CD99; font-size: 1.8rem; font-weight: 800; }
+/* Warna Aksen & Angka (Sesuai Referensi Gambar) */
+.bg-blue-accent { background-color: #4318FF; }
+.bg-red-accent { background-color: #EE5D50; }
+.bg-orange-accent { background-color: #FFB547; }
+.bg-green-accent { background-color: #05CD99; }
 
-.bg-blue-accent { background: #4318FF; }
-.bg-red-accent { background: #EE5D50; }
-.bg-orange-accent { background: #FFB547; }
-.bg-green-accent { background: #05CD99; }
+.os-val { color: #4318FF; font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-top: 5px; }
+.overdue-val { color: #EE5D50; font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-top: 5px; }
+.penalty-val { color: #FFB547; font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-top: 5px; }
+.lancar-val { color: #05CD99; font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-top: 5px; }
 
-/* Progress Bar Custom */
+/* Panel Header (Label Judul Kecil) */
+.panel-header {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #A3AED0; /* Warna teks label soft */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 5px;
+}
+
+/* Progress Bar O/S (Cash vs Leasing) */
 .progress-bar-bg {
     height: 10px;
-    background: #f1f5f9;
+    background: #F4F7FE;
     border-radius: 20px;
     display: flex;
     overflow: hidden;
@@ -132,30 +130,57 @@ body {
 .bar-fill.green { background: #05CD99; }
 .bar-fill.blue { background: #4318FF; }
 
-/* Grid & Panel Styling */
+.progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #A3AED0;
+}
+
+/* Icon di Pojok Kanan Atas */
+.card-icon {
+    position: absolute;
+    top: 25px;
+    right: 20px;
+    font-size: 1.2rem;
+    opacity: 0.8;
+}
+
+/* Middle Section - Grid 2 Kolom */
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
 .panel {
     background: white;
     padding: 25px;
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-    border: 1px solid #f1f5f9;
+    border-radius: 24px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
 }
 
-.panel-header {
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 1px;
-    color: #64748b;
-    margin-bottom: 20px;
-    text-transform: uppercase;
-}
-
-/* Badge Cust Styling */
+/* Badge untuk Info Tambahan (36 Cust, dsb) */
 .badge-cust {
     background: #eab308;
     color: white;
-    padding: 2px 8px;
-    border-radius: 6px;
+    padding: 4px 10px;
+    border-radius: 8px;
     font-size: 0.7rem;
-    font-weight: 700;
+    font-weight: 800;
+}
+
+/* Media Queries untuk Responsivitas */
+@media (max-width: 1200px) {
+    .stats-container { grid-template-columns: repeat(2, 1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+    .stats-container { grid-template-columns: 1fr; }
+    .main-content { margin-left: 0; width: 100%; padding: 15px; }
+    .sidebar { display: none; }
 }
