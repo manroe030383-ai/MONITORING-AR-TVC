@@ -64,20 +64,15 @@ function processDashboard(data) {
     let cashNominal = 0, leasingNominal = 0;
     let cashUnit = 0, leasingUnit = 0;
     
-    // Variabel khusus Breakdown Leasing TVC (Hanya ACC & TAFS)
-    let unitACC = 0;
-    let unitTAFS = 0;
-    let unitSudahGI = 0;
-    let unitRDelivery = 0;
+    let unitACC = 0, unitTAFS = 0;
+    let unitSudahGI = 0, unitRDelivery = 0;
 
     const buckets = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
 
     data.forEach(d => {
-        // Validasi: Abaikan baris kosong jika no_spk tidak ada
         if (!d.no_spk) return;
 
         const os = Number(d.os_balance) || 0;
-        // Cek nama kolom total_overdue atau total_overd sesuai Supabase
         const overdue = Number(d.total_overd) || Number(d.total_overdue) || 0;
         const penalty = Number(d.penalty_amount) || 0;
         const vLancar = Number(d.lancar) || 0;
@@ -88,7 +83,7 @@ function processDashboard(data) {
         const leasingName = (d.leasing_name || '').toUpperCase().trim();
         const glDate = String(d.gl_date || '0').trim();
 
-        // 1. Akumulasi Finansial (KPI Atas)
+        // Akumulasi KPI
         totalOS += os;
         totalOverdue += overdue;
         totalPenalty += penalty;
@@ -99,7 +94,6 @@ function processDashboard(data) {
         buckets['31-60 H'] += v31_60 / 1000000;
         buckets['>60 H'] += vOver60 / 1000000;
 
-        // 2. Klasifikasi Cash vs Leasing (Summary Detail)
         if (leasingName === "CASH" || leasingName === "") {
             cashNominal += os;
             cashUnit++;
@@ -107,45 +101,40 @@ function processDashboard(data) {
             leasingNominal += os;
             leasingUnit++; 
 
-            // 3. LOGIKA BREAKDOWN TVC (Khusus ACC & TAFS)
             if (leasingName.includes("ACC") || leasingName.includes("TAFS")) {
                 if (leasingName.includes("ACC")) unitACC++;
                 if (leasingName.includes("TAFS")) unitTAFS++;
-
-                // Jika gl_date memiliki nilai selain '0', berarti unit sudah GI
-                if (glDate !== "0" && glDate !== "") {
-                    unitSudahGI++;
-                } else {
-                    unitRDelivery++;
-                }
+                if (glDate !== "0" && glDate !== "") { unitSudahGI++; } else { unitRDelivery++; }
             }
         }
     });
 
-    // --- UPDATE UI KPI UTAMA ---
+    // Update UI KPI Atas
     updateText('total-os', formatIDR(totalOS));
     updateText('total-overdue', formatIDR(totalOverdue));
     updateText('total-penalty', formatIDR(totalPenalty));
     updateText('total-lancar', formatIDR(totalLancarNominal));
 
-    // --- UPDATE BREAKDOWN LEASING TVC ---
-    const totalTVC = unitACC + unitTAFS;
-    updateText('total-penjualan-leasing', totalTVC + " Unit"); 
+    // Update Breakdown TVC
+    updateText('total-penjualan-leasing', (unitACC + unitTAFS) + " Unit"); 
     updateText('unit-sudah-gi', unitSudahGI + " Unit");           
     updateText('unit-r-delivery', unitRDelivery + " Unit");       
-    updateText('unit-acc', unitACC + " Unit");
-    updateText('unit-tafs', unitTAFS + " Unit");
+    updateText('unit-acc', unitACC + " Cust");
+    updateText('unit-tafs', unitTAFS + " Cust");
 
-    // --- UPDATE DETAIL SUMMARY ---
-    updateText('count-overdue', (data.filter(d => (Number(d.total_overd) || Number(d.total_overdue) || 0) > 0).length) + " Unit Terlambat");
+    // Update Detail Summary
+    const overdueCount = data.filter(d => (Number(d.total_overd) || 0) > 0).length;
+    updateText('count-overdue', overdueCount + " UNIT TERLAMBAT");
     updateText('val-total-cash', formatIDR(cashNominal));
     updateText('unit-cash', cashUnit + " Unit");
     updateText('val-total-leasing', formatIDR(leasingNominal));
     updateText('unit-leasing', leasingUnit + " Unit");
 
+    // Panggil Fungsi Render
     renderCharts(cashNominal, leasingNominal, Object.values(buckets));
     renderSalesList(data);
     renderTopSPV(data, totalOS);
+    renderOverdueList(data); // <--- Menampilkan List Overdue
 }
 
 // ==========================================
@@ -174,6 +163,35 @@ function renderCharts(cash, leasing, agingData) {
     barChart.render();
 }
 
+function renderOverdueList(data) {
+    const listEl = document.getElementById('list-overdue');
+    if (!listEl) return;
+
+    // Ambil top 5 customer dengan total_overd terbesar
+    const overdueData = data
+        .filter(d => (Number(d.total_overd) || 0) > 0)
+        .sort((a, b) => (Number(b.total_overd) || 0) - (Number(a.total_overd) || 0))
+        .slice(0, 5);
+
+    if (overdueData.length === 0) {
+        listEl.innerHTML = '<p class="text-center text-slate-400">Tidak ada data overdue</p>';
+        return;
+    }
+
+    listEl.innerHTML = overdueData.map(d => `
+        <div class="flex justify-between items-start border-b border-slate-50 pb-2">
+            <div>
+                <span class="block text-[9px] font-extrabold uppercase">${d.customer_name || 'UNKNOWN'}</span>
+                <span class="bg-red-600 text-white text-[7px] px-1.5 py-0.5 rounded font-bold">MAX ${d.hari_overdue || 0} HARI</span>
+            </div>
+            <div class="text-right">
+                <span class="block text-[10px] font-black text-red-600">${formatIDR(d.total_overd)}</span>
+                <span class="text-[8px] text-slate-400">1 Unit</span>
+            </div>
+        </div>
+    `).join('');
+}
+
 function renderSalesList(data) {
     const map = {};
     data.forEach(d => {
@@ -186,7 +204,7 @@ function renderSalesList(data) {
     if (listEl) {
         listEl.innerHTML = sorted.map((s, i) => `
             <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                <span class="text-[10px] font-bold text-gray-600">${i + 1}. ${s[0]}</span>
+                <span class="text-[9px] font-bold text-gray-600">${i + 1}. ${s[0]}</span>
                 <span class="text-blue-600 font-black text-[10px]">${formatJuta(s[1])}</span>
             </div>
         `).join('');
@@ -209,7 +227,7 @@ function renderTopSPV(data, totalOS) {
                 <div class="mb-2">
                     <div class="flex justify-between text-[9px] font-bold mb-1">
                         <span>${i + 1}. ${s[0]}</span>
-                        <span>${formatJuta(s[1])}</span>
+                        <span class="text-[#1B2559]">${formatJuta(s[1])}</span>
                     </div>
                     <div class="w-full bg-gray-100 h-1 rounded-full">
                         <div class="bg-purple-500 h-1 rounded-full" style="width:${pct}%"></div>
