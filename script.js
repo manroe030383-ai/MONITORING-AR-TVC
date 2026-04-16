@@ -63,17 +63,13 @@ async function loadData() {
 // ==========================================
 function processDashboard(data) {
     let totalOS = 0, totalOverdue = 0, totalPenalty = 0, totalLancarNominal = 0;
-    let cashNominal = 0, leasingNominal = 0;
-    let cashUnit = 0, leasingUnit = 0;
-    
-    let unitACC = 0, unitTAFS = 0;
-    let unitSudahGI = 0, unitRDelivery = 0;
+    let cashNominal = 0, leasingNominal = 0, cashUnit = 0, leasingUnit = 0;
+    let unitACC = 0, unitTAFS = 0, unitSudahGI = 0, unitRDelivery = 0;
 
     const buckets = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
 
     data.forEach(d => {
         if (!d.no_spk) return;
-
         const os = Number(d.os_balance) || 0;
         const overdue = Number(d.total_overd) || Number(d.total_overdue) || 0;
         const penalty = Number(d.penalty_amount) || 0;
@@ -81,7 +77,6 @@ function processDashboard(data) {
         const v1_30 = Number(d.hari_1_30) || 0;
         const v31_60 = Number(d.hari_31_60) || 0;
         const vOver60 = Number(d.lebih_60_hari) || 0;
-
         const leasingName = (d.leasing_name || '').toUpperCase().trim();
         const glDate = String(d.gl_date || '0').trim();
 
@@ -96,57 +91,46 @@ function processDashboard(data) {
         buckets['>60 H'] += vOver60 / 1000000;
 
         if (leasingName === "CASH" || leasingName === "") {
-            cashNominal += os;
-            cashUnit++;
+            cashNominal += os; cashUnit++;
         } else {
-            leasingNominal += os;
-            leasingUnit++; 
-
-            if (leasingName.includes("ACC") || leasingName.includes("TAFS")) {
-                if (leasingName.includes("ACC")) unitACC++;
-                if (leasingName.includes("TAFS")) unitTAFS++;
-                if (glDate !== "0" && glDate !== "") { unitSudahGI++; } else { unitRDelivery++; }
-            }
+            leasingNominal += os; leasingUnit++; 
+            if (leasingName.includes("ACC")) unitACC++;
+            if (leasingName.includes("TAFS")) unitTAFS++;
+            if (glDate !== "0" && glDate !== "") unitSudahGI++; else unitRDelivery++;
         }
     });
 
-    // --- BAGIAN INI UNTUK MERUBAH TGL ARSIP DB JADI CURRENT ---
+    // --- BAGIAN UPDATE TANGGAL ARSIP DB (OTOMATIS HARI INI) ---
     const skrg = new Date();
-    const tglSekarang = String(skrg.getDate()).padStart(2, '0') + "/" + 
+    const tglArsipStr = String(skrg.getDate()).padStart(2, '0') + "/" + 
                         String(skrg.getMonth() + 1).padStart(2, '0') + "/" + 
                         skrg.getFullYear();
-    updateText('tgl-arsip', tglSekarang); 
+    updateText('tgl-arsip', tglArsipStr); 
     // ---------------------------------------------------------
 
     updateText('total-os', formatIDR(totalOS));
     updateText('total-overdue', formatIDR(totalOverdue));
     updateText('total-penalty', formatIDR(totalPenalty));
     updateText('total-lancar', formatIDR(totalLancarNominal));
-
+    updateText('val-total-cash', formatIDR(cashNominal));
+    updateText('unit-cash', cashUnit + " Unit");
+    updateText('val-total-leasing', formatIDR(leasingNominal));
+    updateText('unit-leasing', leasingUnit + " Unit");
     updateText('total-penjualan-leasing', (unitACC + unitTAFS) + " Unit"); 
     updateText('unit-sudah-gi', unitSudahGI + " Unit");           
     updateText('unit-r-delivery', unitRDelivery + " Unit");       
     updateText('unit-acc', unitACC + " Cust");
     updateText('unit-tafs', unitTAFS + " Cust");
+    updateText('count-overdue', (data.filter(d => (Number(d.total_overd) || 0) > 0).length) + " UNIT TERLAMBAT");
 
-    updateText('val-total-cash', formatIDR(cashNominal));
-    updateText('unit-cash', cashUnit + " Unit");
-    updateText('val-total-leasing', formatIDR(leasingNominal));
-    updateText('unit-leasing', leasingUnit + " Unit");
-
-    try {
-        renderCharts(cashNominal, leasingNominal, Object.values(buckets));
-    } catch (e) {
-        console.error("Gagal render grafik:", e);
-    }
-    
+    try { renderCharts(cashNominal, leasingNominal, Object.values(buckets)); } catch (e) {}
     renderSalesList(data);
     renderTopSPV(data, totalOS);
     renderOverdueList(data);
 }
 
 // ==========================================
-// 5. RENDER GRAFIK & LIST
+// 5. RENDER FUNGSI GRAFIK & LIST
 // ==========================================
 function renderCharts(cash, leasing, agingData) {
     const donutEl = document.querySelector("#chart-donut-main");
@@ -156,7 +140,7 @@ function renderCharts(cash, leasing, agingData) {
             series: [cash, leasing],
             labels: ['Cash', 'Leasing'],
             chart: { type: 'donut', height: 230 },
-            colors: ['#00E396', '#422AFB'],
+            colors: ['#10B981', '#2563EB'],
             legend: { position: 'bottom' },
             dataLabels: { enabled: false }
         });
@@ -168,39 +152,15 @@ function renderCharts(cash, leasing, agingData) {
         if (barChart) barChart.destroy();
         barChart = new ApexCharts(barEl, {
             series: [{ name: 'Nominal (Juta)', data: agingData }],
-            chart: { type: 'bar', height: 300, toolbar: { show: false } },
-            colors: ['#00E396', '#FEB019', '#FF4560', '#775DD0'], 
-            plotOptions: { 
-                bar: { distributed: true, borderRadius: 6 } 
-            },
-            xaxis: { 
-                categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] 
-            },
+            chart: { type: 'bar', height: 250, toolbar: { show: false } },
+            colors: ['#10B981', '#FBBF24', '#F97316', '#EF4444'], 
+            plotOptions: { bar: { distributed: true, borderRadius: 4 } },
+            xaxis: { categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] },
             legend: { show: false },
             dataLabels: { enabled: false }
         });
         barChart.render();
     }
-}
-
-function renderOverdueList(data) {
-    const listEl = document.getElementById('list-overdue');
-    if (!listEl) return;
-    const overdueData = data
-        .filter(d => (Number(d.total_overd) || 0) > 0)
-        .sort((a, b) => (Number(b.total_overd) || 0) - (Number(a.total_overd) || 0))
-        .slice(0, 5);
-    listEl.innerHTML = overdueData.map(d => `
-        <div class="flex justify-between items-start border-b border-slate-50 pb-2">
-            <div>
-                <span class="block text-[9px] font-extrabold uppercase">${d.customer_name || 'UNKNOWN'}</span>
-                <span class="bg-red-600 text-white text-[7px] px-1.5 py-0.5 rounded font-bold">MAX ${d.hari_overdue || 0} HARI</span>
-            </div>
-            <div class="text-right">
-                <span class="block text-[10px] font-black text-red-600">${formatIDR(d.total_overd)}</span>
-            </div>
-        </div>
-    `).join('');
 }
 
 function renderSalesList(data) {
@@ -217,9 +177,27 @@ function renderSalesList(data) {
             <div class="flex justify-between items-center py-1 border-b border-gray-50">
                 <span class="text-[9px] font-bold text-gray-600">${i + 1}. ${s[0]}</span>
                 <span class="text-blue-600 font-black text-[10px]">${formatJuta(s[1])}</span>
-            </div>
-        `).join('');
+            </div>`).join('');
     }
+}
+
+function renderOverdueList(data) {
+    const listEl = document.getElementById('list-overdue');
+    if (!listEl) return;
+    const overdueData = data
+        .filter(d => (Number(d.total_overd) || 0) > 0)
+        .sort((a, b) => (Number(b.total_overd) || 0) - (Number(a.total_overd) || 0))
+        .slice(0, 5);
+    listEl.innerHTML = overdueData.length ? overdueData.map(d => `
+        <div class="flex justify-between items-start border-b border-slate-50 pb-2">
+            <div>
+                <span class="block text-[8px] font-extrabold uppercase">${d.customer_name || 'UNKNOWN'}</span>
+                <span class="bg-red-600 text-white text-[6px] px-1 py-0.5 rounded font-bold">${d.hari_overdue || 0} HARI</span>
+            </div>
+            <div class="text-right">
+                <span class="block text-[9px] font-black text-red-600">${formatIDR(d.total_overd)}</span>
+            </div>
+        </div>`).join('') : '<p class="text-slate-400 text-center italic">Tidak ada data overdue</p>';
 }
 
 function renderTopSPV(data, totalOS) {
@@ -234,23 +212,11 @@ function renderTopSPV(data, totalOS) {
     if (listEl) {
         listEl.innerHTML = sorted.map((s, i) => {
             const pct = totalOS > 0 ? (s[1] / totalOS) * 100 : 0;
-            return `
-                <div class="mb-2">
-                    <div class="flex justify-between text-[9px] font-bold mb-1">
-                        <span>${i + 1}. ${s[0]}</span>
-                        <span class="text-[#1B2559]">${formatJuta(s[1])}</span>
-                    </div>
-                    <div class="w-full bg-gray-100 h-1 rounded-full">
-                        <div class="bg-purple-500 h-1 rounded-full" style="width:${pct}%"></div>
-                    </div>
-                </div>`;
+            return `<div class="mb-2"><div class="flex justify-between text-[9px] font-bold mb-1"><span>${i + 1}. ${s[0]}</span><span class="text-[#1B2559]">${formatJuta(s[1])}</span></div><div class="w-full bg-gray-100 h-1 rounded-full"><div class="bg-purple-500 h-1 rounded-full" style="width:${pct}%"></div></div></div>`;
         }).join('');
     }
 }
 
-// ==========================================
-// 6. INITIALIZATION
-// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     updateDateTime();
     loadData();
