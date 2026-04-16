@@ -45,18 +45,12 @@ function updateDateTime() {
 // ==========================================
 async function loadData() {
     try {
-        console.log("Memulai tarik data dari Supabase...");
         const { data, error } = await supabase
             .from('ar_unit')
             .select('*');
 
         if (error) throw error;
-        if (data && data.length > 0) {
-            console.log("Data berhasil ditarik, jumlah baris:", data.length);
-            processDashboard(data);
-        } else {
-            console.warn("Data kosong atau tidak ditemukan di tabel ar_unit");
-        }
+        if (data) processDashboard(data);
     } catch (err) {
         console.error("Gagal menarik data:", err.message);
     }
@@ -89,7 +83,6 @@ function processDashboard(data) {
         const leasingName = (d.leasing_name || '').toUpperCase().trim();
         const glDate = String(d.gl_date || '0').trim();
 
-        // Akumulasi KPI
         totalOS += os;
         totalOverdue += overdue;
         totalPenalty += penalty;
@@ -115,20 +108,17 @@ function processDashboard(data) {
         }
     });
 
-    // Update UI KPI Atas
     updateText('total-os', formatIDR(totalOS));
     updateText('total-overdue', formatIDR(totalOverdue));
     updateText('total-penalty', formatIDR(totalPenalty));
     updateText('total-lancar', formatIDR(totalLancarNominal));
 
-    // Update Breakdown TVC
     updateText('total-penjualan-leasing', (unitACC + unitTAFS) + " Unit"); 
     updateText('unit-sudah-gi', unitSudahGI + " Unit");           
     updateText('unit-r-delivery', unitRDelivery + " Unit");       
     updateText('unit-acc', unitACC + " Cust");
     updateText('unit-tafs', unitTAFS + " Cust");
 
-    // Update Detail Summary
     const overdueCount = data.filter(d => (Number(d.total_overd) || 0) > 0).length;
     updateText('count-overdue', overdueCount + " UNIT TERLAMBAT");
     updateText('val-total-cash', formatIDR(cashNominal));
@@ -136,7 +126,6 @@ function processDashboard(data) {
     updateText('val-total-leasing', formatIDR(leasingNominal));
     updateText('unit-leasing', leasingUnit + " Unit");
 
-    // Panggil Fungsi Render (Dibalut Try-Catch agar jika grafik error, angka tetap muncul)
     try {
         renderCharts(cashNominal, leasingNominal, Object.values(buckets));
     } catch (e) {
@@ -149,10 +138,9 @@ function processDashboard(data) {
 }
 
 // ==========================================
-// 5. RENDER GRAFIK & LIST
+// 5. RENDER GRAFIK & LIST (UPDATE WARNA & LEGEND)
 // ==========================================
 function renderCharts(cash, leasing, agingData) {
-    // 1. Donut Chart
     const donutEl = document.querySelector("#chart-donut-main");
     if (donutEl) {
         if (donutChart) donutChart.destroy();
@@ -160,24 +148,37 @@ function renderCharts(cash, leasing, agingData) {
             series: [cash, leasing],
             labels: ['Cash', 'Leasing'],
             chart: { type: 'donut', height: 230 },
-            colors: ['#10B981', '#422AFB'],
+            colors: ['#00E396', '#422AFB'],
             legend: { position: 'bottom' },
-            dataLabels: { enabled: false } // Angka di dalam lingkaran hilang
+            dataLabels: { enabled: false }
         });
         donutChart.render();
     }
 
-    // 2. Bar Chart
     const barEl = document.querySelector("#chart-aging-nominal");
     if (barEl) {
         if (barChart) barChart.destroy();
         barChart = new ApexCharts(barEl, {
             series: [{ name: 'Nominal (Juta)', data: agingData }],
             chart: { type: 'bar', height: 300, toolbar: { show: false } },
-            colors: ['#10B981', '#FFD700', '#FF8C00', '#EF4444'],
-            plotOptions: { bar: { distributed: true, borderRadius: 6 } },
-            xaxis: { categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] },
-            dataLabels: { enabled: false } // Angka di atas batang hilang
+            // WARNA BAR: Lancar (Hijau), 1-30 (Kuning), 31-60 (Orange), >60 (Merah)
+            colors: ['#00E396', '#FEB019', '#FF4560', '#775DD0'], 
+            plotOptions: { 
+                bar: { 
+                    distributed: true, 
+                    borderRadius: 6,
+                    columnWidth: '60%' 
+                } 
+            },
+            xaxis: { 
+                categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'],
+                labels: { style: { fontSize: '10px', fontWeight: 700 } }
+            },
+            // MENGHILANGKAN TULISAN LEGEND DI BAWAH (Karena sudah ada di sumbu X)
+            legend: {
+                show: false
+            },
+            dataLabels: { enabled: false }
         });
         barChart.render();
     }
@@ -186,17 +187,14 @@ function renderCharts(cash, leasing, agingData) {
 function renderOverdueList(data) {
     const listEl = document.getElementById('list-overdue');
     if (!listEl) return;
-
     const overdueData = data
         .filter(d => (Number(d.total_overd) || 0) > 0)
         .sort((a, b) => (Number(b.total_overd) || 0) - (Number(a.total_overd) || 0))
         .slice(0, 5);
-
     if (overdueData.length === 0) {
         listEl.innerHTML = '<p class="text-center text-slate-400">Tidak ada data overdue</p>';
         return;
     }
-
     listEl.innerHTML = overdueData.map(d => `
         <div class="flex justify-between items-start border-b border-slate-50 pb-2">
             <div>
@@ -263,5 +261,5 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDateTime();
     loadData();
     setInterval(updateDateTime, 60000);
-    setInterval(loadData, 300000); // Auto refresh data setiap 5 menit
-});
+    setInterval(loadData, 300000); 
+});// Auto refresh data setiap 5 menit
