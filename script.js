@@ -9,7 +9,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let donutChart = null;
 let barChart = null;
-let leasingBarsChart = null; // Menambahkan variabel untuk grafik baru
 
 // ==========================================
 // 2. HELPER / FORMATTER
@@ -67,8 +66,8 @@ function processDashboard(data) {
     let cashNominal = 0, leasingNominal = 0;
     let cashUnit = 0, leasingUnit = 0;
     
-    // Objek untuk menampung data leasing secara dinamis
-    let leasingDataMap = {}; 
+    let unitACC = 0, unitTAFS = 0;
+    let unitSudahGI = 0, unitRDelivery = 0;
 
     const buckets = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
 
@@ -83,7 +82,7 @@ function processDashboard(data) {
         const v31_60 = Number(d.hari_31_60) || 0;
         const vOver60 = Number(d.lebih_60_hari) || 0;
 
-        let leasingName = (d.leasing_name || '').toUpperCase().trim();
+        const leasingName = (d.leasing_name || '').toUpperCase().trim();
         const glDate = String(d.gl_date || '0').trim();
 
         totalOS += os;
@@ -103,42 +102,32 @@ function processDashboard(data) {
             leasingNominal += os;
             leasingUnit++; 
 
-            // LOGIKA DINAMIS LEASING:
-            if (!leasingDataMap[leasingName]) {
-                leasingDataMap[leasingName] = { nominal: 0, unit: 0 };
+            if (leasingName.includes("ACC") || leasingName.includes("TAFS")) {
+                if (leasingName.includes("ACC")) unitACC++;
+                if (leasingName.includes("TAFS")) unitTAFS++;
+                if (glDate !== "0" && glDate !== "") { unitSudahGI++; } else { unitRDelivery++; }
             }
-            leasingDataMap[leasingName].nominal += os;
-            leasingDataMap[leasingName].unit++;
         }
     });
 
-    // Update UI KPI Atas (Sama seperti sebelumnya)
     updateText('total-os', formatIDR(totalOS));
     updateText('total-overdue', formatIDR(totalOverdue));
     updateText('total-penalty', formatIDR(totalPenalty));
     updateText('total-lancar', formatIDR(totalLancarNominal));
+
+    updateText('total-penjualan-leasing', (unitACC + unitTAFS) + " Unit"); 
+    updateText('unit-sudah-gi', unitSudahGI + " Unit");           
+    updateText('unit-r-delivery', unitRDelivery + " Unit");       
+    updateText('unit-acc', unitACC + " Cust");
+    updateText('unit-tafs', unitTAFS + " Cust");
 
     updateText('val-total-cash', formatIDR(cashNominal));
     updateText('unit-cash', cashUnit + " Unit");
     updateText('val-total-leasing', formatIDR(leasingNominal));
     updateText('unit-leasing', leasingUnit + " Unit");
 
-    // Menghitung persentase, mengurutkan dari yang terbesar, dan merapikan data leasing
-    const sortedLeasingData = Object.entries(leasingDataMap)
-        .map(([name, data]) => ({
-            name,
-            nominal: data.nominal,
-            juta: data.nominal / 1000000,
-            percent: totalOS > 0 ? ((data.nominal / totalOS) * 100).toFixed(1) : 0
-        }))
-        .sort((a, b) => b.nominal - a.nominal) // Urutan terbesar ke terkecil
-        .slice(0, 5); // Tampilkan top 5 saja
-
-    // Render Semua Grafik
     try {
         renderCharts(cashNominal, leasingNominal, Object.values(buckets));
-        // Fungsi baru untuk render batang leasing
-        renderLeasingBarsChart(sortedLeasingData); 
     } catch (e) {
         console.error("Gagal render grafik:", e);
     }
@@ -149,10 +138,9 @@ function processDashboard(data) {
 }
 
 // ==========================================
-// 5. RENDER GRAFIK & LIST
+// 5. RENDER GRAFIK & LIST (UPDATE: HILANGKAN LEGEND)
 // ==========================================
 function renderCharts(cash, leasing, agingData) {
-    // 1. Donut Chart (Sama seperti sebelumnya)
     const donutEl = document.querySelector("#chart-donut-main");
     if (donutEl) {
         if (donutChart) donutChart.destroy();
@@ -167,7 +155,6 @@ function renderCharts(cash, leasing, agingData) {
         donutChart.render();
     }
 
-    // 2. Bar Chart (Sama seperti sebelumnya)
     const barEl = document.querySelector("#chart-aging-nominal");
     if (barEl) {
         if (barChart) barChart.destroy();
@@ -175,94 +162,20 @@ function renderCharts(cash, leasing, agingData) {
             series: [{ name: 'Nominal (Juta)', data: agingData }],
             chart: { type: 'bar', height: 300, toolbar: { show: false } },
             colors: ['#00E396', '#FEB019', '#FF4560', '#775DD0'], 
-            plotOptions: { bar: { distributed: true, borderRadius: 6 } },
-            xaxis: { categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] },
-            legend: { show: false },
+            plotOptions: { 
+                bar: { distributed: true, borderRadius: 6 } 
+            },
+            xaxis: { 
+                categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] 
+            },
+            // BAGIAN INI YANG MENGHILANGKAN TULISAN DI BAWAH GRAFIK
+            legend: {
+                show: false
+            },
             dataLabels: { enabled: false }
         });
         barChart.render();
     }
-}
-
-// FUNGSI BARU UNTUK GRAFIK LEASING BARIZONTAL
-function renderLeasingBarsChart(leasingData) {
-    const containerEl = document.querySelector("#chart-leasing-bars");
-    if (!containerEl) return;
-
-    if (leasingBarsChart) leasingBarsChart.destroy();
-
-    // Persiapan data ApexCharts
-    const seriesData = leasingData.map(item => item.nominal);
-    const categoriesData = leasingData.map(item => item.name);
-
-    leasingBarsChart = new ApexCharts(containerEl, {
-        series: [{
-            name: 'Nominal OS',
-            data: seriesData
-        }],
-        chart: {
-            type: 'bar',
-            height: 250, // Sesuaikan tinggi container
-            toolbar: { show: false }
-        },
-        plotOptions: {
-            bar: {
-                horizontal: true, // Membuat batang jadi horizontal
-                borderRadius: 4,
-                barHeight: '60%', // Tebal batang
-                dataLabels: {
-                    position: 'top' // Letakkan label di ujung kanan batang
-                }
-            }
-        },
-        colors: ['#422AFB'], // Gunakan warna dasar biru leasing
-        xaxis: {
-            categories: categoriesData,
-            labels: {
-                show: false // Sembunyikan angka axis bawah agar bersih
-            },
-            axisBorder: { show: false },
-            axisTicks: { show: false }
-        },
-        yaxis: {
-            labels: {
-                style: {
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    colors: ['#1B2559'] // Warna teks nama leasing
-                }
-            }
-        },
-        grid: {
-            show: false // Sembunyikan garis kotak-kotak di belakang
-        },
-        dataLabels: {
-            enabled: true,
-            textAnchor: 'start',
-            style: {
-                fontSize: '11px',
-                colors: ['#1B2559'], // Warna teks persen dan nominal
-                fontWeight: 700
-            },
-            // FORMATTER LABEL: Menampilkan "Percent% (NominalJuta)"
-            formatter: function (val, opt) {
-                // Mengambil data persen dan juta dari data leasing asli kita
-                const index = opt.dataPointIndex;
-                const dataItem = leasingData[index];
-                return `${dataItem.percent}% (${formatJuta(dataItem.nominal)})`;
-            },
-            offsetX: 10 // Geser label sedikit ke kanan agar tidak menempel batang
-        },
-        tooltip: {
-            y: {
-                formatter: function (val) {
-                    return formatIDR(val);
-                }
-            }
-        }
-    });
-
-    leasingBarsChart.render();
 }
 
 function renderOverdueList(data) {
