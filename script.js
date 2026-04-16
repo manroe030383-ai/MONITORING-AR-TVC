@@ -9,6 +9,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let donutChart = null;
 let barChart = null;
+let leasingBarsChart = null;
 
 // ==========================================
 // 2. HELPER / FORMATTER
@@ -62,27 +63,30 @@ async function loadData() {
 // 4. LOGIKA PEMROSESAN UTAMA
 // ==========================================
 function processDashboard(data) {
+    // Variabel Penampung
     let totalOS = 0, totalOverdue = 0, totalPenalty = 0, totalLancarNominal = 0;
     let cashNominal = 0, leasingNominal = 0;
     let cashUnit = 0, leasingUnit = 0;
     
     let unitACC = 0, unitTAFS = 0;
     let unitSudahGI = 0, unitRDelivery = 0;
+    let leasingDataMap = {}; 
 
     const buckets = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
 
+    // Proses Data Baris per Baris
     data.forEach(d => {
         if (!d.no_spk) return;
 
         const os = Number(d.os_balance) || 0;
-        const overdue = Number(d.total_overd) || Number(d.total_overdue) || 0;
+        const overdue = Number(d.total_overd) || 0;
         const penalty = Number(d.penalty_amount) || 0;
         const vLancar = Number(d.lancar) || 0;
         const v1_30 = Number(d.hari_1_30) || 0;
         const v31_60 = Number(d.hari_31_60) || 0;
         const vOver60 = Number(d.lebih_60_hari) || 0;
 
-        const leasingName = (d.leasing_name || '').toUpperCase().trim();
+        let leasingName = (d.leasing_name || 'UNKNOWN').toUpperCase().trim();
         const glDate = String(d.gl_date || '0').trim();
 
         totalOS += os;
@@ -101,103 +105,136 @@ function processDashboard(data) {
         } else {
             leasingNominal += os;
             leasingUnit++; 
+            
+            // Hitung Breakdown TVC
+            if (leasingName.includes("ACC")) unitACC++;
+            if (leasingName.includes("TAFS")) unitTAFS++;
+            if (glDate !== "0" && glDate !== "") { unitSudahGI++; } else { unitRDelivery++; }
 
-            if (leasingName.includes("ACC") || leasingName.includes("TAFS")) {
-                if (leasingName.includes("ACC")) unitACC++;
-                if (leasingName.includes("TAFS")) unitTAFS++;
-                if (glDate !== "0" && glDate !== "") { unitSudahGI++; } else { unitRDelivery++; }
+            // Simpan Data per Leasing untuk Grafik
+            if (!leasingDataMap[leasingName]) {
+                leasingDataMap[leasingName] = { nominal: 0 };
             }
+            leasingDataMap[leasingName].nominal += os;
         }
     });
 
+    // --- UPDATE TANGGAL ARSIP DB (OTOMATIS HARI INI) ---
+    const skrg = new Date();
+    const tglArsip = String(skrg.getDate()).padStart(2, '0') + "/" + 
+                     String(skrg.getMonth() + 1).padStart(2, '0') + "/" + 
+                     skrg.getFullYear();
+    updateText('tgl-arsip', tglArsip);
+
+    // --- UPDATE ANGKA KPI UTAMA ---
     updateText('total-os', formatIDR(totalOS));
     updateText('total-overdue', formatIDR(totalOverdue));
     updateText('total-penalty', formatIDR(totalPenalty));
     updateText('total-lancar', formatIDR(totalLancarNominal));
+    
+    updateText('val-total-cash', formatIDR(cashNominal));
+    updateText('unit-cash', cashUnit + " Unit");
+    updateText('val-total-leasing', formatIDR(leasingNominal));
+    updateText('unit-leasing', leasingUnit + " Unit");
 
+    // --- UPDATE BREAKDOWN TVC ---
     updateText('total-penjualan-leasing', (unitACC + unitTAFS) + " Unit"); 
     updateText('unit-sudah-gi', unitSudahGI + " Unit");           
     updateText('unit-r-delivery', unitRDelivery + " Unit");       
     updateText('unit-acc', unitACC + " Cust");
     updateText('unit-tafs', unitTAFS + " Cust");
 
-    updateText('val-total-cash', formatIDR(cashNominal));
-    updateText('unit-cash', cashUnit + " Unit");
-    updateText('val-total-leasing', formatIDR(leasingNominal));
-    updateText('unit-leasing', leasingUnit + " Unit");
+    // Persiapan Data Top 5 Leasing
+    const sortedLeasingData = Object.entries(leasingDataMap)
+        .map(([name, val]) => ({
+            name,
+            nominal: val.nominal,
+            percent: totalOS > 0 ? ((val.nominal / totalOS) * 100).toFixed(1) : 0
+        }))
+        .sort((a, b) => b.nominal - a.nominal).slice(0, 5);
 
-    try {
-        renderCharts(cashNominal, leasingNominal, Object.values(buckets));
-    } catch (e) {
-        console.error("Gagal render grafik:", e);
-    }
+    // --- RENDER SEMUA GRAFIK ---
+    try { renderDonut(cashNominal, leasingNominal); } catch(e) { console.error(e); }
+    try { renderAgingBar(Object.values(buckets)); } catch(e) { console.error(e); }
+    try { renderLeasingBars(sortedLeasingData); } catch(e) { console.error(e); }
     
+    // --- RENDER TABEL LIST ---
     renderSalesList(data);
     renderTopSPV(data, totalOS);
-    renderOverdueList(data);
 }
 
 // ==========================================
-// 5. RENDER GRAFIK & LIST (UPDATE: HILANGKAN LEGEND)
+// 5. FUNGSI RENDER GRAFIK
 // ==========================================
-function renderCharts(cash, leasing, agingData) {
-    const donutEl = document.querySelector("#chart-donut-main");
-    if (donutEl) {
-        if (donutChart) donutChart.destroy();
-        donutChart = new ApexCharts(donutEl, {
-            series: [cash, leasing],
-            labels: ['Cash', 'Leasing'],
-            chart: { type: 'donut', height: 230 },
-            colors: ['#00E396', '#422AFB'],
-            legend: { position: 'bottom' },
-            dataLabels: { enabled: false }
-        });
-        donutChart.render();
-    }
-
-    const barEl = document.querySelector("#chart-aging-nominal");
-    if (barEl) {
-        if (barChart) barChart.destroy();
-        barChart = new ApexCharts(barEl, {
-            series: [{ name: 'Nominal (Juta)', data: agingData }],
-            chart: { type: 'bar', height: 300, toolbar: { show: false } },
-            colors: ['#00E396', '#FEB019', '#FF4560', '#775DD0'], 
-            plotOptions: { 
-                bar: { distributed: true, borderRadius: 6 } 
-            },
-            xaxis: { 
-                categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] 
-            },
-            // BAGIAN INI YANG MENGHILANGKAN TULISAN DI BAWAH GRAFIK
-            legend: {
-                show: false
-            },
-            dataLabels: { enabled: false }
-        });
-        barChart.render();
-    }
+function renderDonut(cash, leasing) {
+    const el = document.querySelector("#chart-donut-main");
+    if (!el) return;
+    if (donutChart) donutChart.destroy();
+    donutChart = new ApexCharts(el, {
+        series: [cash, leasing],
+        labels: ['Cash', 'Leasing'],
+        chart: { type: 'donut', height: 230 },
+        colors: ['#00E396', '#422AFB'],
+        dataLabels: { enabled: false },
+        legend: { position: 'bottom' }
+    });
+    donutChart.render();
 }
 
-function renderOverdueList(data) {
-    const listEl = document.getElementById('list-overdue');
-    if (!listEl) return;
-    const overdueData = data
-        .filter(d => (Number(d.total_overd) || 0) > 0)
-        .sort((a, b) => (Number(b.total_overd) || 0) - (Number(a.total_overd) || 0))
-        .slice(0, 5);
-    listEl.innerHTML = overdueData.map(d => `
-        <div class="flex justify-between items-start border-b border-slate-50 pb-2">
-            <div>
-                <span class="block text-[9px] font-extrabold uppercase">${d.customer_name || 'UNKNOWN'}</span>
-                <span class="bg-red-600 text-white text-[7px] px-1.5 py-0.5 rounded font-bold">MAX ${d.hari_overdue || 0} HARI</span>
-            </div>
-            <div class="text-right">
-                <span class="block text-[10px] font-black text-red-600">${formatIDR(d.total_overd)}</span>
-            </div>
-        </div>
-    `).join('');
+function renderAgingBar(agingData) {
+    const el = document.querySelector("#chart-aging-nominal");
+    if (!el) return;
+    if (barChart) barChart.destroy();
+    barChart = new ApexCharts(el, {
+        series: [{ name: 'Nominal (Juta)', data: agingData }],
+        chart: { type: 'bar', height: 280, toolbar: { show: false } },
+        colors: ['#00E396', '#FEB019', '#FF4560', '#775DD0'],
+        plotOptions: { bar: { distributed: true, borderRadius: 6 } },
+        xaxis: { categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] },
+        legend: { show: false },
+        dataLabels: { enabled: false }
+    });
+    barChart.render();
 }
 
+function renderLeasingBars(lData) {
+    const el = document.querySelector("#chart-leasing-bars");
+    if (!el) return;
+    if (leasingBarsChart) leasingBarsChart.destroy();
+    leasingBarsChart = new ApexCharts(el, {
+        series: [{ name: 'OS', data: lData.map(d => d.nominal) }],
+        chart: { type: 'bar', height: 200, toolbar: { show: false } },
+        plotOptions: { 
+            bar: { 
+                horizontal: true, 
+                borderRadius: 4,
+                barHeight: '50%'
+            } 
+        },
+        colors: ['#422AFB'],
+        grid: { show: false },
+        xaxis: { 
+            categories: lData.map(d => d.name),
+            labels: { show: false },
+            axisBorder: { show: false }
+        },
+        yaxis: {
+            labels: { style: { fontSize: '10px', fontWeight: 600 } }
+        },
+        dataLabels: {
+            enabled: true,
+            textAnchor: 'start',
+            offsetX: 10,
+            formatter: (val, opt) => `${lData[opt.dataPointIndex].percent}% (${formatJuta(val)})`,
+            style: { fontSize: '10px', colors: ['#1B2559'] }
+        }
+    });
+    leasingBarsChart.render();
+}
+
+// ==========================================
+// 6. FUNGSI RENDER LIST (TABEL)
+// ==========================================
 function renderSalesList(data) {
     const map = {};
     data.forEach(d => {
@@ -217,7 +254,7 @@ function renderSalesList(data) {
     }
 }
 
-function renderTopSPV(data, totalOS) {
+function renderTopSPV(data, total) {
     const map = {};
     data.forEach(d => {
         if (!d.no_spk) return;
@@ -228,12 +265,12 @@ function renderTopSPV(data, totalOS) {
     const listEl = document.getElementById('list-spv');
     if (listEl) {
         listEl.innerHTML = sorted.map((s, i) => {
-            const pct = totalOS > 0 ? (s[1] / totalOS) * 100 : 0;
+            const pct = total > 0 ? (s[1] / total) * 100 : 0;
             return `
                 <div class="mb-2">
                     <div class="flex justify-between text-[9px] font-bold mb-1">
                         <span>${i + 1}. ${s[0]}</span>
-                        <span class="text-[#1B2559]">${formatJuta(s[1])}</span>
+                        <span>${formatJuta(s[1])}</span>
                     </div>
                     <div class="w-full bg-gray-100 h-1 rounded-full">
                         <div class="bg-purple-500 h-1 rounded-full" style="width:${pct}%"></div>
@@ -244,7 +281,7 @@ function renderTopSPV(data, totalOS) {
 }
 
 // ==========================================
-// 6. INITIALIZATION
+// 7. INITIALIZATION
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     updateDateTime();
