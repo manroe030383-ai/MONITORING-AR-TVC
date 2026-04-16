@@ -36,7 +36,7 @@ function updateDateTime() {
     const time = now.getHours().toString().padStart(2, '0') + "." + now.getMinutes().toString().padStart(2, '0');
     const textEl = document.getElementById('tgl-update-text');
     if (textEl) {
-        textEl.innerText = `DATA UPDATE: ${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} - ${time} WIB`;
+        textEl.innerText = `DATA UPDATE: ${days[now.getDay()]} , ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} - ${time} WIB`;
     }
 }
 
@@ -110,14 +110,13 @@ function processDashboard(data) {
         }
     });
 
-    // --- LOGIKA TANGGAL OTOMATIS ARSIP DB ---
+    // --- BAGIAN INI UNTUK MERUBAH TGL ARSIP DB JADI CURRENT ---
     const skrg = new Date();
-    const tgl = String(skrg.getDate()).padStart(2, '0');
-    const bln = String(skrg.getMonth() + 1).padStart(2, '0');
-    const thn = skrg.getFullYear();
-    const tglArsipFull = `${tgl}/${bln}/${thn}`;
-    updateText('tgl-arsip', tglArsipFull); 
-    // ----------------------------------------
+    const tglSekarang = String(skrg.getDate()).padStart(2, '0') + "/" + 
+                        String(skrg.getMonth() + 1).padStart(2, '0') + "/" + 
+                        skrg.getFullYear();
+    updateText('tgl-arsip', tglSekarang); 
+    // ---------------------------------------------------------
 
     updateText('total-os', formatIDR(totalOS));
     updateText('total-overdue', formatIDR(totalOverdue));
@@ -177,9 +176,7 @@ function renderCharts(cash, leasing, agingData) {
             xaxis: { 
                 categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] 
             },
-            legend: {
-                show: false
-            },
+            legend: { show: false },
             dataLabels: { enabled: false }
         });
         barChart.render();
