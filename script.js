@@ -50,7 +50,9 @@ async function loadData() {
             .select('*');
 
         if (error) throw error;
-        if (data) processDashboard(data);
+        if (data && data.length > 0) {
+            processDashboard(data);
+        }
     } catch (err) {
         console.error("Gagal menarik data:", err.message);
     }
@@ -119,8 +121,6 @@ function processDashboard(data) {
     updateText('unit-acc', unitACC + " Cust");
     updateText('unit-tafs', unitTAFS + " Cust");
 
-    const overdueCount = data.filter(d => (Number(d.total_overd) || 0) > 0).length;
-    updateText('count-overdue', overdueCount + " UNIT TERLAMBAT");
     updateText('val-total-cash', formatIDR(cashNominal));
     updateText('unit-cash', cashUnit + " Unit");
     updateText('val-total-leasing', formatIDR(leasingNominal));
@@ -138,7 +138,7 @@ function processDashboard(data) {
 }
 
 // ==========================================
-// 5. RENDER GRAFIK & LIST (UPDATE WARNA & LEGEND)
+// 5. RENDER GRAFIK & LIST (UPDATE: HILANGKAN LEGEND)
 // ==========================================
 function renderCharts(cash, leasing, agingData) {
     const donutEl = document.querySelector("#chart-donut-main");
@@ -161,20 +161,14 @@ function renderCharts(cash, leasing, agingData) {
         barChart = new ApexCharts(barEl, {
             series: [{ name: 'Nominal (Juta)', data: agingData }],
             chart: { type: 'bar', height: 300, toolbar: { show: false } },
-            // WARNA BAR: Lancar (Hijau), 1-30 (Kuning), 31-60 (Orange), >60 (Merah)
             colors: ['#00E396', '#FEB019', '#FF4560', '#775DD0'], 
             plotOptions: { 
-                bar: { 
-                    distributed: true, 
-                    borderRadius: 6,
-                    columnWidth: '60%' 
-                } 
+                bar: { distributed: true, borderRadius: 6 } 
             },
             xaxis: { 
-                categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'],
-                labels: { style: { fontSize: '10px', fontWeight: 700 } }
+                categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] 
             },
-            // MENGHILANGKAN TULISAN LEGEND DI BAWAH (Karena sudah ada di sumbu X)
+            // BAGIAN INI YANG MENGHILANGKAN TULISAN DI BAWAH GRAFIK
             legend: {
                 show: false
             },
@@ -191,10 +185,6 @@ function renderOverdueList(data) {
         .filter(d => (Number(d.total_overd) || 0) > 0)
         .sort((a, b) => (Number(b.total_overd) || 0) - (Number(a.total_overd) || 0))
         .slice(0, 5);
-    if (overdueData.length === 0) {
-        listEl.innerHTML = '<p class="text-center text-slate-400">Tidak ada data overdue</p>';
-        return;
-    }
     listEl.innerHTML = overdueData.map(d => `
         <div class="flex justify-between items-start border-b border-slate-50 pb-2">
             <div>
@@ -203,7 +193,6 @@ function renderOverdueList(data) {
             </div>
             <div class="text-right">
                 <span class="block text-[10px] font-black text-red-600">${formatIDR(d.total_overd)}</span>
-                <span class="text-[8px] text-slate-400">1 Unit</span>
             </div>
         </div>
     `).join('');
