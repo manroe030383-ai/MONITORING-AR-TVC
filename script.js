@@ -100,14 +100,14 @@ function processDashboard(data) {
         }
     });
 
-    // --- BAGIAN UPDATE TANGGAL ARSIP DB (OTOMATIS HARI INI) ---
+    // --- UPDATE TANGGAL ARSIP DB (OTOMATIS HARI INI) ---
     const skrg = new Date();
     const tglArsipStr = String(skrg.getDate()).padStart(2, '0') + "/" + 
                         String(skrg.getMonth() + 1).padStart(2, '0') + "/" + 
                         skrg.getFullYear();
     updateText('tgl-arsip', tglArsipStr); 
-    // ---------------------------------------------------------
 
+    // Update Text Elements
     updateText('total-os', formatIDR(totalOS));
     updateText('total-overdue', formatIDR(totalOverdue));
     updateText('total-penalty', formatIDR(totalPenalty));
@@ -123,7 +123,9 @@ function processDashboard(data) {
     updateText('unit-tafs', unitTAFS + " Cust");
     updateText('count-overdue', (data.filter(d => (Number(d.total_overd) || 0) > 0).length) + " UNIT TERLAMBAT");
 
+    // Render Visuals
     try { renderCharts(cashNominal, leasingNominal, Object.values(buckets)); } catch (e) {}
+    renderLeasingBreakdown(data, totalOS); // Fungsi Baru untuk Progress Bar Leasing
     renderSalesList(data);
     renderTopSPV(data, totalOS);
     renderOverdueList(data);
@@ -132,6 +134,40 @@ function processDashboard(data) {
 // ==========================================
 // 5. RENDER FUNGSI GRAFIK & LIST
 // ==========================================
+
+// Fungsi Baru: Menampilkan Progress Bar per Leasing
+function renderLeasingBreakdown(data, totalOS) {
+    const listEl = document.getElementById('leasing-breakdown-list');
+    if (!listEl) return;
+
+    const map = {};
+    data.forEach(d => {
+        const name = (d.leasing_name || '').toUpperCase().trim();
+        if (name && name !== 'CASH') {
+            map[name] = (map[name] || 0) + (Number(d.os_balance) || 0);
+        }
+    });
+
+    const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
+
+    listEl.innerHTML = sorted.map(([name, value]) => {
+        const pct = totalOS > 0 ? ((value / totalOS) * 100).toFixed(1) : 0;
+        return `
+            <div class="space-y-1">
+                <div class="flex justify-between items-center text-[9px] font-bold">
+                    <span class="text-slate-600">${name}</span>
+                    <div class="flex gap-4">
+                        <span class="text-slate-400">${pct}%</span>
+                        <span class="text-[#1B2559] font-black">${formatJuta(value)}</span>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-blue-600 h-full rounded-full" style="width: ${pct}%"></div>
+                </div>
+            </div>`;
+    }).join('');
+}
+
 function renderCharts(cash, leasing, agingData) {
     const donutEl = document.querySelector("#chart-donut-main");
     if (donutEl) {
