@@ -6,71 +6,262 @@
     <title>Dashboard AR Unit - Auto2000</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #F8FAFC; 
+        }
         
-        /* Efek Card 3D Premium */
-        .card-3d {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-bottom: 4px solid #E2E8F0;
+        /* Desain Kartu Sesuai Referensi Gambar Bapak */
+        .card-premium {
+            background: white;
+            border-radius: 28px;
+            padding: 24px;
             position: relative;
+            border: 1px solid #F1F5F9;
+            transition: all 0.3s ease;
         }
-        .card-3d:hover {
-            transform: translateY(-6px);
+
+        .card-premium:hover {
+            transform: translateY(-5px);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
-            border-bottom: 4px solid #EF4444; /* Warna merah saat hover */
         }
-        .card-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02); }
+
+        /* Kotak Ikon Pojok Kanan Atas */
+        .icon-box {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* Badge SPK */
+        .spk-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 800;
+            margin-top: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body class="p-8">
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        
-        <div class="bg-white p-6 rounded-[24px] card-3d card-shadow border border-slate-100">
-            <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">TOTAL O/S</p>
-            <h3 id="total-os" class="text-2xl font-black text-[#1B2559]">Rp 0</h3>
-            <div class="mt-5 flex h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div id="bar-cash" class="bg-emerald-500" style="width: 0%"></div>
-                <div id="bar-leasing" class="bg-blue-600" style="width: 0%"></div>
-            </div>
-            <div class="flex justify-between mt-3 text-[9px] font-black uppercase">
-                <span class="text-emerald-500">CASH</span>
-                <span class="text-blue-600">LEASING</span>
-            </div>
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-2xl font-black text-[#1B2559]">Overview AR Unit</h1>
+            <p id="tgl-update-text" class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider"></p>
         </div>
-
-        <div class="bg-white p-6 rounded-[24px] card-3d card-shadow border border-slate-100">
-            <div class="absolute top-6 right-6 text-red-500 bg-red-50 p-2 rounded-xl border border-red-100">⚠️</div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">TOTAL OVERDUE</p>
-            <h3 id="total-overdue" class="text-2xl font-black text-red-600">Rp 0</h3>
-            <div class="mt-4">
-                <span id="count-overdue-spk" class="text-[10px] font-black text-red-500 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 uppercase">
-                    0 SPK LEWAT TOP
-                </span>
-            </div>
+        <div class="text-right">
+            <span class="text-[10px] font-bold text-slate-400 block uppercase">Arsip DB:</span>
+            <span id="tgl-arsip" class="text-xs font-black text-[#1B2559]"></span>
         </div>
-
-        <div class="bg-white p-6 rounded-[24px] card-3d card-shadow border border-slate-100">
-            <div class="absolute top-6 right-6 text-orange-500 bg-orange-50 p-2 rounded-xl border border-orange-100">💰</div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">POTENSI PENALTI</p>
-            <h3 id="total-penalty" class="text-2xl font-black text-[#1B2559]">Rp 0</h3>
-            <div class="mt-4">
-                <p id="count-penalty-spk" class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">DARI 0 SPK</p>
-            </div>
-        </div>
-
-        <div class="bg-white p-6 rounded-[24px] card-3d card-shadow border border-slate-100">
-            <div class="absolute top-6 right-6 text-emerald-500 bg-emerald-50 p-2 rounded-xl border border-emerald-100">✅</div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">BELUM JATUH TEMPO</p>
-            <h3 id="total-lancar" class="text-2xl font-black text-emerald-600">Rp 0</h3>
-            <div class="mt-4">
-                <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-tight">O/S LANCAR</p>
-            </div>
-        </div>
-
     </div>
 
-    <script type="module" src="script.js"></script>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        
+        <div class="card-premium">
+            <div class="icon-box bg-slate-50">📊</div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">TOTAL O/S</p>
+            <h3 id="total-os" class="text-2xl font-black text-[#1B2559]">Rp 0</h3>
+            <div class="mt-8 flex h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                <div id="bar-cash" class="bg-[#10B981]" style="width: 0%"></div>
+                <div id="bar-leasing" class="bg-[#2563EB]" style="width: 0%"></div>
+            </div>
+            <div class="flex justify-between mt-3 text-[9px] font-black uppercase">
+                <span class="text-[#10B981]">CASH</span>
+                <span class="text-[#2563EB]">LEASING</span>
+            </div>
+        </div>
+
+        <div class="card-premium">
+            <div class="icon-box bg-red-50 text-red-500">⚠️</div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">TOTAL OVERDUE (> TOP)</p>
+            <h3 id="total-overdue" class="text-2xl font-black text-red-600">Rp 0</h3>
+            <div id="count-overdue-spk" class="spk-badge bg-red-50 text-red-500 border border-red-100">
+                0 SPK LEWAT TOP
+            </div>
+        </div>
+
+        <div class="card-premium">
+            <div class="icon-box bg-orange-50 text-orange-500">💰</div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">POTENSI PENALTI</p>
+            <h3 id="total-penalty" class="text-2xl font-black text-[#1B2559]">Rp 0</h3>
+            <p id="count-penalty-spk" class="text-[10px] text-slate-400 font-bold mt-5 uppercase tracking-tight">DARI 0 SPK</p>
+        </div>
+
+        <div class="card-premium">
+            <div class="icon-box bg-emerald-50 text-emerald-500">✅</div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">BELUM JATUH TEMPO</p>
+            <h3 id="total-lancar" class="text-2xl font-black text-emerald-600">Rp 0</h3>
+            <p class="text-[10px] text-emerald-500 font-bold mt-5 uppercase tracking-tight">O/S AMAN (LANCAR)</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white p-6 rounded-[28px] border border-slate-100">
+            <p class="text-xs font-black text-[#1B2559] uppercase mb-6">Aging Analysis (Umur Piutang)</p>
+            <div id="chart-aging-nominal"></div>
+        </div>
+
+        <div class="bg-white p-6 rounded-[28px] border border-slate-100">
+            <p class="text-xs font-black text-[#1B2559] uppercase mb-6">Top 5 Salesman Performance</p>
+            <div id="list-salesman" class="space-y-4">
+                </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        // 1. KONEKSI SUPABASE
+        const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let barChart = null;
+
+        // 2. HELPER FUNCTIONS
+        const formatIDR = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
+        const formatJuta = (n) => (Number(n) / 1000000).toFixed(1) + " Jt";
+        
+        function updateText(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = value;
+        }
+
+        // 3. LOAD DATA DARI SUPABASE
+        async function loadData() {
+            try {
+                const { data, error } = await supabase.from('ar_unit').select('*');
+                if (error) throw error;
+                if (data) processDashboard(data);
+            } catch (err) {
+                console.error("Fetch Error:", err.message);
+            }
+        }
+
+        // 4. LOGIKA PEMROSESAN DATA
+        function processDashboard(data) {
+            let totalOS = 0, totalOverdue = 0, totalPenalty = 0, totalLancar = 0;
+            let cashNominal = 0, leasingNominal = 0;
+            let spkOverdueCount = 0, spkPenaltyCount = 0;
+            
+            const agingBuckets = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
+            const salesmanMap = {};
+
+            data.forEach(d => {
+                if (!d.no_spk) return;
+                
+                const os = Number(d.os_balance) || 0;
+                const overdue = Number(d.total_overd) || Number(d.total_overdue) || 0;
+                const penalty = Number(d.penalty_amount) || 0;
+                const metode = (d.metode_pembayaran || '').toLowerCase();
+                const salesman = d.salesman_name || "Unknown";
+
+                totalOS += os;
+
+                // Logika Hitung Jumlah SPK (Row data)
+                if (overdue > 0) {
+                    totalOverdue += overdue;
+                    spkOverdueCount++;
+                }
+                if (penalty > 0) {
+                    totalPenalty += penalty;
+                    spkPenaltyCount++;
+                }
+
+                // Komposisi Cash/Leasing
+                if (metode.includes('cash')) cashNominal += os;
+                else leasingNominal += os;
+
+                // Aging Logic
+                const h1_30 = Number(d.hari_1_30) || 0;
+                const h31_60 = Number(d.hari_31_60) || 0;
+                const hOver60 = Number(d.lebih_60_hari) || 0;
+
+                agingBuckets['LANCAR'] += (os - (h1_30 + h31_60 + hOver60)) / 1000000;
+                agingBuckets['1-30 H'] += h1_30 / 1000000;
+                agingBuckets['31-60 H'] += h31_60 / 1000000;
+                agingBuckets['>60 H'] += hOver60 / 1000000;
+
+                // Salesman Performance
+                salesmanMap[salesman] = (salesmanMap[salesman] || 0) + os;
+            });
+
+            totalLancar = totalOS - totalOverdue;
+
+            // UPDATE UI TEXT
+            updateText('total-os', formatIDR(totalOS));
+            updateText('total-overdue', formatIDR(totalOverdue));
+            updateText('total-penalty', formatIDR(totalPenalty));
+            updateText('total-lancar', formatIDR(totalLancar));
+            
+            // UPDATE SPK COUNT DINAMIS
+            updateText('count-overdue-spk', `${spkOverdueCount} SPK LEWAT TOP`);
+            updateText('count-penalty-spk', `DARI ${spkPenaltyCount} SPK`);
+
+            // UPDATE PROGRESS BAR
+            if (totalOS > 0) {
+                document.getElementById('bar-cash').style.width = (cashNominal / totalOS * 100) + '%';
+                document.getElementById('bar-leasing').style.width = (leasingNominal / totalOS * 100) + '%';
+            }
+
+            // RENDER VISUALS
+            renderAgingChart(Object.values(agingBuckets));
+            renderSalesmanList(salesmanMap);
+            updateInfoDates();
+        }
+
+        function renderAgingChart(chartData) {
+            const options = {
+                series: [{ name: 'Nominal (Juta)', data: chartData }],
+                chart: { type: 'bar', height: 280, toolbar: { show: false } },
+                colors: ['#10B981', '#FBBF24', '#F97316', '#EF4444'],
+                plotOptions: { bar: { distributed: true, borderRadius: 8, columnWidth: '50%' } },
+                xaxis: { categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] },
+                legend: { show: false },
+                dataLabels: { enabled: false }
+            };
+
+            if (barChart) barChart.destroy();
+            barChart = new ApexCharts(document.querySelector("#chart-aging-nominal"), options);
+            barChart.render();
+        }
+
+        function renderSalesmanList(map) {
+            const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const listEl = document.getElementById('list-salesman');
+            listEl.innerHTML = sorted.map((s, i) => `
+                <div class="flex justify-between items-center py-1 border-b border-slate-50">
+                    <span class="text-[10px] font-bold text-slate-600">${i + 1}. ${s[0]}</span>
+                    <span class="text-blue-600 font-black text-[11px]">${formatJuta(s[1])}</span>
+                </div>
+            `).join('');
+        }
+
+        function updateInfoDates() {
+            const now = new Date();
+            updateText('tgl-update-text', `DATA UPDATE: ${now.toLocaleString('id-ID', { weekday: 'long' }).toUpperCase()}, ${now.toLocaleDateString('id-ID')} - ${now.getHours()}.${now.getMinutes()} WIB`);
+            updateText('tgl-arsip', now.toLocaleDateString('id-ID'));
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            setInterval(loadData, 300000); // Refresh data tiap 5 menit
+        });
+    </script>
 </body>
 </html>
