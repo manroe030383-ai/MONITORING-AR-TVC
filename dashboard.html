@@ -3,223 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard AR Unit - Auto2000 Pangkalan Bun</title>
+    <title>Dashboard AR Unit - Auto2000</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; color: #1B2559; }
-        .sidebar-active { background-color: #EF4444; color: white; border-radius: 0.75rem; }
-        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.02); }
-        .tab-active { background-color: #1B2559; color: white; }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; }
+        
+        /* Efek Card 3D Premium */
+        .card-3d {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-bottom: 4px solid #E2E8F0;
+            position: relative;
+        }
+        .card-3d:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+            border-bottom: 4px solid #EF4444; /* Warna merah saat hover */
+        }
+        .card-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02); }
     </style>
 </head>
-<body class="flex min-h-screen">
+<body class="p-8">
 
-    <aside class="w-72 bg-[#111827] text-slate-400 p-6 hidden lg:block sticky top-0 h-screen">
-        <div class="mb-10 px-2">
-            <div class="flex items-center gap-3 mb-2">
-                <div class="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold">A</div>
-                <h2 class="text-white font-extrabold text-lg tracking-tight">Auto2000</h2>
-            </div>
-            <p class="text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">Branch Control Center</p>
-        </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        <nav class="space-y-2">
-            <p class="text-[9px] font-black text-slate-600 uppercase px-3 mb-4 tracking-widest">Master Menu</p>
-            <a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-xl transition-all group">
-                <span class="text-lg group-hover:scale-110 transition-transform">📊</span> 
-                <span class="text-xs font-bold">Ekosistem Aplikasi</span>
-            </a>
-            
-            <div class="pt-6">
-                <p class="text-[9px] font-black text-slate-600 uppercase px-3 mb-4 tracking-widest">AR Kendaraan (Unit)</p>
-                <a href="#" class="flex items-center gap-3 p-3 sidebar-active text-white shadow-lg shadow-red-900/20">
-                    <span class="text-lg">📈</span> 
-                    <span class="text-xs font-bold">Dashboard Unit</span>
-                </a>
-                <a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-xl transition-all mt-2 group">
-                    <span class="text-lg group-hover:scale-110 transition-transform">📄</span> 
-                    <span class="text-xs font-bold text-slate-400 group-hover:text-white">Data AR Unit</span>
-                </a>
+        <div class="bg-white p-6 rounded-[24px] card-3d card-shadow border border-slate-100">
+            <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">TOTAL O/S</p>
+            <h3 id="total-os" class="text-2xl font-black text-[#1B2559]">Rp 0</h3>
+            <div class="mt-5 flex h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                <div id="bar-cash" class="bg-emerald-500" style="width: 0%"></div>
+                <div id="bar-leasing" class="bg-blue-600" style="width: 0%"></div>
             </div>
-        </nav>
-    </aside>
-
-    <main class="flex-1 p-8 overflow-x-hidden">
-        
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-            <div>
-                <p id="tgl-update-text" class="text-[9px] font-black text-red-600 mb-1 uppercase tracking-widest">MEMUAT DATA TERBARU...</p>
-                <h1 class="text-4xl font-extrabold tracking-tight text-[#1B2559]">Overview AR Unit</h1>
-                <div class="flex items-center gap-2 mt-1">
-                    <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <p class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Pangkalan Bun • Realtime Supabase</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <div class="bg-white px-5 py-3 rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">ARSIP DB:</span>
-                    <span id="tgl-arsip" class="text-sm font-black text-[#1B2559]">--/--/----</span>
-                </div>
-                <button class="bg-red-50 text-red-600 px-6 py-3 rounded-2xl text-[11px] font-bold border border-red-100 hover:bg-red-600 hover:text-white transition-all">Download PDF</button>
+            <div class="flex justify-between mt-3 text-[9px] font-black uppercase">
+                <span class="text-emerald-500">CASH</span>
+                <span class="text-blue-600">LEASING</span>
             </div>
         </div>
 
-        <div class="flex gap-2 mb-8 overflow-x-auto pb-2">
-            <button class="px-6 py-2.5 rounded-xl text-[11px] font-bold flex items-center gap-2 tab-active shadow-md transition-all whitespace-nowrap">
-                <span>📁</span> Ringkasan
-            </button>
-            <button class="px-6 py-2.5 rounded-xl text-[11px] font-bold flex items-center gap-2 bg-white text-slate-400 border border-slate-100 hover:border-slate-300 transition-all whitespace-nowrap">
-                <span>📄</span> Leasing
-            </button>
-            <button class="px-6 py-2.5 rounded-xl text-[11px] font-bold flex items-center gap-2 bg-white text-slate-400 border border-slate-100 hover:border-slate-300 transition-all whitespace-nowrap">
-                <span>⚠️</span> Overdue
-            </button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-[28px] card-shadow border border-slate-50 relative overflow-hidden group">
-                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 transition-transform">
-                    <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path></svg>
-                </div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">TOTAL O/S</p>
-                <h3 id="total-os" class="text-2xl font-black text-[#1B2559]">Rp 0</h3>
-                <div class="mt-5 flex h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                    <div id="bar-cash" class="bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" style="width: 50%"></div>
-                    <div id="bar-leasing" class="bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.5)]" style="width: 50%"></div>
-                </div>
-                <div class="flex justify-between mt-3 text-[9px] font-black uppercase tracking-tighter">
-                    <span class="text-emerald-500">CASH</span>
-                    <span class="text-blue-600">LEASING</span>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-[28px] card-shadow border border-slate-50 relative">
-                <div class="absolute top-6 right-6 text-red-500 bg-red-50 p-2 rounded-xl border border-red-100">⚠️</div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">TOTAL OVERDUE</p>
-                <h3 id="total-overdue" class="text-2xl font-black text-red-600">Rp 0</h3>
-                <div class="mt-4 flex items-center gap-2">
-                    <span id="count-overdue" class="text-[11px] font-black text-red-500 bg-red-50 px-3 py-1 rounded-lg">0 UNIT TERLAMBAT</span>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-[28px] card-shadow border border-slate-50 relative">
-                <div class="absolute top-6 right-6 text-orange-500 bg-orange-50 p-2 rounded-xl border border-orange-100">💰</div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">POTENSI PENALTI</p>
-                <h3 id="total-penalty" class="text-2xl font-black text-[#1B2559]">Rp 0</h3>
-                <p class="text-[11px] text-slate-400 font-bold mt-4 uppercase">UPDATE REALTIME</p>
-            </div>
-
-            <div class="bg-white p-6 rounded-[28px] card-shadow border border-slate-50 relative">
-                <div class="absolute top-6 right-6 text-emerald-500 bg-emerald-50 p-2 rounded-xl border border-emerald-100">✔️</div>
-                <p class="text-[10px] font-bold text-emerald-600 uppercase mb-3 tracking-widest">BELUM JATUH TEMPO</p>
-                <h3 id="total-lancar" class="text-2xl font-black text-emerald-600">Rp 0</h3>
-                <p class="text-[11px] text-emerald-500 font-bold mt-4 uppercase tracking-tighter">O/S AMAN (LANCAR)</p>
+        <div class="bg-white p-6 rounded-[24px] card-3d card-shadow border border-slate-100">
+            <div class="absolute top-6 right-6 text-red-500 bg-red-50 p-2 rounded-xl border border-red-100">⚠️</div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">TOTAL OVERDUE</p>
+            <h3 id="total-overdue" class="text-2xl font-black text-red-600">Rp 0</h3>
+            <div class="mt-4">
+                <span id="count-overdue-spk" class="text-[10px] font-black text-red-500 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 uppercase">
+                    0 SPK LEWAT TOP
+                </span>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-8 rounded-[32px] card-shadow border border-slate-50">
-                <h4 class="text-[10px] font-black text-[#1B2559] uppercase mb-8 tracking-[0.2em] flex items-center gap-2">
-                    <span class="w-1.5 h-4 bg-red-600 rounded-full"></span> AGING ANALYSIS (NOMINAL)
-                </h4>
-                <div id="chart-aging-nominal"></div>
-            </div>
-
-            <div class="lg:col-span-2 bg-white p-8 rounded-[32px] card-shadow border border-slate-50">
-                <h4 class="text-[10px] font-black text-[#1B2559] uppercase mb-8 tracking-[0.2em] flex items-center gap-2">
-                    <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span> KOMPOSISI & LEASING BREAKDOWN
-                </h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <div>
-                        <div id="chart-donut-main"></div>
-                        <div class="mt-6 space-y-3">
-                            <div class="bg-emerald-50/50 p-4 rounded-2xl flex justify-between items-center border border-emerald-100">
-                                <span class="text-[10px] font-bold text-emerald-700 uppercase">Total Cash</span>
-                                <span id="val-total-cash" class="text-sm font-black text-[#1B2559]">Rp 0</span>
-                            </div>
-                            <div class="bg-blue-50/50 p-4 rounded-2xl flex justify-between items-center border border-blue-100">
-                                <span class="text-[10px] font-bold text-blue-700 uppercase">Total Leasing</span>
-                                <span id="val-total-leasing" class="text-sm font-black text-[#1B2559]">Rp 0</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="border-l border-slate-50 pl-0 md:pl-6">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-6 tracking-widest">TOP LEASING BREAKDOWN</p>
-                        <div id="leasing-breakdown-list" class="space-y-6">
-                            <div class="animate-pulse space-y-4">
-                                <div class="h-8 bg-slate-50 rounded-lg"></div>
-                                <div class="h-8 bg-slate-50 rounded-lg"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="bg-white p-6 rounded-[24px] card-3d card-shadow border border-slate-100">
+            <div class="absolute top-6 right-6 text-orange-500 bg-orange-50 p-2 rounded-xl border border-orange-100">💰</div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">POTENSI PENALTI</p>
+            <h3 id="total-penalty" class="text-2xl font-black text-[#1B2559]">Rp 0</h3>
+            <div class="mt-4">
+                <p id="count-penalty-spk" class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">DARI 0 SPK</p>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            <div class="bg-white p-6 rounded-[28px] card-shadow border border-slate-50">
-                <h4 class="text-[10px] font-black text-[#1B2559] uppercase mb-6 flex items-center gap-2">
-                    <span class="bg-blue-50 p-2 rounded-xl text-blue-600">📊</span> BREAKDOWN LEASING TVC
-                </h4>
-                <div class="bg-blue-50/50 p-5 rounded-2xl text-center border border-blue-100 mb-4">
-                    <p class="text-[9px] font-bold text-blue-600 uppercase mb-1">TOTAL UNIT LEASING</p>
-                    <h3 id="total-penjualan-leasing" class="text-3xl font-black text-[#1B2559]">0 Unit</h3>
-                </div>
-                <div class="grid grid-cols-2 gap-3 mb-6">
-                    <div class="bg-emerald-50/50 p-4 rounded-xl text-center border border-emerald-100">
-                        <p class="text-[8px] font-bold text-emerald-600 uppercase">SUDAH GI</p>
-                        <p id="unit-sudah-gi" class="text-lg font-black text-[#1B2559]">0</p>
-                    </div>
-                    <div class="bg-orange-50/50 p-4 rounded-xl text-center border border-orange-100">
-                        <p class="text-[8px] font-bold text-orange-600 uppercase">BELUM DELIVERY</p>
-                        <p id="unit-r-delivery" class="text-lg font-black text-[#1B2559]">0</p>
-                    </div>
-                </div>
-                <div class="space-y-3 pt-3 border-t border-slate-50">
-                    <div class="flex justify-between items-center group">
-                        <span class="text-[11px] font-bold text-slate-500">1. ACC</span>
-                        <span id="unit-acc" class="bg-amber-400 text-white text-[10px] px-3 py-1 rounded-lg font-bold shadow-sm shadow-amber-200">0 Cust</span>
-                    </div>
-                    <div class="flex justify-between items-center group">
-                        <span class="text-[11px] font-bold text-slate-500">2. TAFS</span>
-                        <span id="unit-tafs" class="bg-amber-400 text-white text-[10px] px-3 py-1 rounded-lg font-bold shadow-sm shadow-amber-200">0 Cust</span>
-                    </div>
-                </div>
+        <div class="bg-white p-6 rounded-[24px] card-3d card-shadow border border-slate-100">
+            <div class="absolute top-6 right-6 text-emerald-500 bg-emerald-50 p-2 rounded-xl border border-emerald-100">✅</div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">BELUM JATUH TEMPO</p>
+            <h3 id="total-lancar" class="text-2xl font-black text-emerald-600">Rp 0</h3>
+            <div class="mt-4">
+                <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-tight">O/S LANCAR</p>
             </div>
-
-            <div class="bg-white p-6 rounded-[28px] card-shadow border border-slate-50">
-                <h4 class="text-[10px] font-black text-[#1B2559] uppercase mb-6 flex items-center gap-2">
-                    <span class="bg-orange-50 p-2 rounded-xl text-orange-600">👤</span> TOP 5 SALESMAN
-                </h4>
-                <div id="list-salesman" class="space-y-4">
-                    </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-[28px] card-shadow border border-slate-50">
-                <h4 class="text-[10px] font-black text-[#1B2559] uppercase mb-6 flex items-center gap-2">
-                    <span class="bg-red-50 p-2 rounded-xl text-red-600">⚠️</span> TOP 5 OVERDUE
-                </h4>
-                <div id="list-overdue" class="space-y-4">
-                    </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-[28px] card-shadow border border-slate-50">
-                <h4 class="text-[10px] font-black text-[#1B2559] uppercase mb-6 flex items-center gap-2">
-                    <span class="bg-purple-50 p-2 rounded-xl text-purple-600">🏢</span> TOP 5 SPV AR
-                </h4>
-                <div id="list-spv" class="space-y-4">
-                    </div>
-            </div>
-
         </div>
-    </main>
+
+    </div>
 
     <script type="module" src="script.js"></script>
 </body>

@@ -65,6 +65,10 @@ function processDashboard(data) {
     let totalOS = 0, totalOverdue = 0, totalPenalty = 0, totalLancarNominal = 0;
     let cashNominal = 0, leasingNominal = 0, cashUnit = 0, leasingUnit = 0;
     let unitACC = 0, unitTAFS = 0, unitSudahGI = 0, unitRDelivery = 0;
+    
+    // Variabel baru untuk hitung jumlah SPK (Row data)
+    let spkOverdueCount = 0;
+    let spkPenaltyCount = 0;
 
     const buckets = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
 
@@ -85,6 +89,10 @@ function processDashboard(data) {
         totalPenalty += penalty;
         totalLancarNominal += vLancar;
 
+        // LOGIKA HITUNG SPK DINAMIS
+        if (overdue > 0) spkOverdueCount++;
+        if (penalty > 0) spkPenaltyCount++;
+
         buckets['LANCAR'] += vLancar / 1000000;
         buckets['1-30 H'] += v1_30 / 1000000;
         buckets['31-60 H'] += v31_60 / 1000000;
@@ -100,32 +108,43 @@ function processDashboard(data) {
         }
     });
 
-    // --- UPDATE TANGGAL ARSIP DB (OTOMATIS HARI INI) ---
+    // --- UPDATE TANGGAL ARSIP DB ---
     const skrg = new Date();
     const tglArsipStr = String(skrg.getDate()).padStart(2, '0') + "/" + 
                         String(skrg.getMonth() + 1).padStart(2, '0') + "/" + 
                         skrg.getFullYear();
     updateText('tgl-arsip', tglArsipStr); 
 
-    // Update Text Elements
+    // Update Text Elements (Nominal)
     updateText('total-os', formatIDR(totalOS));
     updateText('total-overdue', formatIDR(totalOverdue));
     updateText('total-penalty', formatIDR(totalPenalty));
     updateText('total-lancar', formatIDR(totalLancarNominal));
     updateText('val-total-cash', formatIDR(cashNominal));
-    updateText('unit-cash', cashUnit + " Unit");
     updateText('val-total-leasing', formatIDR(leasingNominal));
-    updateText('unit-leasing', leasingUnit + " Unit");
+    
+    // UPDATE JUMLAH SPK DINAMIS
+    updateText('count-overdue-spk', `${spkOverdueCount} SPK LEWAT TOP`);
+    updateText('count-penalty-spk', `DARI ${spkPenaltyCount} SPK`);
+    
+    // Dashboard AR Unit Stats
     updateText('total-penjualan-leasing', (unitACC + unitTAFS) + " Unit"); 
     updateText('unit-sudah-gi', unitSudahGI + " Unit");           
     updateText('unit-r-delivery', unitRDelivery + " Unit");       
     updateText('unit-acc', unitACC + " Cust");
     updateText('unit-tafs', unitTAFS + " Cust");
-    updateText('count-overdue', (data.filter(d => (Number(d.total_overd) || 0) > 0).length) + " UNIT TERLAMBAT");
+
+    // Update Progress Bar O/S Card
+    const barCash = document.getElementById('bar-cash');
+    const barLeasing = document.getElementById('bar-leasing');
+    if (barCash && barLeasing && totalOS > 0) {
+        barCash.style.width = `${(cashNominal / totalOS) * 100}%`;
+        barLeasing.style.width = `${(leasingNominal / totalOS) * 100}%`;
+    }
 
     // Render Visuals
     try { renderCharts(cashNominal, leasingNominal, Object.values(buckets)); } catch (e) {}
-    renderLeasingBreakdown(data, totalOS); // Fungsi Baru untuk Progress Bar Leasing
+    renderLeasingBreakdown(data, totalOS);
     renderSalesList(data);
     renderTopSPV(data, totalOS);
     renderOverdueList(data);
@@ -135,11 +154,9 @@ function processDashboard(data) {
 // 5. RENDER FUNGSI GRAFIK & LIST
 // ==========================================
 
-// Fungsi Baru: Menampilkan Progress Bar per Leasing
 function renderLeasingBreakdown(data, totalOS) {
     const listEl = document.getElementById('leasing-breakdown-list');
     if (!listEl) return;
-
     const map = {};
     data.forEach(d => {
         const name = (d.leasing_name || '').toUpperCase().trim();
@@ -147,13 +164,11 @@ function renderLeasingBreakdown(data, totalOS) {
             map[name] = (map[name] || 0) + (Number(d.os_balance) || 0);
         }
     });
-
     const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
-
     listEl.innerHTML = sorted.map(([name, value]) => {
         const pct = totalOS > 0 ? ((value / totalOS) * 100).toFixed(1) : 0;
         return `
-            <div class="space-y-1">
+            <div class="space-y-1 mb-3">
                 <div class="flex justify-between items-center text-[9px] font-bold">
                     <span class="text-slate-600">${name}</span>
                     <div class="flex gap-4">
@@ -178,7 +193,8 @@ function renderCharts(cash, leasing, agingData) {
             chart: { type: 'donut', height: 230 },
             colors: ['#10B981', '#2563EB'],
             legend: { position: 'bottom' },
-            dataLabels: { enabled: false }
+            dataLabels: { enabled: false },
+            plotOptions: { pie: { donut: { size: '70%' } } }
         });
         donutChart.render();
     }
@@ -210,7 +226,7 @@ function renderSalesList(data) {
     const listEl = document.getElementById('list-salesman');
     if (listEl) {
         listEl.innerHTML = sorted.map((s, i) => `
-            <div class="flex justify-between items-center py-1 border-b border-gray-50">
+            <div class="flex justify-between items-center py-2 border-b border-gray-50 hover:bg-slate-50 rounded-lg px-2 transition-all">
                 <span class="text-[9px] font-bold text-gray-600">${i + 1}. ${s[0]}</span>
                 <span class="text-blue-600 font-black text-[10px]">${formatJuta(s[1])}</span>
             </div>`).join('');
@@ -225,10 +241,10 @@ function renderOverdueList(data) {
         .sort((a, b) => (Number(b.total_overd) || 0) - (Number(a.total_overd) || 0))
         .slice(0, 5);
     listEl.innerHTML = overdueData.length ? overdueData.map(d => `
-        <div class="flex justify-between items-start border-b border-slate-50 pb-2">
+        <div class="flex justify-between items-start border-b border-slate-50 pb-2 mb-2 px-1">
             <div>
-                <span class="block text-[8px] font-extrabold uppercase">${d.customer_name || 'UNKNOWN'}</span>
-                <span class="bg-red-600 text-white text-[6px] px-1 py-0.5 rounded font-bold">${d.hari_overdue || 0} HARI</span>
+                <span class="block text-[8px] font-extrabold uppercase text-slate-700">${d.customer_name || 'UNKNOWN'}</span>
+                <span class="bg-red-50 text-red-600 border border-red-100 text-[6px] px-1.5 py-0.5 rounded font-bold uppercase">${d.hari_overdue || 0} HARI TERLAMBAT</span>
             </div>
             <div class="text-right">
                 <span class="block text-[9px] font-black text-red-600">${formatIDR(d.total_overd)}</span>
@@ -248,7 +264,16 @@ function renderTopSPV(data, totalOS) {
     if (listEl) {
         listEl.innerHTML = sorted.map((s, i) => {
             const pct = totalOS > 0 ? (s[1] / totalOS) * 100 : 0;
-            return `<div class="mb-2"><div class="flex justify-between text-[9px] font-bold mb-1"><span>${i + 1}. ${s[0]}</span><span class="text-[#1B2559]">${formatJuta(s[1])}</span></div><div class="w-full bg-gray-100 h-1 rounded-full"><div class="bg-purple-500 h-1 rounded-full" style="width:${pct}%"></div></div></div>`;
+            return `
+                <div class="mb-3 px-1">
+                    <div class="flex justify-between text-[9px] font-bold mb-1">
+                        <span>${i + 1}. ${s[0]}</span>
+                        <span class="text-[#1B2559]">${formatJuta(s[1])}</span>
+                    </div>
+                    <div class="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
+                        <div class="bg-purple-500 h-full rounded-full" style="width:${pct}%"></div>
+                    </div>
+                </div>`;
         }).join('');
     }
 }
