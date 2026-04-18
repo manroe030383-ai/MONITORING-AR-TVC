@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="flex min-h-screen">
+<body class="flex min-h-screen bg-[#F4F7FE]">
 
     <aside class="w-72 bg-[#111827] text-slate-400 p-6 hidden lg:block sticky top-0 h-screen z-50">
         <div class="mb-10 px-2">
@@ -20,29 +20,21 @@
             <p class="text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">Branch Control Center</p>
         </div>
         <nav class="space-y-2">
-            <p class="text-[9px] font-black text-slate-600 uppercase px-3 mb-4 tracking-widest">Master Menu</p>
-            <a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-xl transition-all group">
-                <span class="text-lg group-hover:scale-110 transition-transform">📊</span> 
-                <span class="text-xs font-bold">Ekosistem Aplikasi</span>
+            <p class="text-[9px] font-black text-slate-600 uppercase px-3 mb-4 tracking-widest">AR Kendaraan (Unit)</p>
+            <a href="#" class="flex items-center gap-3 p-3 bg-red-600 text-white rounded-xl shadow-lg shadow-red-900/20">
+                <span class="text-lg">📈</span> <span class="text-xs font-bold">Dashboard Unit</span>
             </a>
-            <div class="pt-6">
-                <p class="text-[9px] font-black text-slate-600 uppercase px-3 mb-4 tracking-widest">AR Kendaraan (Unit)</p>
-                <a href="#" class="flex items-center gap-3 p-3 bg-red-600 text-white rounded-xl shadow-lg shadow-red-900/20">
-                    <span class="text-lg">📈</span> 
-                    <span class="text-xs font-bold">Dashboard Unit</span>
-                </a>
-            </div>
         </nav>
     </aside>
 
-    <main class="flex-1 p-8 overflow-x-hidden bg-[#F4F7FE]">
+    <main class="flex-1 p-8 overflow-x-hidden">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
                 <p id="tgl-update-text" class="text-[9px] font-black text-red-600 mb-1 uppercase tracking-widest italic animate-pulse">MEMUAT DATA...</p>
                 <h1 class="text-4xl font-extrabold tracking-tight text-[#1B2559]">Overview AR Unit</h1>
             </div>
             <div class="bg-white px-5 py-3 rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">ARSIP DB:</span>
+                <span class="text-[10px] font-bold text-slate-400 uppercase">ARSIP DB:</span>
                 <span id="tgl-arsip" class="text-sm font-black text-[#1B2559]">--/--/----</span>
             </div>
         </div>
@@ -51,7 +43,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="stat-card">
                     <div class="card-accent bg-[#4318FF]"></div>
-                    <p class="panel-header uppercase">Total O/S Balance</p>
+                    <p class="panel-header">TOTAL O/S BALANCE</p>
                     <h3 id="total-os" class="os-val">Rp 0</h3>
                     <div class="progress-bar-bg mt-4">
                         <div id="bar-cash" class="bar-fill bg-emerald-500" style="width: 0%"></div>
@@ -60,38 +52,29 @@
                 </div>
                 <div class="stat-card">
                     <div class="card-accent bg-[#EE5D50]"></div>
-                    <p class="panel-header uppercase">Total Overdue</p>
-                    <h3 id="total-overdue" class="overdue-val">Rp 0</h3>
+                    <p class="panel-header">TOTAL OVERDUE</p>
+                    <h3 id="total-overdue" class="overdue-val text-red-500">Rp 0</h3>
                     <span id="count-overdue-spk" class="text-[10px] font-bold text-red-500 mt-2">0 SPK</span>
                 </div>
                 <div class="stat-card">
                     <div class="card-accent bg-[#FFB547]"></div>
-                    <p class="panel-header uppercase">Potensi Penalti</p>
-                    <h3 id="total-penalty" class="penalty-val">Rp 0</h3>
+                    <p class="panel-header">POTENSI PENALTI</p>
+                    <h3 id="total-penalty" class="penalty-val text-orange-500">Rp 0</h3>
                 </div>
                 <div class="stat-card">
                     <div class="card-accent bg-[#05CD99]"></div>
-                    <p class="panel-header uppercase">Belum Jatuh Tempo</p>
+                    <p class="panel-header">BELUM JATUH TEMPO</p>
                     <h3 id="total-lancar" class="lancar-val text-emerald-500">Rp 0</h3>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <div class="panel">
-                    <h4 class="text-[10px] font-black text-[#1B2559] uppercase mb-6 tracking-widest">Aging Analysis</h4>
-                    <div id="chart-aging-nominal"></div>
-                </div>
+                <div class="panel"><h4 class="text-[10px] font-black uppercase mb-6">Aging Analysis</h4><div id="chart-aging-nominal"></div></div>
                 <div class="lg:col-span-2 panel">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div><div id="chart-donut-main"></div></div>
                         <div>
-                            <div id="chart-donut-main"></div>
-                            <div class="mt-6 space-y-2">
-                                <div class="flex justify-between text-[11px] font-bold"><span class="text-emerald-600 uppercase">Total Cash</span> <span id="val-total-cash">Rp 0</span></div>
-                                <div class="flex justify-between text-[11px] font-bold"><span class="text-blue-600 uppercase">Total Leasing</span> <span id="val-total-leasing">Rp 0</span></div>
-                            </div>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">Leasing Breakdown</p>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-4">Leasing Breakdown</p>
                             <div id="leasing-breakdown-list" class="space-y-4"></div>
                         </div>
                     </div>
@@ -100,9 +83,9 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="panel !p-4">
-                    <h4 class="text-[9px] font-black text-[#1B2559] uppercase mb-4 flex items-center gap-2">📊 LEASING TVC</h4>
+                    <h4 class="text-[9px] font-black uppercase mb-4">📊 LEASING TVC</h4>
                     <div class="bg-blue-50/50 p-4 rounded-xl text-center border border-blue-100 mb-3">
-                        <p class="text-[8px] font-bold text-blue-600 uppercase">TOTAL UNIT LEASING</p>
+                        <p class="text-[8px] font-bold text-blue-600 uppercase">TOTAL UNIT</p>
                         <h3 id="total-penjualan-leasing" class="text-2xl font-black text-[#1B2559]">0 Unit</h3>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
@@ -116,21 +99,9 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="panel !p-4">
-                    <h4 class="text-[9px] font-black text-[#1B2559] uppercase mb-4">👤 TOP 5 O/S SALESMAN</h4>
-                    <div id="list-salesman" class="space-y-2"></div>
-                </div>
-
-                <div class="panel !p-4">
-                    <h4 class="text-[9px] font-black text-red-500 uppercase mb-4">⚠️ TOP OVERDUE</h4>
-                    <div id="list-overdue" class="space-y-2"></div>
-                </div>
-
-                <div class="panel !p-4">
-                    <h4 class="text-[9px] font-black text-[#1B2559] uppercase mb-4">🏢 TOP 5 CONTRIB. SPV</h4>
-                    <div id="list-spv" class="space-y-2"></div>
-                </div>
+                <div class="panel !p-4"><h4 class="text-[9px] font-black uppercase mb-4 text-blue-600">👤 TOP 5 O/S SALESMAN</h4><div id="list-salesman" class="space-y-1"></div></div>
+                <div class="panel !p-4"><h4 class="text-[9px] font-black uppercase mb-4 text-red-500">⚠️ TOP OVERDUE</h4><div id="list-overdue" class="space-y-1"></div></div>
+                <div class="panel !p-4"><h4 class="text-[9px] font-black uppercase mb-4 text-emerald-600">🏢 TOP 5 CONTRIB. SPV</h4><div id="list-spv" class="space-y-1"></div></div>
             </div>
         </div>
     </main>
