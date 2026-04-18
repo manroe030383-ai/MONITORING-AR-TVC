@@ -7,7 +7,54 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F4F7FE; }
+        
+        /* Tab Styling Sesuai Referensi */
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            border-radius: 9999px; /* Pill Shape */
+            font-size: 13px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            border: 1px solid #E2E8F0;
+            background: white;
+            color: #475569;
+        }
+
+        .tab-btn.active {
+            background-color: #1B2559; /* Navy */
+            color: white;
+            border-color: #1B2559;
+            shadow: 0 10px 15px -3px rgba(27, 37, 89, 0.2);
+        }
+
+        /* Ikon abu-abu untuk tab tidak aktif */
+        .tab-btn:not(.active) .tab-icon {
+            filter: grayscale(1) opacity(0.6);
+        }
+
+        /* Rounded Panel & Table Row */
+        .premium-panel {
+            border-radius: 24px;
+            background: white;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        }
+
+        .table-row-premium td {
+            padding-top: 16px;
+            padding-bottom: 16px;
+            border-top: 1px solid #F1F5F9;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .table-row-premium td:first-child { border-left: 1px solid #F1F5F9; border-top-left-radius: 20px; border-bottom-left-radius: 20px; padding-left: 20px; }
+        .table-row-premium td:last-child { border-right: 1px solid #F1F5F9; border-top-right-radius: 20px; border-bottom-right-radius: 20px; padding-right: 20px; }
+    </style>
 </head>
 <body class="flex min-h-screen">
 
@@ -15,203 +62,97 @@
         <div class="mb-10 px-2">
             <div class="flex items-center gap-3 mb-2">
                 <div class="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-red-900/40">A</div>
-                <h2 class="text-white font-extrabold text-lg tracking-tight text-nowrap">Auto2000</h2>
+                <h2 class="text-white font-extrabold text-lg tracking-tight">Auto2000</h2>
             </div>
             <p class="text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">Branch Control Center</p>
         </div>
-        
         <nav class="space-y-2">
-            <p class="text-[9px] font-black text-slate-600 uppercase px-3 mb-4 tracking-widest">Master Menu</p>
-            <a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-xl transition-all group">
-                <span class="text-lg group-hover:scale-110 transition-transform">📊</span> 
-                <span class="text-xs font-bold">Ekosistem Aplikasi</span>
+            <a href="#" class="flex items-center gap-3 p-3 bg-red-600 text-white rounded-xl shadow-lg shadow-red-900/20">
+                <span class="text-lg">📈</span> <span class="text-xs font-bold">Dashboard Unit</span>
             </a>
-            
-            <div class="pt-6">
-                <p class="text-[9px] font-black text-slate-600 uppercase px-3 mb-4 tracking-widest">AR Kendaraan (Unit)</p>
-                <a href="#" class="flex items-center gap-3 p-3 bg-red-600 text-white rounded-xl shadow-lg shadow-red-900/20">
-                    <span class="text-lg">📈</span> 
-                    <span class="text-xs font-bold">Dashboard Unit</span>
-                </a>
-                <a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-xl transition-all mt-2 group">
-                    <span class="text-lg group-hover:scale-110 transition-transform">📄</span> 
-                    <span class="text-xs font-bold text-slate-400 group-hover:text-white">Data AR Unit</span>
-                </a>
-            </div>
         </nav>
     </aside>
 
-    <main class="flex-1 p-8 overflow-x-hidden bg-[#F4F7FE]">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <main class="flex-1 p-10 overflow-x-hidden">
+        <div class="flex flex-col md:flex-row justify-between items-start mb-10">
             <div>
-                <p id="tgl-update-text" class="text-[9px] font-black text-red-600 mb-1 uppercase tracking-widest italic animate-pulse">MEMUAT DATA TERBARU...</p>
+                <p id="tgl-update-text" class="text-[10px] font-black text-red-600 mb-1 uppercase tracking-widest italic">
+                    DATA UPDATE: SABTU, 18 APRIL 2026 - 09:54 WIB
+                </p>
                 <h1 class="text-4xl font-extrabold tracking-tight text-[#1B2559]">Overview AR Unit</h1>
-                <div class="flex items-center gap-2 mt-1">
+                <div class="flex items-center gap-2 mt-2">
                     <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <p class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Pangkalan Bun • Realtime Supabase</p>
+                    <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">PANGKALAN BUN • REALTIME SUPABASE</p>
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <div class="bg-white px-5 py-3 rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">ARSIP DB:</span>
+                <div class="bg-white px-6 py-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">ARSIP DB:</span>
                     <span id="tgl-arsip" class="text-sm font-black text-[#1B2559]">--/--/----</span>
                 </div>
-                <button onclick="window.print()" class="bg-red-50 text-red-600 px-6 py-3 rounded-2xl text-[11px] font-bold border border-red-100 hover:bg-red-600 hover:text-white transition-all shadow-sm">Download PDF</button>
+                <button class="bg-[#FEE2E2] text-[#EF4444] px-6 py-3 rounded-2xl text-[11px] font-extrabold hover:bg-red-600 hover:text-white transition-all">Download PDF</button>
             </div>
         </div>
 
-        <div class="flex flex-wrap gap-4 mb-8">
-            <button class="tab-btn active" data-tab="ringkasan">
+        <div class="flex flex-wrap gap-3 mb-10">
+            <button class="tab-btn" data-tab="ringkasan">
                 <span class="tab-icon">🕒</span> Ringkasan
             </button>
-            <button class="tab-btn" data-tab="leasing">
+            <button class="tab-btn active" data-tab="leasing">
                 <span class="tab-icon">🏢</span> Leasing
             </button>
             <button class="tab-btn" data-tab="overdue">
-                <span class="tab-icon text-red-500">⚠️</span> Overdue
+                <span class="tab-icon">⚠️</span> Overdue
             </button>
             <button class="tab-btn" data-tab="database">
-                <span class="tab-icon text-slate-500">💾</span> Database Lengkap
+                <span class="tab-icon">💾</span> Database Lengkap
             </button>
         </div>
 
-        <div id="main-dashboard-content">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="stat-card">
-                    <div class="card-accent bg-[#4318FF]"></div>
-                    <span class="card-icon text-[#4318FF]">📊</span>
-                    <p class="panel-header">TOTAL O/S BALANCE</p>
-                    <h3 id="total-os" class="os-val">Rp 0</h3>
-                    <div class="progress-bar-bg">
-                        <div id="bar-cash" class="bar-fill bg-emerald-500" style="width: 0%"></div>
-                        <div id="bar-leasing" class="bar-fill bg-blue-600" style="width: 0%"></div>
-                    </div>
-                    <div class="progress-labels">
-                        <span class="text-emerald-500">CASH</span>
-                        <span class="text-blue-600">LEASING</span>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="card-accent bg-[#EE5D50]"></div>
-                    <span class="card-icon text-red-500">⚠️</span>
-                    <p class="panel-header">TOTAL OVERDUE</p>
-                    <h3 id="total-overdue" class="overdue-val text-red-500">Rp 0</h3>
-                    <div class="mt-auto">
-                        <span id="count-overdue-spk" class="text-[10px] font-extrabold text-red-500 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100">0 SPK</span>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="card-accent bg-[#FFB547]"></div>
-                    <span class="card-icon text-orange-500">💰</span>
-                    <p class="panel-header">POTENSI PENALTI</p>
-                    <h3 id="total-penalty" class="penalty-val text-orange-500">Rp 0</h3>
-                    <div class="mt-auto">
-                        <span id="count-penalty-spk" class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter italic">ESTIMASI</span>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="card-accent bg-[#05CD99]"></div>
-                    <span class="card-icon text-emerald-500">✔️</span>
-                    <p class="panel-header">BELUM JATUH TEMPO</p>
-                    <h3 id="total-lancar" class="lancar-val text-emerald-500">Rp 0</h3>
-                    <div class="mt-auto">
-                        <span class="text-[10px] text-emerald-500 font-bold uppercase tracking-tighter">O/S AMAN</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <div class="panel">
-                    <h4 class="text-[10px] font-black text-[#1B2559] uppercase mb-8 tracking-[0.2em] flex items-center gap-2">
-                        <span class="w-1.5 h-4 bg-red-600 rounded-full"></span> AGING ANALYSIS (NOMINAL)
-                    </h4>
-                    <div id="chart-aging-nominal"></div>
-                </div>
-                <div class="lg:col-span-2 panel">
-                    <h4 class="text-[10px] font-black text-[#1B2559] uppercase mb-8 tracking-[0.2em] flex items-center gap-2">
-                        <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span> KOMPOSISI & LEASING BREAKDOWN
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                        <div>
-                            <div id="chart-donut-main"></div>
-                            <div class="mt-6 space-y-3">
-                                <div class="bg-emerald-50/50 p-4 rounded-2xl flex justify-between items-center border border-emerald-100">
-                                    <span class="text-[10px] font-bold text-emerald-700 uppercase">Total Cash</span>
-                                    <span id="val-total-cash" class="text-sm font-black text-[#1B2559]">Rp 0</span>
-                                </div>
-                                <div class="bg-blue-50/50 p-4 rounded-2xl flex justify-between items-center border border-blue-100">
-                                    <span class="text-[10px] font-bold text-blue-700 uppercase">Total Leasing</span>
-                                    <span id="val-total-leasing" class="text-sm font-black text-[#1B2559]">Rp 0</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="border-l border-slate-50 pl-0 md:pl-6">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-6 tracking-widest">TOP LEASING BREAKDOWN</p>
-                            <div id="leasing-breakdown-list" class="space-y-6"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="panel">
-                    <h4 class="text-[10px] font-black text-[#1B2559] uppercase mb-6 flex items-center gap-2">📊 LEASING TVC</h4>
-                    <div class="bg-blue-50/50 p-5 rounded-2xl text-center border border-blue-100 mb-4">
-                        <p class="text-[9px] font-bold text-blue-600 uppercase mb-1">TOTAL UNIT</p>
-                        <h3 id="total-penjualan-leasing" class="text-3xl font-black text-[#1B2559]">0 Unit</h3>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-emerald-50/50 p-4 rounded-xl text-center border border-emerald-100">
-                            <p class="text-[8px] font-bold text-emerald-600 uppercase">GI (DONE)</p>
-                            <p id="unit-sudah-gi" class="text-lg font-black text-[#1B2559]">0</p>
-                        </div>
-                        <div class="bg-orange-50/50 p-4 rounded-xl text-center border border-orange-100">
-                            <p class="text-[8px] font-bold text-orange-600 uppercase">DELIVERY</p>
-                            <p id="unit-r-delivery" class="text-lg font-black text-[#1B2559]">0</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="panel">
-                    <h4 class="text-[10px] font-black text-[#1B2559] uppercase mb-6">👤 TOP SALES O/S</h4>
-                    <div id="list-salesman" class="space-y-4"></div>
-                </div>
-                <div class="panel">
-                    <h4 class="text-[10px] font-black text-[#1B2559] uppercase mb-6">⚠️ TOP OVERDUE</h4>
-                    <div id="list-overdue" class="space-y-4"></div>
-                </div>
-                <div class="panel">
-                    <h4 class="text-[10px] font-black text-[#1B2559] uppercase mb-6">🏢 TOP SPV AR</h4>
-                    <div id="list-spv" class="space-y-4"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="leasing-section" class="hidden mt-6">
-            <div class="panel overflow-hidden">
-                <div class="flex items-center gap-3 mb-6">
-                    <span class="p-3 bg-blue-50 text-blue-600 rounded-xl text-xl">🏢</span>
+        <div id="leasing-section" class="mt-6">
+            <div class="premium-panel">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="p-4 bg-[#F4F7FE] text-[#1B2559] rounded-2xl text-2xl">🏢</div>
                     <div>
-                        <h4 class="text-sm font-black text-[#1B2559] uppercase tracking-wider">Monitoring AR Leasing</h4>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase">Berdasarkan Leadtime Tagihan Terlama</p>
+                        <h4 class="text-md font-black text-[#1B2559] uppercase tracking-wide">Monitoring AR Leasing</h4>
+                        <p class="text-[11px] text-slate-400 font-bold uppercase">Berdasarkan Leadtime Tagihan (Leadtime) Terlama</p>
                     </div>
                 </div>
+
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-separate border-spacing-y-2">
+                    <table class="w-full text-left border-separate border-spacing-y-4">
                         <thead>
-                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
-                                <th class="px-4 py-2 text-left">Leasing</th>
-                                <th class="px-4 py-2 text-left">Customer</th>
-                                <th class="px-4 py-2 text-left">Sales / SPV</th>
-                                <th class="px-4 py-2">Tgl Proses</th>
-                                <th class="px-4 py-2">Umur</th>
-                                <th class="px-4 py-2 text-right">Balance</th>
-                                <th class="px-4 py-2 text-left">Keterangan</th>
+                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <th class="px-6 py-4">Leasing</th>
+                                <th class="px-6 py-4">Customer</th>
+                                <th class="px-6 py-4">Sales / SPV</th>
+                                <th class="px-6 py-4 text-center">Tgl Proses</th>
+                                <th class="px-6 py-4 text-center">Umur</th>
+                                <th class="px-6 py-4 text-right">Balance</th>
+                                <th class="px-6 py-4">Keterangan</th>
                             </tr>
                         </thead>
-                        <tbody id="leasing-table-body"></tbody>
+                        <tbody id="leasing-table-body">
+                            <tr class="table-row-premium bg-white hover:bg-slate-50 transition-all">
+                                <td class="px-6">
+                                    <span class="bg-[#EBF5FF] text-[#2563EB] text-[10px] font-black px-4 py-2 rounded-full border border-blue-100">TAFS</span>
+                                </td>
+                                <td class="px-6">
+                                    <p class="text-[11px] font-black text-[#1B2559] uppercase">LEGER ADIYUSTAMA</p>
+                                    <p class="text-[9px] text-slate-400 font-bold">1</p>
+                                </td>
+                                <td class="px-6">
+                                    <p class="text-[11px] font-black text-[#1B2559] uppercase">ARU PRAWIKO</p>
+                                    <p class="text-[9px] text-slate-400 font-bold uppercase">SPV: JUNIAR FADHILAH</p>
+                                </td>
+                                <td class="px-6 text-center text-[11px] font-bold text-slate-500">-</td>
+                                <td class="px-6 text-center">
+                                    <span class="text-[11px] font-black text-[#1B2559]">23 HR</span>
+                                </td>
+                                <td class="px-6 text-right text-[11px] font-black text-[#1B2559]">Rp 186.800.000</td>
+                                <td class="px-6 text-[10px] text-slate-400 italic">-</td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
