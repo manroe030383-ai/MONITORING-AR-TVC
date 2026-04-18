@@ -1,65 +1,60 @@
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-
-body { background-color: #F4F7FE; color: #1B2559; }
-
-/* PANEL & CARD */
-.panel {
-    background: white;
-    padding: 24px;
-    border-radius: 24px;
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.02);
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
 }
 
-.stat-card {
-    background: white;
-    padding: 24px;
-    border-radius: 24px;
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    min-height: 160px;
-    transition: transform 0.2s ease;
+.shadow-soft {
+    box-shadow: 14px 17px 40px 4px rgba(112, 144, 176, 0.08);
 }
 
-.stat-card:hover { transform: translateY(-3px); }
-
-.card-accent { position: absolute; top: 0; left: 0; right: 0; height: 6px; }
-
-.os-val { color: #4318FF; font-size: 1.6rem; font-weight: 800; margin-top: 8px; }
-.overdue-val { color: #EE5D50; font-size: 1.6rem; font-weight: 800; margin-top: 8px; }
-.penalty-val { color: #FFB547; font-size: 1.6rem; font-weight: 800; margin-top: 8px; }
-.lancar-val { color: #05CD99; font-size: 1.6rem; font-weight: 800; margin-top: 8px; }
-
-.panel-header { font-size: 0.6rem; font-weight: 800; color: #A3AED0; letter-spacing: 0.1em; }
-.card-icon { position: absolute; top: 20px; right: 20px; opacity: 0.2; font-size: 1.5rem; }
-
-/* PROGRESS */
-.progress-bar-bg { height: 6px; background: #F4F7FE; border-radius: 10px; display: flex; overflow: hidden; }
-.bar-fill { height: 100%; transition: width 0.8s ease; }
-.progress-labels { display: flex; justify-content: space-between; font-size: 0.6rem; font-weight: 800; }
-
-/* TABS */
-.tab-btn {
-    padding: 12px 24px;
-    border-radius: 16px;
+.card {
     background: white;
-    color: #A3AED0;
-    font-size: 0.75rem;
-    font-weight: 700;
-    border: 1px solid #E2E8F0;
+    padding: 28px;
+    border-radius: 20px;
+    border: 1px solid #F1F4F9;
     transition: all 0.3s ease;
 }
 
-.tab-btn.active {
-    background: #1B2559;
-    color: white;
-    border-color: #1B2559;
-    box-shadow: 0 10px 20px rgba(27, 37, 89, 0.15);
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
 }
 
-/* SCROLLBAR */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+.card-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #A3AED0;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.card-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.2;
+}
+
+.section-title {
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-title::before {
+    content: "";
+    width: 3px;
+    height: 12px;
+    background: currentColor;
+    border-radius: 4px;
+}
+
+/* Scrollbar Style */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: #CBD5E0; border-radius: 10px; }
