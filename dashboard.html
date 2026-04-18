@@ -3,154 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard AR Unit - Auto2000 Pangkalan Bun</title>
+    <title>Dashboard AR Unit - Auto2000</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F4F7FE; }
-        
-        /* Tab Styling Sesuai Referensi */
-        .tab-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 24px;
-            border-radius: 9999px; /* Pill Shape */
-            font-size: 13px;
-            font-weight: 700;
-            transition: all 0.3s ease;
-            border: 1px solid #E2E8F0;
-            background: white;
-            color: #475569;
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .tab-btn.active { 
+            background-color: #1B2559 !important; 
+            color: white !important; 
+            box-shadow: 0 4px 12px rgba(27, 37, 89, 0.15);
         }
-
-        .tab-btn.active {
-            background-color: #1B2559; /* Navy */
-            color: white;
-            border-color: #1B2559;
-            shadow: 0 10px 15px -3px rgba(27, 37, 89, 0.2);
-        }
-
-        /* Ikon abu-abu untuk tab tidak aktif */
-        .tab-btn:not(.active) .tab-icon {
-            filter: grayscale(1) opacity(0.6);
-        }
-
-        /* Rounded Panel & Table Row */
-        .premium-panel {
-            border-radius: 24px;
-            background: white;
-            padding: 32px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
-        }
-
-        .table-row-premium td {
-            padding-top: 16px;
-            padding-bottom: 16px;
-            border-top: 1px solid #F1F5F9;
-            border-bottom: 1px solid #F1F5F9;
-        }
-
-        .table-row-premium td:first-child { border-left: 1px solid #F1F5F9; border-top-left-radius: 20px; border-bottom-left-radius: 20px; padding-left: 20px; }
-        .table-row-premium td:last-child { border-right: 1px solid #F1F5F9; border-top-right-radius: 20px; border-bottom-right-radius: 20px; padding-right: 20px; }
     </style>
 </head>
-<body class="flex min-h-screen">
+<body class="flex min-h-screen bg-[#F4F7FE]">
 
     <aside class="w-72 bg-[#111827] text-slate-400 p-6 hidden lg:block sticky top-0 h-screen z-50">
         <div class="mb-10 px-2">
-            <div class="flex items-center gap-3 mb-2">
-                <div class="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-red-900/40">A</div>
+            <div class="flex items-center gap-3 mb-1">
+                <div class="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-red-900/40 text-sm">A</div>
                 <h2 class="text-white font-extrabold text-lg tracking-tight">Auto2000</h2>
             </div>
-            <p class="text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">Branch Control Center</p>
+            <p class="text-[9px] font-bold tracking-[0.2em] text-slate-500 uppercase">Branch Control Center</p>
         </div>
-        <nav class="space-y-2">
-            <a href="#" class="flex items-center gap-3 p-3 bg-red-600 text-white rounded-xl shadow-lg shadow-red-900/20">
-                <span class="text-lg">📈</span> <span class="text-xs font-bold">Dashboard Unit</span>
-            </a>
+        
+        <nav class="space-y-6">
+            <div>
+                <p class="text-[9px] font-black text-slate-600 uppercase px-3 mb-4 tracking-widest">Master Portal</p>
+                <a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-xl transition-all group">
+                    <span class="text-sm">🔳</span> 
+                    <span class="text-[11px] font-bold">Ekosistem Aplikasi</span>
+                </a>
+            </div>
+            
+            <div>
+                <p class="text-[9px] font-black text-slate-600 uppercase px-3 mb-4 tracking-widest">AR Kendaraan (Unit)</p>
+                <a href="#" class="flex items-center gap-3 p-3 bg-red-600 text-white rounded-xl shadow-lg shadow-red-900/20 mb-2">
+                    <span class="text-sm">📊</span> 
+                    <span class="text-[11px] font-bold">Dashboard Unit</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800 rounded-xl transition-all group">
+                    <span class="text-sm">📄</span> 
+                    <span class="text-[11px] font-bold text-slate-400 group-hover:text-white">Data AR Unit</span>
+                </a>
+            </div>
+
+            <div class="pt-10 mt-10 border-t border-slate-800/50">
+                <p class="text-[8px] font-bold text-slate-600 uppercase mb-2">Created By</p>
+                <p class="text-[10px] font-bold text-slate-300">Anuar Rizal</p>
+                <p class="text-[8px] text-slate-500 uppercase tracking-tighter">Auto2000 Digital Innovation</p>
+            </div>
         </nav>
     </aside>
 
-    <main class="flex-1 p-10 overflow-x-hidden">
-        <div class="flex flex-col md:flex-row justify-between items-start mb-10">
+    <main class="flex-1 p-8 overflow-x-hidden">
+        
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
-                <p id="tgl-update-text" class="text-[10px] font-black text-red-600 mb-1 uppercase tracking-widest italic">
-                    DATA UPDATE: SABTU, 18 APRIL 2026 - 09:54 WIB
-                </p>
+                <p class="text-[9px] font-black text-red-600 mb-1 uppercase tracking-widest italic">Data Update: Sabtu, 18 April 2026 - 10:02 WIB</p>
                 <h1 class="text-4xl font-extrabold tracking-tight text-[#1B2559]">Overview AR Unit</h1>
-                <div class="flex items-center gap-2 mt-2">
+                <div class="flex items-center gap-2 mt-1">
                     <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">PANGKALAN BUN • REALTIME SUPABASE</p>
+                    <p class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Pangkalan Bun • Realtime Supabase</p>
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <div class="bg-white px-6 py-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                <div class="bg-white px-5 py-3 rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm">
                     <span class="text-[10px] font-bold text-slate-400 uppercase">ARSIP DB:</span>
-                    <span id="tgl-arsip" class="text-sm font-black text-[#1B2559]">--/--/----</span>
+                    <span class="text-sm font-black text-[#1B2559]">--/--/----</span>
                 </div>
-                <button class="bg-[#FEE2E2] text-[#EF4444] px-6 py-3 rounded-2xl text-[11px] font-extrabold hover:bg-red-600 hover:text-white transition-all">Download PDF</button>
+                <button class="bg-[#FDE8E8] text-red-600 px-6 py-3 rounded-2xl text-[11px] font-bold border border-red-100 hover:bg-red-600 hover:text-white transition-all shadow-sm">Download PDF</button>
             </div>
         </div>
 
-        <div class="flex flex-wrap gap-3 mb-10">
-            <button class="tab-btn" data-tab="ringkasan">
-                <span class="tab-icon">🕒</span> Ringkasan
+        <div class="flex flex-wrap gap-3 mb-8">
+            <button class="tab-btn active flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-slate-500 border border-slate-100 font-bold text-xs" data-tab="ringkasan">
+                <span class="text-sm">🕒</span> Ringkasan
             </button>
-            <button class="tab-btn active" data-tab="leasing">
-                <span class="tab-icon">🏢</span> Leasing
+            <button class="tab-btn flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-slate-500 border border-slate-100 font-bold text-xs" data-tab="leasing">
+                <span class="text-sm">🏢</span> Leasing
             </button>
-            <button class="tab-btn" data-tab="overdue">
-                <span class="tab-icon">⚠️</span> Overdue
+            <button class="tab-btn flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-slate-500 border border-slate-100 font-bold text-xs" data-tab="overdue">
+                <span class="text-sm text-orange-400">⚠️</span> Overdue
             </button>
-            <button class="tab-btn" data-tab="database">
-                <span class="tab-icon">💾</span> Database Lengkap
+            <button class="tab-btn flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-slate-500 border border-slate-100 font-bold text-xs" data-tab="database">
+                <span class="text-sm text-indigo-400">💾</span> Database Lengkap
             </button>
         </div>
 
         <div id="leasing-section" class="mt-6">
-            <div class="premium-panel">
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-50">
                 <div class="flex items-center gap-4 mb-8">
-                    <div class="p-4 bg-[#F4F7FE] text-[#1B2559] rounded-2xl text-2xl">🏢</div>
+                    <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-xl shadow-sm">🏢</div>
                     <div>
-                        <h4 class="text-md font-black text-[#1B2559] uppercase tracking-wide">Monitoring AR Leasing</h4>
-                        <p class="text-[11px] text-slate-400 font-bold uppercase">Berdasarkan Leadtime Tagihan (Leadtime) Terlama</p>
+                        <h4 class="text-sm font-black text-[#1B2559] uppercase tracking-wider">Monitoring AR Leasing</h4>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Daftar tagihan diurutkan berdasarkan Umur Tagihan (Leadtime) terlama.</p>
                     </div>
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-separate border-spacing-y-4">
+                    <table class="w-full text-left">
                         <thead>
-                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                <th class="px-6 py-4">Leasing</th>
-                                <th class="px-6 py-4">Customer</th>
-                                <th class="px-6 py-4">Sales / SPV</th>
-                                <th class="px-6 py-4 text-center">Tgl Proses</th>
-                                <th class="px-6 py-4 text-center">Umur</th>
-                                <th class="px-6 py-4 text-right">Balance</th>
-                                <th class="px-6 py-4">Keterangan</th>
+                            <tr class="border-b border-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <th class="pb-4 px-4 font-black">Leasing</th>
+                                <th class="pb-4 px-4 font-black">Customer</th>
+                                <th class="pb-4 px-4 font-black">Sales / SPV</th>
+                                <th class="pb-4 px-4 text-center font-black">Tgl Proses</th>
+                                <th class="pb-4 px-4 text-center font-black">Umur</th>
+                                <th class="pb-4 px-4 text-right font-black">Balance</th>
+                                <th class="pb-4 px-4 text-left font-black">Keterangan</th>
                             </tr>
                         </thead>
-                        <tbody id="leasing-table-body">
-                            <tr class="table-row-premium bg-white hover:bg-slate-50 transition-all">
-                                <td class="px-6">
-                                    <span class="bg-[#EBF5FF] text-[#2563EB] text-[10px] font-black px-4 py-2 rounded-full border border-blue-100">TAFS</span>
+                        <tbody class="divide-y divide-slate-50">
+                            <tr class="group hover:bg-slate-50/50 transition-colors">
+                                <td class="py-5 px-4">
+                                    <span class="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-[10px] font-black border border-blue-100/50">ACC</span>
                                 </td>
-                                <td class="px-6">
-                                    <p class="text-[11px] font-black text-[#1B2559] uppercase">LEGER ADIYUSTAMA</p>
-                                    <p class="text-[9px] text-slate-400 font-bold">1</p>
+                                <td class="py-5 px-4">
+                                    <div class="text-xs font-black text-[#1B2559] uppercase tracking-tight">PT PRATAMA MITRA SEJATI</div>
+                                    <div class="text-[9px] text-slate-400 font-bold">W01QVA/T00EA</div>
                                 </td>
-                                <td class="px-6">
-                                    <p class="text-[11px] font-black text-[#1B2559] uppercase">ARU PRAWIKO</p>
-                                    <p class="text-[9px] text-slate-400 font-bold uppercase">SPV: JUNIAR FADHILAH</p>
+                                <td class="py-5 px-4">
+                                    <div class="text-xs font-black text-[#1B2559] uppercase">CINDY APRILANI</div>
+                                    <div class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter italic">SPV: DANIEL OLOAN TARIHORAN</div>
                                 </td>
-                                <td class="px-6 text-center text-[11px] font-bold text-slate-500">-</td>
-                                <td class="px-6 text-center">
-                                    <span class="text-[11px] font-black text-[#1B2559]">23 HR</span>
+                                <td class="py-5 px-4 text-center text-[11px] font-bold text-slate-500 italic">27 Feb 2026</td>
+                                <td class="py-5 px-4 text-center">
+                                    <span class="bg-slate-100 text-[#1B2559] px-4 py-1.5 rounded-full text-[10px] font-extrabold italic">49 Hr</span>
                                 </td>
-                                <td class="px-6 text-right text-[11px] font-black text-[#1B2559]">Rp 186.800.000</td>
-                                <td class="px-6 text-[10px] text-slate-400 italic">-</td>
+                                <td class="py-5 px-4 text-right">
+                                    <span class="text-xs font-black text-[#1B2559]">Rp 321.800.000</span>
+                                </td>
+                                <td class="py-5 px-4">
+                                    <div class="bg-slate-50/80 px-4 py-2 rounded-xl text-[10px] text-slate-500 font-bold border border-slate-100 inline-block">Sudah Tagih tgl 28.02.2016</div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -159,6 +144,15 @@
         </div>
     </main>
 
-    <script type="module" src="script.js"></script>
+    <script>
+        // Logika Tab Sederhana
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+            });
+        });
+    </script>
 </body>
 </html>
