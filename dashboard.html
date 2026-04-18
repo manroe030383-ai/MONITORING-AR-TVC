@@ -3,181 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Portal AR - Auto2000</title>
+    <title>AR Unit Monitoring - Auto2000 Pangkalan Bun</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F4F7FE; }
-        .tab-btn.active { background-color: #2563EB; color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f0f5fa; }
+        .card-container { background: white; border-radius: 1.5rem; border: 1px solid #e2e8f0; transition: all 0.3s ease; }
+        .card-container:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        .sidebar-dark { background-color: #0f172a; }
     </style>
 </head>
-<body class="text-[#1B2559]">
+<body class="text-slate-700">
 
-    <div class="flex flex-col min-h-screen">
-        <div class="flex-1 p-4 md:p-8 max-w-[1600px] mx-auto w-full">
-            
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div class="flex min-h-screen">
+        <aside class="w-72 sidebar-dark text-slate-400 flex flex-col fixed h-full z-30 shadow-2xl">
+            <div class="p-8">
+                <div class="flex items-center gap-3">
+                    <div class="bg-red-600 text-white font-bold p-1 px-3 rounded-lg text-xl shadow-lg shadow-red-900/40">A</div>
+                    <h1 class="text-xl font-extrabold tracking-tight text-white italic">Auto2000</h1>
+                </div>
+                <p class="text-[9px] text-slate-500 mt-2 font-bold tracking-[0.2em] uppercase px-1">Branch Control Center</p>
+            </div>
+
+            <nav class="flex-1 px-4 mt-2 space-y-6">
                 <div>
-                    <h1 class="text-3xl font-black text-[#1B2559] tracking-tight">AR UNIT MONITORING</h1>
-                    <p id="tgl-update-text" class="text-slate-400 text-xs font-bold uppercase mt-1">SINKRONISASI: LOADING...</p>
+                    <p class="text-[10px] text-slate-600 uppercase font-black px-4 mb-3 tracking-widest">Master Menu</p>
+                    <a href="#" class="flex items-center gap-3 p-3.5 rounded-xl hover:bg-slate-800 transition text-sm font-semibold">🌐 Ekosistem Aplikasi</a>
                 </div>
-                <div class="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 text-right">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Archive Date</p>
-                    <p id="tgl-arsip" class="text-xl font-black text-blue-600">--/--/----</p>
+                <div>
+                    <p class="text-[10px] text-slate-600 uppercase font-black px-4 mb-3 tracking-widest">AR KENDARAAN (UNIT)</p>
+                    <a href="#" class="flex items-center gap-3 p-3.5 rounded-2xl bg-red-600 text-white text-sm font-bold shadow-lg shadow-red-900/40 italic">📊 Dashboard Unit</a>
+                    <a href="#" class="flex items-center gap-3 p-3.5 rounded-xl hover:bg-slate-800 transition text-sm font-semibold mt-1">📄 Data AR Unit</a>
+                </div>
+            </nav>
+
+            <div class="p-8 border-t border-slate-800">
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Developed By</p>
+                <p class="text-xs font-black text-slate-300 mt-1 uppercase">Anuar Rizal</p>
+            </div>
+        </aside>
+
+        <main class="flex-1 ml-72 p-10">
+            <header class="flex justify-between items-start mb-10">
+                <div>
+                    <h1 class="text-3xl font-black text-[#1e293b] uppercase tracking-tighter">AR Unit Monitoring</h1>
+                    <p id="clock" class="text-[10px] text-red-600 font-black mt-1 uppercase tracking-widest italic"></p>
+                </div>
+                <div class="flex gap-4">
+                    <div class="bg-white px-6 py-3 rounded-2xl border border-slate-200 shadow-sm text-center">
+                        <p class="text-[8px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-1">Archive Date</p>
+                        <p class="text-sm font-black text-slate-600">18 / 04 / 2026</p>
+                    </div>
+                    <button class="bg-red-50 text-red-600 border border-red-100 px-8 py-3 rounded-2xl text-[11px] font-black hover:bg-red-600 hover:text-white transition-all shadow-sm uppercase tracking-widest">
+                        Download PDF
+                    </button>
+                </div>
+            </header>
+
+            <div class="flex gap-3 mb-10 bg-white/50 p-1.5 rounded-2xl w-fit border border-slate-200">
+                <button class="bg-blue-600 text-white px-10 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-blue-200">Ringkasan</button>
+                <button class="text-slate-400 px-10 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-white transition-all">Leasing</button>
+                <button class="text-slate-400 px-10 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-white transition-all">Overdue</button>
+                <button class="text-slate-400 px-10 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-white transition-all text-nowrap">Database Lengkap</button>
+            </div>
+
+            <div class="grid grid-cols-4 gap-6 mb-10">
+                <div class="card-container p-8">
+                    <p class="text-[10px] text-slate-400 font-black uppercase mb-3 tracking-widest">Total O/S Balance</p>
+                    <p class="text-2xl font-black text-[#1e293b] tracking-tighter">Rp 19.607.953.211</p>
+                    <div class="w-full bg-slate-100 h-2 mt-8 rounded-full overflow-hidden flex shadow-inner">
+                        <div class="bg-emerald-500 h-full w-[48%]"></div>
+                        <div class="bg-blue-600 h-full w-[52%]"></div>
+                    </div>
+                </div>
+                
+                <div class="card-container p-8">
+                    <p class="text-[10px] text-red-500 font-black uppercase mb-3 tracking-widest">Total Overdue</p>
+                    <p id="total-overdue" class="text-2xl font-black text-red-600 tracking-tighter italic">Rp 6.774.085.357</p>
+                    <div class="mt-8">
+                        <span class="px-4 py-1.5 bg-red-50 text-red-600 text-[9px] font-black rounded-xl border border-red-100 uppercase italic">🚨 29 SPK LEWAT TOP</span>
+                    </div>
+                </div>
+
+                <div class="card-container p-8">
+                    <p class="text-[10px] text-orange-400 font-black uppercase mb-3 tracking-widest">Potensi Penalty</p>
+                    <p class="text-2xl font-black text-orange-500 tracking-tighter">Rp 21.256.730</p>
+                    <p class="mt-8 text-[9px] text-slate-400 font-bold italic uppercase tracking-wider">Estimasi Penagihan</p>
+                </div>
+
+                <div class="card-container p-8">
+                    <p class="text-[10px] text-emerald-400 font-black uppercase mb-3 tracking-widest">Belum Jatuh Tempo</p>
+                    <p class="text-2xl font-black text-emerald-500 tracking-tighter">Rp 12.833.867.854</p>
+                    <div class="mt-8 flex items-center gap-2">
+                        <span class="text-[9px] text-emerald-500 font-black uppercase tracking-widest">O/S AMAN</span>
+                        <div class="bg-emerald-500 text-white rounded-full p-0.5 text-[7px] font-bold">✓</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex flex-wrap gap-2 mb-8 bg-white/50 p-1.5 rounded-2xl shadow-sm w-fit border border-slate-200">
-                <button data-tab="ringkasan" class="tab-btn active px-8 py-2.5 rounded-xl text-sm font-bold transition-all uppercase">Ringkasan</button>
-                <button data-tab="leasing" class="tab-btn px-8 py-2.5 rounded-xl text-sm font-bold text-slate-400 hover:bg-white transition-all uppercase">Leasing</button>
-                <button data-tab="overdue" class="tab-btn px-8 py-2.5 rounded-xl text-sm font-bold text-slate-400 hover:bg-white transition-all uppercase">Overdue</button>
-                <button data-tab="database" class="tab-btn px-8 py-2.5 rounded-xl text-sm font-bold text-slate-400 hover:bg-white transition-all uppercase">Database</button>
-            </div>
-
-            <div id="ringkasan-section" class="tab-content space-y-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50">
-                        <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1">Total O/S Balance</p>
-                        <h2 id="total-os" class="text-2xl font-black text-[#1B2559]">Rp 0</h2>
-                    </div>
-                    <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50 relative overflow-hidden">
-                        <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1">Total Overdue</p>
-                        <h2 id="total-overdue" class="text-2xl font-black text-red-600">Rp 0</h2>
-                        <span id="count-overdue-spk" class="inline-block mt-3 bg-red-50 text-red-600 text-[10px] px-3 py-1 rounded-full font-black uppercase">0 SPK LEWAT TOP</span>
-                    </div>
-                    <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50">
-                        <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1">Potensi Penalty</p>
-                        <h2 id="total-penalty" class="text-2xl font-black text-[#1B2559]">Rp 0</h2>
-                    </div>
-                    <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50">
-                        <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1">Belum Jatuh Tempo</p>
-                        <h2 id="total-lancar" class="text-2xl font-black text-emerald-500">Rp 0</h2>
+            <div class="grid grid-cols-12 gap-8">
+                <div class="col-span-7 card-container p-10">
+                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] border-l-4 border-red-600 pl-4 mb-12">Aging AR Analysis (Nominal)</h3>
+                    <div class="flex items-end justify-between h-64 px-12 border-b-2 border-slate-50 pb-6 bg-slate-50/30 rounded-3xl">
+                        <div class="flex flex-col items-center gap-4 w-full group">
+                            <div class="bg-emerald-500 w-24 rounded-2xl shadow-xl shadow-emerald-100 transition-all group-hover:scale-105" style="height: 100%;"></div>
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">LANCAR</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-4 w-full group">
+                            <div class="bg-orange-400 w-24 rounded-2xl shadow-xl shadow-orange-100 transition-all group-hover:scale-105" style="height: 52%;"></div>
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">1-30 H</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-4 w-full">
+                            <div class="bg-slate-200 w-24 rounded-2xl h-3"></div>
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">31-60 H</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-4 w-full">
+                            <div class="bg-slate-200 w-24 rounded-2xl h-3"></div>
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">>60 H</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 bg-white p-8 rounded-[32px] shadow-sm border border-slate-50">
-                        <p class="font-black text-[#1B2559] mb-6 uppercase text-sm tracking-wider">Aging AR Analysis (Nominal)</p>
-                        <div id="chart-aging-nominal"></div>
-                    </div>
+                <div class="col-span-5 card-container p-10 flex flex-col items-center">
+                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-[0.2em] border-l-4 border-blue-600 pl-4 mb-10 self-start">Cash vs Leasing</h3>
                     
-                    <div class="bg-white p-8 rounded-[32px] shadow-sm border border-slate-50 flex flex-col">
-                        <p class="font-black text-[#1B2559] mb-6 uppercase text-sm tracking-wider text-center">Cash VS Leasing</p>
-                        <div id="chart-donut-main" class="flex-1 flex items-center justify-center"></div>
+                    <div class="relative w-52 h-52 rounded-full border-[22px] border-blue-600 flex items-center justify-center mb-10 shadow-inner">
+                        <div class="absolute inset-0 rounded-full border-[22px] border-emerald-500" style="clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 48%); transform: rotate(-8deg);"></div>
+                        <div class="text-center">
+                            <p class="text-4xl font-black text-slate-800 tracking-tighter">51.4%</p>
+                            <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1 italic text-nowrap">Proporsi Leasing</p>
+                        </div>
+                    </div>
+
+                    <div class="w-full space-y-4">
+                        <div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                            <span class="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-2">
+                                <div class="w-2 h-2 bg-emerald-500 rounded-full"></div> Cash
+                            </span>
+                            <span class="text-sm font-black text-slate-700 italic">Rp 9.527.620.528</span>
+                        </div>
+                        <div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                            <span class="text-[10px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-2">
+                                <div class="w-2 h-2 bg-blue-600 rounded-full"></div> Leasing
+                            </span>
+                            <span class="text-sm font-black text-slate-700 italic">Rp 10.080.332.683</span>
+                        </div>
                         
-                        <div class="mt-6 space-y-4">
-                            <div class="space-y-2">
-                                <div class="flex justify-between text-[10px] font-black uppercase">
-                                    <span class="text-emerald-500">Cash: <span id="val-total-cash">Rp 0</span></span>
-                                    <span class="text-blue-600">Leasing: <span id="val-total-leasing">Rp 0</span></span>
-                                </div>
-                                <div class="flex h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                    <div id="bar-cash" class="bg-emerald-500 transition-all duration-1000" style="width: 0%"></div>
-                                    <div id="bar-leasing" class="bg-blue-600 transition-all duration-1000" style="width: 0%"></div>
-                                </div>
+                        <div class="grid grid-cols-2 gap-4 mt-6">
+                            <div class="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 text-center">
+                                <p class="text-[8px] text-slate-400 font-bold uppercase mb-1 tracking-wider">Total Unit Leasing</p>
+                                <p class="text-2xl font-black text-blue-700">32 Unit</p>
                             </div>
-
-                            <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                <span class="text-xs font-bold text-slate-500">TOTAL UNIT LEASING</span>
-                                <span id="total-penjualan-leasing" class="font-black text-blue-600">0 Unit</span>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 text-center">
-                                    <p class="text-[10px] font-bold text-blue-400 uppercase mb-1">Sudah GI</p>
-                                    <p id="unit-sudah-gi" class="text-xl font-black text-blue-600">0</p>
+                            <div class="grid grid-cols-1 gap-2">
+                                <div class="bg-emerald-50 p-2 rounded-xl text-center border border-emerald-100 flex justify-between px-4 items-center">
+                                    <p class="text-[8px] font-bold text-emerald-600 uppercase">SUDAH GI</p>
+                                    <p class="text-sm font-black text-slate-700">0</p>
                                 </div>
-                                <div class="bg-orange-50/50 p-4 rounded-2xl border border-orange-100 text-center">
-                                    <p class="text-[10px] font-bold text-orange-400 uppercase mb-1">R-Delivery</p>
-                                    <p id="unit-r-delivery" class="text-xl font-black text-orange-600">0</p>
+                                <div class="bg-orange-50 p-2 rounded-xl text-center border border-orange-100 flex justify-between px-4 items-center">
+                                    <p class="text-[8px] font-bold text-orange-600 uppercase">R DELIVERY</p>
+                                    <p class="text-sm font-black text-orange-600">32</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white p-8 rounded-[32px] shadow-sm border border-slate-50">
-                        <p class="font-black text-[#1B2559] mb-6 uppercase text-xs tracking-[0.2em]">Top 5 O/S Salesman</p>
-                        <div id="list-salesman" class="space-y-4"></div>
-                    </div>
-                    <div class="bg-white p-8 rounded-[32px] shadow-sm border border-slate-50">
-                        <p class="font-black text-[#1B2559] mb-6 uppercase text-xs tracking-[0.2em]">Top 5 Contrib. Supervisor</p>
-                        <div id="list-spv" class="space-y-4"></div>
-                    </div>
-                </div>
             </div>
-
-            <div id="leasing-section" class="tab-content hidden">
-                <div class="bg-white rounded-[32px] shadow-sm overflow-hidden border border-slate-100">
-                    <div class="p-8 border-b border-slate-50 bg-slate-50/30">
-                        <h3 class="font-black text-[#1B2559] uppercase tracking-wide">Detail Piutang Leasing</h3>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                                <tr>
-                                    <th class="p-5 border-b border-slate-100">Leasing</th>
-                                    <th class="p-5 border-b border-slate-100">Customer Name</th>
-                                    <th class="p-5 border-b border-slate-100">Salesman</th>
-                                    <th class="p-5 border-b border-slate-100 text-center">GL Date</th>
-                                    <th class="p-5 border-b border-slate-100 text-right">O/S Balance</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leasing-table-body" class="text-sm"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="overdue-section" class="tab-content hidden">
-                <div class="bg-white rounded-[32px] shadow-sm overflow-hidden border border-red-100">
-                    <div class="p-8 border-b border-red-50 bg-red-50/30">
-                        <h3 class="font-black text-red-600 uppercase tracking-wide">Daftar Tagihan Overdue</h3>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="bg-red-50 text-red-400 text-[10px] font-black uppercase tracking-widest">
-                                <tr>
-                                    <th class="p-5 border-b border-red-100">Aging</th>
-                                    <th class="p-5 border-b border-red-100">Customer Name</th>
-                                    <th class="p-5 border-b border-red-100 text-right font-black">Nominal Overdue</th>
-                                </tr>
-                            </thead>
-                            <tbody id="overdue-table-body" class="text-sm font-semibold"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="database-section" class="tab-content hidden">
-                <div class="bg-white rounded-[32px] shadow-sm overflow-hidden border border-slate-200">
-                    <div class="p-8 border-b border-slate-100 flex justify-between items-center">
-                        <h3 class="font-black text-[#1B2559] uppercase tracking-wide">Database Master AR</h3>
-                        <span id="total-row-db" class="text-[10px] font-black bg-blue-100 text-blue-600 px-4 py-1.5 rounded-full uppercase">0 Records</span>
-                    </div>
-                    <div class="overflow-x-auto max-h-[650px] custom-scroll">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="sticky top-0 bg-slate-50 text-slate-500 text-[10px] font-black uppercase z-10 border-b border-slate-200">
-                                <tr>
-                                    <th class="p-4 bg-slate-50">No</th>
-                                    <th class="p-4 bg-slate-50">Customer Name</th>
-                                    <th class="p-4 bg-slate-50 text-right">O/S Balance</th>
-                                    <th class="p-4 bg-slate-50 text-center">Hari O/S</th>
-                                </tr>
-                            </thead>
-                            <tbody id="database-table-body" class="text-[11px] font-medium text-slate-600"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+        </main>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <script>
+        function runRealtimeClock() {
+            const el = document.getElementById('clock');
+            const updateTime = () => {
+                const now = new Date();
+                const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+                const dateStr = now.toLocaleDateString('id-ID', options);
+                const timeStr = now.toLocaleTimeString('id-ID');
+                el.innerText = `DATA UPDATE: ${dateStr.toUpperCase()} - ${timeStr} WIB`;
+            };
+            updateTime();
+            setInterval(updateTime, 1000);
+        }
+        window.onload = runRealtimeClock;
+    </script>
 </body>
 </html>
