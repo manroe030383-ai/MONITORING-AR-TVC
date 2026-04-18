@@ -1,53 +1,65 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
 
-body { display: flex; background-color: #F4F7FE; color: #1B2559; min-height: 100vh; }
+body { background-color: #F4F7FE; color: #1B2559; }
 
-.sidebar-active { background-color: #EF4444; color: white; border-radius: 0.75rem; }
-
+/* PANEL & CARD */
 .panel {
     background: white;
-    padding: 25px;
-    border-radius: 28px;
-    border: 1px solid rgba(241, 245, 249, 0.7);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03);
-    transition: all 0.3s ease;
+    padding: 24px;
+    border-radius: 24px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.02);
 }
 
-/* Stat Card 3D Premium */
 .stat-card {
     background: white;
-    padding: 25px;
-    border-radius: 30px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    padding: 24px;
+    border-radius: 24px;
     border: 1px solid rgba(226, 232, 240, 0.8);
     position: relative;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    min-height: 170px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    min-height: 160px;
+    transition: transform 0.2s ease;
 }
 
-.stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08); }
+.stat-card:hover { transform: translateY(-3px); }
 
-.card-accent { position: absolute; top: 0; left: 0; right: 0; height: 8px; border-radius: 30px 30px 0 0; }
-.bg-blue-accent { background-color: #4318FF; }
-.bg-red-accent { background-color: #EE5D50; }
-.bg-orange-accent { background-color: #FFB547; }
-.bg-green-accent { background-color: #05CD99; }
+.card-accent { position: absolute; top: 0; left: 0; right: 0; height: 6px; }
 
-.os-val { color: #4318FF; font-size: 1.75rem; font-weight: 800; margin-top: 10px; }
-.overdue-val { color: #EE5D50; font-size: 1.75rem; font-weight: 800; margin-top: 10px; }
-.penalty-val { color: #1B2559; font-size: 1.75rem; font-weight: 800; margin-top: 10px; }
-.lancar-val { color: #05CD99; font-size: 1.75rem; font-weight: 800; margin-top: 10px; }
+.os-val { color: #4318FF; font-size: 1.6rem; font-weight: 800; margin-top: 8px; }
+.overdue-val { color: #EE5D50; font-size: 1.6rem; font-weight: 800; margin-top: 8px; }
+.penalty-val { color: #FFB547; font-size: 1.6rem; font-weight: 800; margin-top: 8px; }
+.lancar-val { color: #05CD99; font-size: 1.6rem; font-weight: 800; margin-top: 8px; }
 
-.panel-header { font-size: 0.65rem; font-weight: 800; color: #A3AED0; text-transform: uppercase; letter-spacing: 0.5px; }
+.panel-header { font-size: 0.6rem; font-weight: 800; color: #A3AED0; letter-spacing: 0.1em; }
+.card-icon { position: absolute; top: 20px; right: 20px; opacity: 0.2; font-size: 1.5rem; }
 
-.card-icon { position: absolute; top: 25px; right: 20px; font-size: 1.2rem; }
+/* PROGRESS */
+.progress-bar-bg { height: 6px; background: #F4F7FE; border-radius: 10px; display: flex; overflow: hidden; }
+.bar-fill { height: 100%; transition: width 0.8s ease; }
+.progress-labels { display: flex; justify-content: space-between; font-size: 0.6rem; font-weight: 800; }
 
-.progress-bar-bg { height: 8px; background: #F4F7FE; border-radius: 20px; display: flex; overflow: hidden; margin: 20px 0 8px; }
-.bar-fill { height: 100%; transition: width 0.5s ease; }
-.progress-labels { display: flex; justify-content: space-between; font-size: 0.65rem; font-weight: 800; }
+/* TABS */
+.tab-btn {
+    padding: 12px 24px;
+    border-radius: 16px;
+    background: white;
+    color: #A3AED0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 1px solid #E2E8F0;
+    transition: all 0.3s ease;
+}
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+.tab-btn.active {
+    background: #1B2559;
+    color: white;
+    border-color: #1B2559;
+    box-shadow: 0 10px 20px rgba(27, 37, 89, 0.15);
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
