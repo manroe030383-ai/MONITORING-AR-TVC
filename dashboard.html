@@ -42,20 +42,23 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow border-l-4 border-l-blue-600">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                 <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total O/S Balance</p>
                 <h3 id="total-os" class="text-xl font-black mb-4">Rp 0</h3>
-                <div class="h-1.5 w-full bg-slate-100 rounded-full flex overflow-hidden"><div id="bar-cash" class="bg-emerald-400 h-full"></div><div id="bar-leasing" class="bg-blue-600 h-full"></div></div>
+                <div class="h-1.5 w-full bg-slate-100 rounded-full flex overflow-hidden">
+                    <div id="bar-cash" class="bg-emerald-400 h-full"></div>
+                    <div id="bar-leasing" class="bg-blue-600 h-full"></div>
+                </div>
             </div>
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow border-l-4 border-l-red-600">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                 <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total Overdue</p>
                 <h3 id="total-overdue" class="text-xl font-black text-red-600">Rp 0</h3>
             </div>
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow border-l-4 border-l-orange-500">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                 <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Potensi Penalti</p>
                 <h3 id="total-penalty" class="text-xl font-black text-orange-500">Rp 0</h3>
             </div>
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow border-l-4 border-l-emerald-500">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                 <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Belum Jatuh Tempo</p>
                 <h3 id="total-lancar" class="text-xl font-black text-emerald-500">Rp 0</h3>
             </div>
@@ -63,24 +66,24 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-6">Aging Analysis (Nominal)</h4>
+                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-6">Aging Analysis (Umur Piutang)</h4>
                 <div id="chart-aging"></div>
             </div>
             <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow lg:col-span-2">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">Komposisi & Leasing Breakdown</h4>
+                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">Komposisi & Breakdown Penjualan</h4>
                 <div id="chart-donut-leasing"></div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">🏆 Top Sales O/S</h4>
+                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">🏆 Top 5 Salesman</h4>
                 <div id="list-sales" class="space-y-4"></div>
             </div>
 
             <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-blue-600 uppercase mb-4">📊 Breakdown Leasing TVC</h4>
-                <div class="bg-blue-50/50 p-3 rounded-xl text-center mb-4">
+                <h4 class="text-[10px] font-bold text-blue-600 uppercase mb-4 italic">📊 Breakdown Leasing TVC</h4>
+                <div class="bg-blue-50/50 p-3 rounded-xl text-center mb-4 border border-blue-100">
                     <p class="text-[8px] font-bold text-blue-500 uppercase">Total Penjualan Leasing (TVC)</p>
                     <p id="tvc-total-unit" class="text-2xl font-black text-blue-900">0 Unit</p>
                 </div>
@@ -94,11 +97,12 @@
                         <p id="tvc-delivery" class="text-xs font-black text-orange-700">0 Unit</p>
                     </div>
                 </div>
+                <p class="text-[8px] font-bold text-slate-400 uppercase mb-2">Tagihan Sudah Dikirim / Belum Bayar</p>
                 <div id="list-tvc-detail" class="space-y-2"></div>
             </div>
 
             <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-red-500 uppercase mb-4">⚠️ Top Overdue</h4>
+                <h4 class="text-[10px] font-bold text-red-500 uppercase mb-4">⚠️ Top 5 Overdue</h4>
                 <div id="list-overdue" class="space-y-4"></div>
             </div>
 
