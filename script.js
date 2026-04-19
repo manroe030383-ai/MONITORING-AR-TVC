@@ -78,17 +78,26 @@ function renderCharts(cash, leas, aging) {
         charts.bar = new ApexCharts(document.querySelector("#chart-aging"), {
             series: [{ name: 'Juta', data: Object.values(aging) }],
             chart: { type: 'bar', height: 250, toolbar: { show: false } },
-            colors: ['#3b82f6', '#3b82f6', '#3b82f6', '#3b82f6'],
-            plotOptions: { bar: { borderRadius: 6, columnWidth: '45%', distributed: false } },
-            dataLabels: { enabled: true, style: { fontSize: '8px' }, formatter: (v) => v.toFixed(0) },
+            // WARNA BERBEDA UNTUK TIAP BATANG
+            colors: ['#10B981', '#FBBF24', '#F97316', '#EF4444'], 
+            plotOptions: { 
+                bar: { 
+                    borderRadius: 6, 
+                    columnWidth: '45%', 
+                    distributed: true // PAKSA WARNA BERBEDA TIAP BATANG
+                } 
+            },
+            // MENGHILANGKAN ANGKA DI DALAM BATANG
+            dataLabels: { enabled: false }, 
             xaxis: { 
                 categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'],
                 labels: { 
-                    hideOverlappingLabels: false, // PAKSA SEMUA LABEL MUNCUL
+                    hideOverlappingLabels: false,
                     style: { fontSize: '9px', fontWeight: 700 } 
                 } 
             },
             yaxis: { labels: { formatter: (v) => v + " Jt" } },
+            legend: { show: false }, // Hilangkan legend karena label sumbu X sudah jelas
             grid: { borderColor: '#f1f5f9' }
         });
         charts.bar.render();
@@ -125,4 +134,4 @@ function renderTopList(id, map, colorClass) {
         <div class="flex justify-between items-center text-[9px] border-b border-slate-50 pb-2"><span class="font-bold text-slate-600 uppercase truncate w-32">${i+1}. ${item[0]}</span><span class="${colorClass} font-black">${fmtJuta(item[1])}</span></div>`).join('');
 }
 
-document.addEventListener('DOMContentLoaded', fetchData);
+document.addEventListener('DOMContentLoaded', fetchData);//Refresh setiap 5 menit
