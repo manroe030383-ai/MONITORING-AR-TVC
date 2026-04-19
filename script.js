@@ -5,7 +5,6 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
-
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
 
@@ -14,27 +13,24 @@ async function fetchData() {
         const { data, error } = await supabase.from('ar_unit').select('*');
         if (error) throw error;
         if (data) updateDashboard(data);
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Error fetching data:", e); }
 }
 
 function updateDashboard(data) {
-    let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cOv: 0, cPen: 0, gi: 0, rd: 0, unitCash: 0, unitLeas: 0 };
+    let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, unitCash: 0, unitLeas: 0, cOv: 0, cPen: 0 };
     let aging = { 'LANCAR': 0, '1-30 HR': 0, '31-60 HR': 0, '>60 HR': 0 };
-    let mapSales = {}, mapOverdue = {}, mapSpv = {}, mapLeasing = {}, mapTvc = {};
+    let mapLeasing = {}, mapSales = {}, mapOverdue = {}, mapSpv = {}, mapTvc = {};
 
     data.forEach(d => {
         const valOs = Number(d.os_balance || 0);
         const lName = (d.leasing_name || 'CASH').toUpperCase().trim();
-
         s.os += valOs;
         s.ov += Number(d.total_overdue || 0);
         s.pen += Number(d.penalty_amount || 0);
         s.lan += Number(d.lancar || 0);
-        
         if (Number(d.total_overdue) > 0) s.cOv++;
         if (Number(d.penalty_amount) > 0) s.cPen++;
 
-        // Aging Data
         aging['LANCAR'] += Number(d.lancar || 0) / 1000000;
         aging['1-30 HR'] += Number(d.hari_1_30 || 0) / 1000000;
         aging['31-60 HR'] += Number(d.hari_31_60 || 0) / 1000000;
@@ -46,28 +42,21 @@ function updateDashboard(data) {
             s.leas += valOs; s.unitLeas++;
             mapLeasing[lName] = (mapLeasing[lName] || 0) + valOs;
             mapTvc[lName] = (mapTvc[lName] || 0) + 1;
-            const isGI = d.gl_date && d.gl_date !== "" && d.gl_date !== "null";
-            if (isGI) s.gi++; else s.rd++;
         }
         mapSales[d.salesman_name || 'N/A'] = (mapSales[d.salesman_name] || 0) + valOs;
         mapSpv[d.spv_name || 'N/A'] = (mapSpv[d.spv_name] || 0) + valOs;
         if (Number(d.total_overdue) > 0) mapOverdue[d.customer_name || 'CUST'] = (mapOverdue[d.customer_name] || 0) + Number(d.total_overdue);
     });
 
-    // Update UI
     document.getElementById('total-os').innerText = fmtIDR(s.os);
     document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
     document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
-    document.getElementById('badge-overdue').innerText = `${s.cOv} SPK Lewat TOP`;
-    document.getElementById('spk-penalty').innerText = `Dari ${s.cPen} SPK`;
     document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
     document.getElementById('unit-total-cash').innerText = `${s.unitCash} Unit`;
     document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
     document.getElementById('unit-total-leas').innerText = `${s.unitLeas} Unit`;
     document.getElementById('total-unit').innerText = `${s.unitLeas} Unit`;
-    document.getElementById('unit-gi').innerText = s.gi;
-    document.getElementById('unit-delivery').innerText = s.rd;
 
     renderCharts(s.cash, s.leas, aging);
     renderLeasingList(mapLeasing, s.os);
@@ -76,11 +65,8 @@ function updateDashboard(data) {
     renderTopSpv(mapSpv);
     renderTvcDetail(mapTvc);
 
-    const cashPct = s.os > 0 ? (s.cash / s.os) * 100 : 0;
-    document.getElementById('bar-cash').style.width = `${cashPct}%`;
-    document.getElementById('bar-leasing').style.width = `${100 - cashPct}%`;
     const now = new Date();
-    document.getElementById('status-update').innerText = `DATA UPDATE: ${now.toLocaleDateString('id-ID')} - ${now.toLocaleTimeString('id-ID')} WIB`;
+    document.getElementById('status-update').innerText = `DATA UPDATE: ${now.toLocaleTimeString()} WIB`;
     document.getElementById('tgl-arsip').innerText = now.toLocaleDateString('id-ID');
 }
 
@@ -92,7 +78,8 @@ function renderCharts(cash, leas, aging) {
             colors: ['#10B981', '#FBBF24', '#F97316', '#EF4444'],
             plotOptions: { bar: { borderRadius: 4, columnWidth: '40%', distributed: true } },
             dataLabels: { enabled: false },
-            xaxis: { categories: Object.keys(aging), labels: { style: { fontSize: '9px', fontWeight: 700 } } },
+            legend: { show: false }, // MENGHILANGKAN LEGEND GANDA
+            xaxis: { categories: Object.keys(aging), labels: { style: { fontSize: '10px', fontWeight: 700 } } },
             yaxis: { labels: { formatter: (v) => v + " Jt" } }
         });
         charts.bar.render();
@@ -105,7 +92,7 @@ function renderCharts(cash, leas, aging) {
             chart: { type: 'donut', height: 230 },
             colors: ['#10B981', '#2563EB'],
             stroke: { width: 0 },
-            plotOptions: { pie: { donut: { size: '78%', labels: { show: false } } } },
+            plotOptions: { pie: { donut: { size: '78%', labels: { show: false } } } }, // MENGHILANGKAN ANGKA TENGAH
             dataLabels: { enabled: false },
             legend: { position: 'bottom', fontSize: '10px', fontWeight: 600 }
         });
