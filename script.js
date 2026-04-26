@@ -30,11 +30,9 @@ function updateDashboard(data) {
         s.pen += Number(d.penalty_amount || 0);
         s.lan += Number(d.lancar || 0);
         
-        // POIN 3: Hitung SPK yang memiliki penalti
         if (Number(d.penalty_amount) > 0) s.spkPenCount++;
         if (Number(d.total_overdue) > 0) s.cOv++;
 
-        // Aging Logic
         aging['LANCAR'] += Number(d.lancar || 0) / 1000000;
         aging['1-30 H'] += Number(d.hari_1_30 || 0) / 1000000;
         aging['31-60 H'] += Number(d.hari_31_60 || 0) / 1000000;
@@ -46,7 +44,6 @@ function updateDashboard(data) {
             s.leas += valOs; s.unitLeas++;
             mapLeasing[lName] = (mapLeasing[lName] || 0) + valOs;
             
-            // POIN 5: Logic GI vs Delivery untuk Leasing
             if (d.gl_date) s.gi++; else s.rd++;
             mapTvcDetail[lName] = (mapTvcDetail[lName] || 0) + 1;
         }
@@ -59,7 +56,6 @@ function updateDashboard(data) {
         }
     });
 
-    // Update UI
     document.getElementById('total-os').innerText = fmtIDR(s.os);
     document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
@@ -69,14 +65,12 @@ function updateDashboard(data) {
     document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
     document.getElementById('unit-total-leas').innerText = `${s.unitLeas} Unit`;
     
-    // POIN 3 & 5
     document.getElementById('total-unit').innerText = `${s.unitLeas} Unit`;
     document.getElementById('unit-gi').innerText = `${s.gi} Unit`;
     document.getElementById('unit-delivery').innerText = `${s.rd} Unit`;
     document.getElementById('spk-penalty').innerText = `${s.spkPenCount} SPK`;
     document.getElementById('badge-overdue').innerText = `${s.cOv} SPK LEWAT TOP`;
 
-    // POIN 1: Hari, Tanggal, Jam
     const now = new Date();
     const hari = now.toLocaleDateString('id-ID', { weekday: 'long' }).toUpperCase();
     const tgl = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
@@ -90,16 +84,13 @@ function updateDashboard(data) {
     renderTvcList(mapTvcDetail);
     renderTopSpv(mapSpv, s.os);
 
-    // Progress bar O/S
     const cashPct = s.os > 0 ? (s.cash / s.os) * 100 : 0;
     document.getElementById('bar-cash').style.width = `${cashPct}%`;
     document.getElementById('bar-leasing').style.width = `${100 - cashPct}%`;
 }
 
 function renderCharts(cash, leas, aging) {
-    // POIN 4: Warna Berbeda (Hijau, Kuning, Orange, Merah)
     const barColors = ['#10B981', '#F59E0B', '#F97316', '#EF4444'];
-
     if (!charts.bar) {
         charts.bar = new ApexCharts(document.querySelector("#chart-aging"), {
             series: [{ name: 'Juta', data: Object.values(aging) }],
@@ -112,9 +103,7 @@ function renderCharts(cash, leas, aging) {
             legend: { show: false }
         });
         charts.bar.render();
-    } else {
-        charts.bar.updateSeries([{ data: Object.values(aging) }]);
-    }
+    } else { charts.bar.updateSeries([{ data: Object.values(aging) }]); }
 
     if (!charts.donut) {
         charts.donut = new ApexCharts(document.querySelector("#chart-donut-leasing"), {
@@ -130,27 +119,27 @@ function renderCharts(cash, leas, aging) {
     } else { charts.donut.updateSeries([cash, leas]); }
 }
 
-// POIN 5 Detail TVC
+// PERBAIKAN: Render List TVC (Tanpa Background Box per Item)
 function renderTvcList(map) {
-    const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 3);
+    const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 5);
     document.getElementById('tvc-detail-list').innerHTML = sorted.map(([name, val]) => `
-        <div class="flex justify-between items-center text-[9px] bg-slate-50 p-2 rounded-lg border border-slate-100">
+        <div class="flex justify-between items-center text-[10px] border-b border-slate-50 py-2">
             <span class="font-bold text-slate-500 uppercase">${name}</span>
-            <span class="font-black text-blue-600">${val} Unit</span>
+            <span class="font-black text-blue-600 text-xs">${val} Unit</span>
         </div>
     `).join('');
 }
 
-// POIN 6 Detail SPV dengan Progress Bar
+// PERBAIKAN: Render Top SPV (Persis Gambar Referensi)
 function renderTopSpv(map, total) {
     const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 5);
     document.getElementById('list-spv').innerHTML = sorted.map((item, i) => {
         const pct = ((item[1] / total) * 100).toFixed(1);
         return `
         <div class="space-y-1">
-            <div class="flex justify-between text-[9px] font-bold">
+            <div class="flex justify-between text-[10px] font-bold">
                 <span class="text-slate-600 uppercase truncate w-32">${i+1}. ${item[0]}</span>
-                <span class="text-purple-600 font-black">${fmtJuta(item[1])}</span>
+                <span class="text-purple-600 font-black text-xs">${fmtJuta(item[1])}</span>
             </div>
             <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
                 <div class="bg-purple-500 h-full" style="width: ${pct}%"></div>
@@ -170,9 +159,9 @@ function renderLeasingList(map, total) {
 
 function renderTopList(id, map, colorClass) {
     document.getElementById(id).innerHTML = Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 5).map((item, i) => `
-        <div class="flex justify-between items-center text-[9px] border-b border-slate-50 pb-2">
+        <div class="flex justify-between items-center text-[10px] border-b border-slate-50 pb-2">
             <span class="font-bold text-slate-600 uppercase truncate w-32">${i+1}. ${item[0]}</span>
-            <span class="${colorClass} font-black">${fmtJuta(item[1])}</span>
+            <span class="${colorClass} font-black text-xs">${fmtJuta(item[1])}</span>
         </div>`).join('');
 }
 
