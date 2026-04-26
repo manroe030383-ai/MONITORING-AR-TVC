@@ -17,9 +17,14 @@ async function fetchData() {
 }
 
 function updateDashboard(data) {
-    let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, unitCash: 0, unitLeas: 0, cOv: 0, gi: 0, rd: 0, spkPenCount: 0 };
+    let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, unitCash: 0, unitLeas: 0, cOv: 0, spkPenCount: 0 };
+    
+    // Counter khusus untuk TVC (TAFS & ACC)
+    let tvc = { totalUnit: 0, gi: 0, rd: 0 };
+    let mapTvcDetail = { 'TAFS': 0, 'ACC': 0 };
+
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
-    let mapLeasing = {}, mapSales = {}, mapOverdue = {}, mapSpv = {}, mapTvcDetail = {};
+    let mapLeasing = {}, mapSales = {}, mapOverdue = {}, mapSpv = {};
 
     data.forEach(d => {
         const valOs = Number(d.os_balance || 0);
@@ -44,8 +49,12 @@ function updateDashboard(data) {
             s.leas += valOs; s.unitLeas++;
             mapLeasing[lName] = (mapLeasing[lName] || 0) + valOs;
             
-            if (d.gl_date) s.gi++; else s.rd++;
-            mapTvcDetail[lName] = (mapTvcDetail[lName] || 0) + 1;
+            // LOGIKA KHUSUS TVC (Hanya TAFS dan ACC)
+            if (lName === 'TAFS' || lName === 'ACC') {
+                tvc.totalUnit++;
+                if (d.gl_date) tvc.gi++; else tvc.rd++;
+                mapTvcDetail[lName]++;
+            }
         }
 
         mapSales[d.salesman_name || 'N/A'] = (mapSales[d.salesman_name] || 0) + valOs;
@@ -56,6 +65,7 @@ function updateDashboard(data) {
         }
     });
 
+    // Update UI Stats
     document.getElementById('total-os').innerText = fmtIDR(s.os);
     document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
@@ -65,9 +75,11 @@ function updateDashboard(data) {
     document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
     document.getElementById('unit-total-leas').innerText = `${s.unitLeas} Unit`;
     
-    document.getElementById('total-unit').innerText = `${s.unitLeas} Unit`;
-    document.getElementById('unit-gi').innerText = `${s.gi} Unit`;
-    document.getElementById('unit-delivery').innerText = `${s.rd} Unit`;
+    // Update UI TVC (Hanya TAFS & ACC)
+    document.getElementById('total-unit-tvc').innerText = `${tvc.totalUnit} Unit`;
+    document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
+    document.getElementById('unit-delivery-tvc').innerText = `${tvc.rd} Unit`;
+
     document.getElementById('spk-penalty').innerText = `${s.spkPenCount} SPK`;
     document.getElementById('badge-overdue').innerText = `${s.cOv} SPK LEWAT TOP`;
 
@@ -119,18 +131,17 @@ function renderCharts(cash, leas, aging) {
     } else { charts.donut.updateSeries([cash, leas]); }
 }
 
-// PERBAIKAN: Render List TVC (Tanpa Background Box per Item)
+// RENDER TVC LIST: Hanya menampilkan TAFS dan ACC
 function renderTvcList(map) {
-    const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 5);
-    document.getElementById('tvc-detail-list').innerHTML = sorted.map(([name, val]) => `
+    const target = ['TAFS', 'ACC'];
+    document.getElementById('tvc-detail-list').innerHTML = target.map(name => `
         <div class="flex justify-between items-center text-[10px] border-b border-slate-50 py-2">
             <span class="font-bold text-slate-500 uppercase">${name}</span>
-            <span class="font-black text-blue-600 text-xs">${val} Unit</span>
+            <span class="font-black text-blue-600 text-xs">${map[name] || 0} Unit</span>
         </div>
     `).join('');
 }
 
-// PERBAIKAN: Render Top SPV (Persis Gambar Referensi)
 function renderTopSpv(map, total) {
     const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 5);
     document.getElementById('list-spv').innerHTML = sorted.map((item, i) => {
