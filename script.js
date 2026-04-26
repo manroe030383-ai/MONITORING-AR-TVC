@@ -18,11 +18,8 @@ async function fetchData() {
 
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, unitCash: 0, unitLeas: 0, cOv: 0, spkPenCount: 0 };
-    
-    // Counter khusus untuk TVC (TAFS & ACC)
     let tvc = { totalUnit: 0, gi: 0, rd: 0 };
     let mapTvcDetail = { 'TAFS': 0, 'ACC': 0 };
-
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
     let mapLeasing = {}, mapSales = {}, mapOverdue = {}, mapSpv = {};
 
@@ -49,7 +46,6 @@ function updateDashboard(data) {
             s.leas += valOs; s.unitLeas++;
             mapLeasing[lName] = (mapLeasing[lName] || 0) + valOs;
             
-            // LOGIKA KHUSUS TVC (Hanya TAFS dan ACC)
             if (lName === 'TAFS' || lName === 'ACC') {
                 tvc.totalUnit++;
                 if (d.gl_date) tvc.gi++; else tvc.rd++;
@@ -65,7 +61,6 @@ function updateDashboard(data) {
         }
     });
 
-    // Update UI Stats
     document.getElementById('total-os').innerText = fmtIDR(s.os);
     document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
@@ -75,11 +70,9 @@ function updateDashboard(data) {
     document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
     document.getElementById('unit-total-leas').innerText = `${s.unitLeas} Unit`;
     
-    // Update UI TVC (Hanya TAFS & ACC)
     document.getElementById('total-unit-tvc').innerText = `${tvc.totalUnit} Unit`;
     document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     document.getElementById('unit-delivery-tvc').innerText = `${tvc.rd} Unit`;
-
     document.getElementById('spk-penalty').innerText = `${s.spkPenCount} SPK`;
     document.getElementById('badge-overdue').innerText = `${s.cOv} SPK LEWAT TOP`;
 
@@ -131,7 +124,6 @@ function renderCharts(cash, leas, aging) {
     } else { charts.donut.updateSeries([cash, leas]); }
 }
 
-// RENDER TVC LIST: Hanya menampilkan TAFS dan ACC
 function renderTvcList(map) {
     const target = ['TAFS', 'ACC'];
     document.getElementById('tvc-detail-list').innerHTML = target.map(name => `
@@ -142,20 +134,26 @@ function renderTvcList(map) {
     `).join('');
 }
 
+// KHUSUS PERBAIKAN TOP SPV AGAR SESUAI REFERENSI
 function renderTopSpv(map, total) {
     const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 5);
     document.getElementById('list-spv').innerHTML = sorted.map((item, i) => {
         const pct = ((item[1] / total) * 100).toFixed(1);
         return `
-        <div class="space-y-1">
-            <div class="flex justify-between text-[10px] font-bold">
-                <span class="text-slate-600 uppercase truncate w-32">${i+1}. ${item[0]}</span>
-                <span class="text-purple-600 font-black text-xs">${fmtJuta(item[1])}</span>
+        <div class="space-y-1.5">
+            <div class="flex justify-between items-end">
+                <span class="text-[11px] font-extrabold text-slate-700 uppercase truncate w-36">${i+1}. ${item[0]}</span>
+                <div class="text-right">
+                    <span class="text-purple-700 font-extrabold text-[11px] block leading-none">${fmtJuta(item[1])}</span>
+                </div>
             </div>
-            <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
-                <div class="bg-purple-500 h-full" style="width: ${pct}%"></div>
+            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden shadow-inner">
+                <div class="bg-purple-600 h-full rounded-full transition-all duration-700" style="width: ${pct}%"></div>
             </div>
-            <div class="flex justify-end text-[7px] font-bold text-slate-400 italic">${pct}% Kontribusi</div>
+            <div class="flex justify-between text-[8px] font-bold text-slate-400 italic px-0.5">
+                <span>Rank ${i+1}</span>
+                <span>${pct}% Kontribusi</span>
+            </div>
         </div>`;
     }).join('');
 }
@@ -176,4 +174,4 @@ function renderTopList(id, map, colorClass) {
         </div>`).join('');
 }
 
-document.addEventListener('DOMContentLoaded', fetchData);
+document.addEventListener('DOMContentLoaded', fetchData);//refhres setiap 5 minute
