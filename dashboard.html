@@ -12,7 +12,6 @@
         .card-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04); }
         .nav-active { background-color: #1B2559 !important; color: white !important; }
         .box-total { border-radius: 12px; padding: 12px; }
-        .transition-all { transition: all 0.3s ease; }
     </style>
 </head>
 <body class="bg-[#F8FAFC] min-h-screen flex text-[#1B2559]">
@@ -26,84 +25,40 @@
             </div>
         </div>
         <nav class="space-y-1">
-            <p class="text-[9px] font-bold text-slate-600 uppercase mb-4 px-2 tracking-widest">AR Kendaraan (Unit)</p>
             <a href="#" class="flex items-center gap-3 p-3 bg-red-600 text-white rounded-xl text-xs font-bold shadow-lg">📊 Dashboard Unit</a>
-            <a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800/50 rounded-xl text-xs font-medium transition-all">📄 Data AR Unit</a>
         </nav>
     </aside>
 
     <main class="flex-1 p-6 overflow-x-hidden">
         <div class="flex justify-between items-start mb-6">
-            <div>
-                <p id="status-update" class="text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic">MEMUAT DATA...</p>
-                <h2 class="text-2xl font-extrabold tracking-tight">Overview AR Unit</h2>
-                <div class="flex gap-2 mt-4">
-                    <button class="nav-btn nav-active px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Ringkasan</button>
-                    <button class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Leasing</button>
-                    <button class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Overdue</button>
-                </div>
-            </div>
-            <div class="flex gap-4 items-center">
-                <div class="bg-white p-3 rounded-xl border border-slate-100 flex flex-col items-end">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase">ARSIP DB:</span>
-                    <span id="tgl-arsip" class="text-xs font-black">2026</span>
-                </div>
-            </div>
+            <h2 class="text-2xl font-extrabold tracking-tight">Overview AR Unit</h2>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                 <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total O/S Balance</p>
-                <h3 id="total-os" class="text-xl font-black mb-4 tracking-tighter">Rp 0</h3>
-                <div class="h-1.5 w-full bg-slate-100 rounded-full flex overflow-hidden mb-1">
-                    <div id="bar-cash" class="bg-emerald-400 h-full" style="width: 0%"></div>
-                    <div id="bar-leasing" class="bg-blue-600 h-full" style="width: 0%"></div>
-                </div>
-                <div class="flex justify-between text-[8px] font-bold uppercase tracking-tighter">
-                    <span class="text-emerald-500">Cash</span>
-                    <span class="text-blue-600">Leasing</span>
-                </div>
+                <h3 id="total-os" class="text-xl font-black">Rp 0</h3>
             </div>
             <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total Overdue (> TOP)</p>
-                <h3 id="total-overdue" class="text-xl font-black text-red-600 tracking-tighter">Rp 0</h3>
-                <span id="badge-overdue" class="text-[9px] font-bold text-red-400 mt-2 block uppercase italic">0 SPK Lewat TOP</span>
+                <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total Overdue</p>
+                <h3 id="total-overdue" class="text-xl font-black text-red-600">Rp 0</h3>
             </div>
             <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                 <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Potensi Penalti</p>
-                <h3 id="total-penalty" class="text-xl font-black text-orange-500 tracking-tighter">Rp 0</h3>
-                <span id="spk-penalty" class="text-[9px] font-bold text-slate-400 mt-2 block uppercase italic">0 SPK</span>
+                <h3 id="total-penalty" class="text-xl font-black text-orange-500">Rp 0</h3>
             </div>
             <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                 <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Belum Jatuh Tempo</p>
-                <h3 id="total-lancar" class="text-xl font-black text-emerald-500 tracking-tighter">Rp 0</h3>
-                <span class="text-[9px] font-bold text-emerald-400 mt-2 block uppercase italic">O/S Aman</span>
+                <h3 id="total-lancar" class="text-xl font-black text-emerald-500">Rp 0</h3>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-10">Aging Analysis (Nominal)</h4>
-                <div id="chart-aging"></div>
-            </div>
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow lg:col-span-2">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">Komposisi & Breakdown Penjualan</h4>
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow lg:col-span-3">
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
                     <div class="md:col-span-4"><div id="chart-donut-leasing"></div></div>
-                    <div class="md:col-span-8 space-y-6">
-                        <div class="flex gap-4">
-                            <div class="box-total bg-emerald-50 border border-emerald-100 flex-1">
-                                <p class="text-[8px] font-bold text-emerald-600 uppercase mb-1">Total Cash</p>
-                                <p id="val-total-cash" class="text-sm font-black text-emerald-700">Rp 0</p>
-                                <p id="unit-total-cash" class="text-[8px] font-bold text-emerald-500">0 Unit</p>
-                            </div>
-                            <div class="box-total bg-blue-50 border border-blue-100 flex-1">
-                                <p class="text-[8px] font-bold text-blue-600 uppercase mb-1">Total Leasing</p>
-                                <p id="val-total-leas" class="text-sm font-black text-blue-700">Rp 0</p>
-                                <p id="unit-total-leas" class="text-[8px] font-bold text-blue-500">0 Unit</p>
-                            </div>
-                        </div>
-                        <div id="leasing-list" class="space-y-4 pt-2 border-t border-slate-50"></div>
+                    <div class="md:col-span-8">
+                        <div id="leasing-list" class="space-y-4"></div>
                     </div>
                 </div>
             </div>
@@ -117,21 +72,9 @@
 
             <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                 <h4 class="text-[10px] font-bold text-blue-500 uppercase mb-4">📊 Breakdown Leasing TVC</h4>
-                <div class="bg-[#F0F7FF] p-6 rounded-2xl border border-blue-100 text-center mb-4">
-                    <span class="text-[9px] font-bold text-blue-600 uppercase tracking-widest">Total TAFS & ACC</span>
-                    <p id="total-unit-tvc" class="text-3xl font-black text-[#1B2559]">0 Unit</p>
+                <div id="tvc-detail-list" class="space-y-2 text-center">
+                    <p id="total-unit-tvc" class="text-2xl font-black">0 Unit</p>
                 </div>
-                <div class="grid grid-cols-2 gap-2 mb-4">
-                    <div class="bg-[#F0FDF4] p-3 rounded-xl text-center border border-emerald-100">
-                        <p class="text-[8px] font-bold text-emerald-600 uppercase mb-1">Sudah GI</p>
-                        <p id="unit-gi-tvc" class="text-2xl font-black text-emerald-700">0 Unit</p>
-                    </div>
-                    <div class="bg-[#FFF7ED] p-3 rounded-xl text-center border border-orange-100">
-                        <p class="text-[8px] font-bold text-orange-600 uppercase mb-1">Belum GI</p>
-                        <p id="unit-delivery-tvc" class="text-2xl font-black text-orange-700">0 Unit</p>
-                    </div>
-                </div>
-                <div id="tvc-detail-list" class="space-y-1"></div>
             </div>
 
             <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
@@ -141,13 +84,14 @@
 
             <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                 <div class="flex items-center gap-3 mb-4">
-                    <div class="bg-purple-50 p-2 rounded-lg">🏢</div>
+                    <div class="bg-purple-50 p-2 rounded-lg text-lg">🏢</div>
                     <div>
-                        <h4 class="text-[11px] font-bold text-[#1B2559] uppercase">Top SPV AR Distribution</h4>
-                        <p class="text-[9px] text-slate-400 font-medium">Kontribusi O/S per Supervisor</p>
+                        <h4 class="text-[11px] font-extrabold text-[#1B2559] uppercase">Top SPV AR Distribution</h4>
+                        <p class="text-[9px] text-slate-400 font-medium italic">Kontribusi O/S per Supervisor</p>
                     </div>
                 </div>
-                <div id="list-spv" class="space-y-6"></div>
+                <div id="list-spv" class="space-y-6">
+                    </div>
             </div>
         </div>
     </main>
