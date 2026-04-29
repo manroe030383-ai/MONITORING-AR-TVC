@@ -1,168 +1,172 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Overview AR Unit - Auto2000</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .card-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04); }
-        .nav-active { background-color: #1B2559 !important; color: white !important; }
-        .box-total { border-radius: 12px; padding: 12px; }
-        .transition-all { transition: all 0.3s ease; }
-    </style>
+<meta charset="UTF-8">
+<title>AR Monitoring System</title>
+
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<style>
+body { font-family: Arial; background:#eef1f5; margin:0; }
+.header { background:#1e293b; color:#fff; padding:15px; }
+.container { padding:20px; }
+.grid { display:grid; grid-template-columns: repeat(4,1fr); gap:10px; }
+.card { background:#fff; padding:15px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+table { width:100%; margin-top:20px; background:#fff; border-collapse: collapse; }
+th, td { padding:10px; border-bottom:1px solid #ddd; }
+.status-red { color:red; font-weight:bold; }
+.status-green { color:green; }
+</style>
 </head>
-<body class="bg-[#F8FAFC] min-h-screen flex text-[#1B2559]">
 
-    <aside class="w-64 bg-[#0B1324] text-slate-400 hidden lg:flex flex-col p-6 sticky top-0 h-screen">
-        <div class="flex items-center gap-3 mb-10">
-            <div class="bg-red-600 text-white w-9 h-9 rounded-lg flex items-center justify-center font-bold">A</div>
-            <div>
-                <h1 class="text-white font-bold text-xs uppercase">Auto2000</h1>
-                <p class="text-[8px] uppercase tracking-widest text-slate-500">Branch Control</p>
-            </div>
-        </div>
-        <nav class="space-y-1">
-            <p class="text-[9px] font-bold text-slate-600 uppercase mb-4 px-2 tracking-widest">AR Kendaraan (Unit)</p>
-            <a href="#" class="flex items-center gap-3 p-3 bg-red-600 text-white rounded-xl text-xs font-bold shadow-lg">📊 Dashboard Unit</a>
-            <a href="#" class="flex items-center gap-3 p-3 hover:bg-slate-800/50 rounded-xl text-xs font-medium transition-all">📄 Data AR Unit</a>
-        </nav>
-    </aside>
+<body>
 
-    <main class="flex-1 p-6 overflow-x-hidden">
-        <div class="flex justify-between items-start mb-6">
-            <div>
-                <p id="status-update" class="text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic">MEMUAT DATA...</p>
-                <h2 class="text-2xl font-extrabold tracking-tight">Overview AR Unit</h2>
-                <div class="flex gap-2 mt-4">
-                    <button onclick="filterTab(this, 'ringkasan')" class="nav-btn nav-active px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Ringkasan</button>
-                    <button onclick="filterTab(this, 'leasing')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Leasing</button>
-                    <button onclick="filterTab(this, 'overdue')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Overdue</button>
-                    <button onclick="filterTab(this, 'database')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Database Lengkap</button>
-                </div>
-            </div>
-            <div class="flex gap-4 items-center">
-                <div class="bg-white p-3 rounded-xl border border-slate-100 flex flex-col items-end">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase">ARSIP DB:</span>
-                    <span id="tgl-arsip" class="text-xs font-black">23/04/2026</span>
-                </div>
-                <button class="bg-white border border-slate-200 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase hover:bg-slate-50">Download PDF</button>
-            </div>
-        </div>
+<div class="header">
+AR Monitoring System
+</div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total O/S Balance</p>
-                <h3 id="total-os" class="text-xl font-black mb-4 tracking-tighter">Rp 0</h3>
-                <div class="h-1.5 w-full bg-slate-100 rounded-full flex overflow-hidden mb-1">
-                    <div id="bar-cash" class="bg-emerald-400 h-full" style="width: 0%"></div>
-                    <div id="bar-leasing" class="bg-blue-600 h-full" style="width: 0%"></div>
-                </div>
-                <div class="flex justify-between text-[8px] font-bold uppercase tracking-tighter">
-                    <span class="text-emerald-500">Cash</span>
-                    <span class="text-blue-600">Leasing</span>
-                </div>
-            </div>
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total Overdue (> TOP)</p>
-                <h3 id="total-overdue" class="text-xl font-black text-red-600 tracking-tighter">Rp 0</h3>
-                <span id="badge-overdue" class="text-[9px] font-bold text-red-400 mt-2 block uppercase">0 SPK Lewat TOP</span>
-            </div>
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Potensi Penalti</p>
-                <h3 id="total-penalty" class="text-xl font-black text-orange-500 tracking-tighter">Rp 0</h3>
-                <span id="spk-penalty" class="text-[9px] font-bold text-slate-400 mt-2 block uppercase italic">0 SPK</span>
-            </div>
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Belum Jatuh Tempo</p>
-                <h3 id="total-lancar" class="text-xl font-black text-emerald-500 tracking-tighter">Rp 0</h3>
-                <div class="mt-2 flex items-center gap-1">
-                    <span class="w-2 h-2 bg-emerald-400 rounded-full"></span>
-                    <span class="text-[9px] font-bold text-emerald-400 uppercase italic">O/S Aman</span>
-                </div>
-            </div>
-        </div>
+<div class="container">
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-10">Aging Analysis (Nominal)</h4>
-                <div id="chart-aging"></div>
-            </div>
+<div id="kpi" class="grid"></div>
 
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow lg:col-span-2">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">Komposisi & Breakdown Penjualan</h4>
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-                    <div class="md:col-span-4"><div id="chart-donut-leasing"></div></div>
-                    <div class="md:col-span-8 space-y-6">
-                        <div class="flex gap-4">
-                            <div class="box-total bg-emerald-50 border border-emerald-100 flex-1">
-                                <p class="text-[8px] font-bold text-emerald-600 uppercase mb-1">Total Cash</p>
-                                <p id="val-total-cash" class="text-sm font-black text-emerald-700">Rp 0</p>
-                                <p id="unit-total-cash" class="text-[8px] font-bold text-emerald-500">0 Unit</p>
-                            </div>
-                            <div class="box-total bg-blue-50 border border-blue-100 flex-1">
-                                <p class="text-[8px] font-bold text-blue-600 uppercase mb-1">Total Leasing</p>
-                                <p id="val-total-leas" class="text-sm font-black text-blue-700">Rp 0</p>
-                                <p id="unit-total-leas" class="text-[8px] font-bold text-blue-500">0 Unit</p>
-                            </div>
-                        </div>
-                        <div id="leasing-list" class="space-y-4 pt-2 border-t border-slate-50"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div id="chart"></div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">🏆 Top Sales O/S</h4>
-                <div id="list-sales" class="space-y-4"></div>
-            </div>
+<input id="search" placeholder="Cari customer..." onkeyup="loadData()">
 
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-blue-500 uppercase mb-4">📊 Breakdown Leasing TVC</h4>
-                <div class="bg-[#F0F7FF] p-6 rounded-2xl border border-blue-100 text-center mb-4">
-                    <span class="text-[9px] font-bold text-blue-600 uppercase tracking-widest">Total Penjualan TAFS & ACC</span>
-                    <p id="total-unit-tvc" class="text-3xl font-black text-[#1B2559]">0 Unit</p>
-                </div>
-                <div class="grid grid-cols-2 gap-2 mb-4">
-                    <div class="bg-[#F0FDF4] p-3 rounded-xl text-center border border-emerald-100">
-                        <p class="text-[8px] font-bold text-emerald-600 uppercase mb-1">SUDAH GI / TAGIH</p>
-                        <p id="unit-gi-tvc" class="text-2xl font-black text-emerald-700">0 Unit</p>
-                    </div>
-                    <div class="bg-[#FFF7ED] p-3 rounded-xl text-center border border-orange-100">
-                        <p class="text-[8px] font-bold text-orange-600 uppercase mb-1">BELUM DELIVERY</p>
-                        <p id="unit-delivery-tvc" class="text-2xl font-black text-orange-700">0 Unit</p>
-                    </div>
-                </div>
-                <div id="tvc-detail-list" class="space-y-1">
-                    </div>
-            </div>
+<table>
+<thead>
+<tr>
+<th>Customer</th>
+<th>Sales</th>
+<th>Leasing</th>
+<th>OS</th>
+<th>Overdue</th>
+<th>Status Leasing</th>
+<th>Unit</th>
+</tr>
+</thead>
 
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-red-500 uppercase mb-4">⚠️ Top 5 Overdue</h4>
-                <div id="list-overdue" class="space-y-4"></div>
-            </div>
+<tbody id="table-body"></tbody>
+</table>
 
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-purple-600 uppercase mb-4">🏢 Top SPV AR Distribution</h4>
-                <div id="list-spv" class="space-y-6"></div>
-            </div>
-        </div>
-    </main>
+</div>
 
-    <script type="module" src="script.js"></script>
-    <script>
-        function filterTab(btn, tabName) {
-            document.querySelectorAll('.nav-btn').forEach(b => {
-                b.classList.remove('nav-active');
-                b.classList.add('bg-white', 'text-slate-500');
-            });
-            btn.classList.add('nav-active');
-            btn.classList.remove('bg-white', 'text-slate-500');
-        }
-    </script>
+<script>
+const supabase = supabase.createClient("YOUR_URL","YOUR_KEY");
+
+let role = null;
+
+// DETECT USER
+async function init(){
+  let { data } = await supabase.auth.getUser();
+  let email = data.user.email;
+
+  if(email.includes("acc") || email.includes("tafs")) role="leasing";
+  else if(email.includes("dealer")) role="sales";
+  else role="admin";
+
+  loadData();
+  realtime();
+}
+
+// LOAD DATA
+async function loadData(){
+  let { data } = await supabase.from("ar_data").select("*");
+
+  let keyword = document.getElementById("search").value || "";
+  data = data.filter(x=>x.customer_name.toLowerCase().includes(keyword.toLowerCase()));
+
+  renderKPI(data);
+  renderChart(data);
+  renderTable(data);
+}
+
+// KPI
+function renderKPI(data){
+  let os = data.reduce((a,b)=>a+b.os_balance,0);
+  let od = data.reduce((a,b)=>a+b.total_overdue,0);
+
+  document.getElementById("kpi").innerHTML = `
+    <div class="card">Total OS<br>${os}</div>
+    <div class="card">Overdue<br>${od}</div>
+    <div class="card">Jumlah Data<br>${data.length}</div>
+    <div class="card">Risk Level<br>${od>0?'HIGH':'SAFE'}</div>
+  `;
+}
+
+// CHART
+function renderChart(data){
+  let chart = new ApexCharts(document.querySelector("#chart"), {
+    chart:{ type:'bar' },
+    series:[{ data:data.map(x=>x.total_overdue) }],
+    xaxis:{ categories:data.map(x=>x.customer_name) }
+  });
+  chart.render();
+}
+
+// TABLE
+function renderTable(data){
+  let html="";
+
+  data.forEach(row=>{
+    html+=`
+    <tr>
+      <td>${row.customer_name}</td>
+      <td>${row.salesman_name}</td>
+      <td>${row.leasing_name}</td>
+      <td>${row.os_balance}</td>
+      <td class="${row.total_overdue>0?'status-red':'status-green'}">${row.total_overdue}</td>
+
+      <td>
+        ${role==="leasing" ? `
+          <select id="l_${row.no_billing}">
+            <option>Pending</option>
+            <option>Process</option>
+            <option>Approved</option>
+            <option>Reject</option>
+            <option>Paid</option>
+          </select>
+          <button onclick="updateLeasing('${row.no_billing}')">✔</button>
+        ` : 'View'}
+      </td>
+
+      <td>
+        ${role==="sales" ? `
+          <select id="u_${row.no_spk}">
+            <option>On Delivery</option>
+            <option>In Transit</option>
+            <option>Arrived</option>
+          </select>
+          <button onclick="updateUnit('${row.no_spk}')">✔</button>
+        ` : 'View'}
+      </td>
+    </tr>`;
+  });
+
+  document.getElementById("table-body").innerHTML=html;
+}
+
+// UPDATE
+async function updateLeasing(bill){
+  let status = document.getElementById(`l_${bill}`).value;
+  await supabase.from("leasing_updates").insert({no_billing:bill, leasing_status:status});
+}
+
+async function updateUnit(spk){
+  let status = document.getElementById(`u_${spk}`).value;
+  await supabase.from("unit_tracking").insert({no_spk:spk, unit_status:status});
+}
+
+// REALTIME
+function realtime(){
+  supabase.channel('realtime')
+    .on('postgres_changes',{event:'*',schema:'public',table:'ar_data'},loadData)
+    .subscribe();
+}
+
+init();
+</script>
+
 </body>
 </html>
