@@ -8,69 +8,26 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
 <style>
-body{
-  margin:0;
-  font-family:Segoe UI;
-  background:#eef2f6;
-}
+body{margin:0;font-family:Segoe UI;background:#eef2f6}
 
 /* SIDEBAR */
 .sidebar{
-  width:240px;
-  height:100vh;
-  position:fixed;
-  background:#0f172a;
-  color:white;
-  padding:20px;
+  width:240px;height:100vh;position:fixed;
+  background:#0f172a;color:white;padding:20px
 }
-.sidebar h2{margin-bottom:30px;}
-.menu div{
-  padding:12px;
-  margin-bottom:10px;
-  border-radius:8px;
-  cursor:pointer;
-}
-.menu div.active, .menu div:hover{
-  background:#ef4444;
-}
+.menu div{padding:12px;margin-bottom:10px;border-radius:8px;cursor:pointer}
+.menu div.active{background:#ef4444}
 
 /* MAIN */
-.main{
-  margin-left:260px;
-  padding:20px;
-}
-
-/* HEADER */
-.header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.tabs button{
-  margin-right:10px;
-  padding:8px 15px;
-  border:none;
-  border-radius:20px;
-  background:#e5e7eb;
-  cursor:pointer;
-}
-.tabs .active{
-  background:#2563eb;
-  color:white;
-}
+.main{margin-left:260px;padding:20px}
 
 /* KPI */
 .kpi-grid{
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:15px;
-  margin-top:20px;
+  gap:15px;margin-top:20px
 }
-.kpi{
-  background:white;
-  padding:15px;
-  border-radius:12px;
-}
+.kpi{background:white;padding:15px;border-radius:12px}
 .kpi h4{margin:0;font-size:12px;color:#888}
 .kpi h2{margin:5px 0}
 .blue{color:#2563eb}
@@ -82,47 +39,25 @@ body{
 .main-grid{
   display:grid;
   grid-template-columns:2fr 1fr;
-  gap:20px;
-  margin-top:20px;
+  gap:20px;margin-top:20px
 }
-
-.big-box{
-  background:white;
-  padding:15px;
-  border-radius:12px;
+.big-box,.box{
+  background:white;padding:15px;border-radius:12px
 }
-
 .right-box{
-  display:grid;
-  grid-template-rows:1fr 1fr;
-  gap:20px;
-}
-
-.box{
-  background:white;
-  padding:15px;
-  border-radius:12px;
+  display:grid;grid-template-rows:1fr 1fr;gap:20px
 }
 
 /* BOTTOM */
 .bottom-grid{
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:20px;
-  margin-top:20px;
+  gap:20px;margin-top:20px
 }
 
 /* PROGRESS */
-.bar{
-  background:#e5e7eb;
-  height:6px;
-  border-radius:5px;
-}
-.fill{
-  background:#2563eb;
-  height:6px;
-  border-radius:5px;
-}
+.bar{background:#e5e7eb;height:6px;border-radius:5px}
+.fill{background:#2563eb;height:6px;border-radius:5px}
 </style>
 </head>
 
@@ -138,20 +73,10 @@ body{
 
 <div class="main">
 
-<div class="header">
-  <h2>Overview AR Unit</h2>
-  <div class="tabs">
-    <button class="active">Ringkasan</button>
-    <button>Leasing</button>
-    <button>Overdue</button>
-    <button>Database</button>
-  </div>
-</div>
+<h2>Overview AR Unit</h2>
 
-<!-- KPI -->
 <div id="kpi" class="kpi-grid"></div>
 
-<!-- MAIN -->
 <div class="main-grid">
 
   <div class="big-box">
@@ -160,7 +85,6 @@ body{
   </div>
 
   <div class="right-box">
-
     <div class="box">
       <h3>Leasing Composition</h3>
       <div id="leasingChart"></div>
@@ -170,14 +94,11 @@ body{
       <h3>Leasing Breakdown</h3>
       <div id="leasingBreakdown"></div>
     </div>
-
   </div>
 
 </div>
 
-<!-- BOTTOM -->
 <div class="bottom-grid">
-
   <div class="box">
     <h3>Top Sales</h3>
     <div id="topSales"></div>
@@ -197,56 +118,82 @@ body{
     <h3>SPV</h3>
     <div id="spv"></div>
   </div>
-
 </div>
 
 </div>
 
 <script>
-const supabase = supabase.createClient("YOUR_URL","YOUR_KEY");
+const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
+const SUPABASE_KEY = 'YOUR_ANON_KEY';
+
+// ✅ FIX PENTING (harus seperti ini)
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let DATA=[];
+let chart1, chart2;
 
-// LOAD DATA
+// ================= LOAD DATA =================
 async function load(){
-  let {data} = await supabase.from("ar_data").select("*");
-  DATA=data;
 
-  renderKPI();
-  renderCharts();
-  renderLists();
-  renderBreakdown();
+  try{
+    const { data, error } = await supabase
+      .from("ar_data")
+      .select("*");
+
+    if(error){
+      alert("Error ambil data: " + error.message);
+      return;
+    }
+
+    if(!data || data.length === 0){
+      alert("Data kosong di Supabase");
+      return;
+    }
+
+    DATA = data;
+
+    renderKPI();
+    renderCharts();
+    renderLists();
+    renderBreakdown();
+
+  }catch(err){
+    console.error(err);
+    alert("Gagal load data");
+  }
 }
 
-// KPI
+// ================= KPI =================
 function renderKPI(){
-  document.getElementById("kpi").innerHTML=`
+  document.getElementById("kpi").innerHTML = `
     <div class="kpi">
       <h4>Total OS Balance</h4>
-      <h2 class="blue">Rp ${sum("os_balance")}</h2>
+      <h2 class="blue">Rp ${format(sum("os_balance"))}</h2>
     </div>
 
     <div class="kpi">
       <h4>Total Overdue</h4>
-      <h2 class="red">Rp ${sum("total_overdue")}</h2>
+      <h2 class="red">Rp ${format(sum("total_overdue"))}</h2>
     </div>
 
     <div class="kpi">
       <h4>Potensi Penalti</h4>
-      <h2 class="orange">Rp ${sum("penalty_amount")}</h2>
+      <h2 class="orange">Rp ${format(sum("penalty_amount"))}</h2>
     </div>
 
     <div class="kpi">
       <h4>Belum Jatuh Tempo</h4>
-      <h2 class="green">Rp ${sum("lancar")}</h2>
+      <h2 class="green">Rp ${format(sum("lancar"))}</h2>
     </div>
   `;
 }
 
-// CHART
+// ================= CHART =================
 function renderCharts(){
 
-  new ApexCharts(document.querySelector("#agingChart"),{
+  if(chart1) chart1.destroy();
+
+  chart1 = new ApexCharts(document.querySelector("#agingChart"),{
     chart:{type:'bar',height:300},
     series:[{
       data:[
@@ -257,63 +204,81 @@ function renderCharts(){
       ]
     }],
     xaxis:{categories:['Lancar','1-30','31-60','>60']}
-  }).render();
+  });
 
-  let leasing=groupBy("leasing_name");
+  chart1.render();
 
-  new ApexCharts(document.querySelector("#leasingChart"),{
+  let leasing = groupBy("leasing_name");
+
+  if(chart2) chart2.destroy();
+
+  chart2 = new ApexCharts(document.querySelector("#leasingChart"),{
     chart:{type:'donut'},
     series:Object.values(leasing),
     labels:Object.keys(leasing)
-  }).render();
+  });
+
+  chart2.render();
 }
 
-// LIST
+// ================= LIST =================
 function renderLists(){
 
   let sales = Object.entries(groupBy("salesman_name"))
     .sort((a,b)=>b[1]-a[1]).slice(0,5);
 
   document.getElementById("topSales").innerHTML =
-    sales.map(x=>`${x[0]} - ${x[1]}`).join("<br>");
+    sales.map(x=>`${x[0]} - ${format(x[1])}`).join("<br>");
 
-  let overdue = [...DATA].sort((a,b)=>b.total_overdue-a.total_overdue).slice(0,5);
+  let overdue = [...DATA]
+    .sort((a,b)=>b.total_overdue-a.total_overdue)
+    .slice(0,5);
 
   document.getElementById("topOverdue").innerHTML =
-    overdue.map(x=>`${x.customer_name} - ${x.total_overdue}`).join("<br>");
+    overdue.map(x=>`${x.customer_name} - ${format(x.total_overdue)}`).join("<br>");
 }
 
-// BREAKDOWN
+// ================= BREAKDOWN =================
 function renderBreakdown(){
+
   let data = groupBy("leasing_name");
+  let total = sum("os_balance");
+
   let html="";
 
   Object.entries(data).forEach(([k,v])=>{
+    let percent = ((v/total)*100).toFixed(1);
+
     html+=`
-      ${k}
+      ${k} (${percent}%)
       <div class="bar">
-        <div class="fill" style="width:${v/100000000}%"></div>
+        <div class="fill" style="width:${percent}%"></div>
       </div><br>
     `;
   });
 
-  document.getElementById("leasingBreakdown").innerHTML=html;
+  document.getElementById("leasingBreakdown").innerHTML = html;
 }
 
-// HELPER
+// ================= HELPER =================
 function sum(field){
-  return DATA.reduce((a,b)=>a+(b[field]||0),0);
+  return DATA.reduce((a,b)=>a+(Number(b[field])||0),0);
 }
 
 function groupBy(field){
   let obj={};
   DATA.forEach(x=>{
-    let key=x[field]||'Unknown';
-    obj[key]=(obj[key]||0)+x.os_balance;
+    let key = x[field] || "Unknown";
+    obj[key] = (obj[key]||0) + (Number(x.os_balance)||0);
   });
   return obj;
 }
 
+function format(x){
+  return x.toLocaleString("id-ID");
+}
+
+// START
 load();
 </script>
 
