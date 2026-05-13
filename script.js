@@ -11,9 +11,8 @@ let charts = {};
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
 
-// --- FUNGSI NAVIGASI TAB (WAJIB ADA) ---
+// --- FUNGSI NAVIGASI TAB ---
 window.filterTab = function(btn, tabName) {
-    // 1. Update UI Tombol
     document.querySelectorAll('.nav-btn').forEach(b => {
         b.classList.remove('nav-active');
         b.classList.add('bg-white', 'text-slate-500');
@@ -21,13 +20,11 @@ window.filterTab = function(btn, tabName) {
     btn.classList.add('nav-active');
     btn.classList.remove('bg-white', 'text-slate-500');
 
-    // 2. Tampilkan Konten yang Sesuai
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.add('hidden');
     });
     document.getElementById(`content-${tabName}`).classList.remove('hidden');
 
-    // 3. Fix Grafik agar tidak gepeng saat kembali ke Ringkasan
     if (tabName === 'ringkasan') {
         window.dispatchEvent(new Event('resize'));
     }
@@ -44,7 +41,7 @@ async function fetchData() {
         if (error) throw error;
 
         if (data && data.length > 0) {
-            updateDashboard(data); // Memanggil logika perhitungan Anda
+            updateDashboard(data);
             statusEl.innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
             statusEl.className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic";
         } else {
@@ -56,7 +53,7 @@ async function fetchData() {
     }
 }
 
-// 3. Logika Perhitungan Dashboard (MODIFIKASI: Ditambah Renderer Tab)
+// 3. Logika Perhitungan Dashboard
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, unitCash: 0, unitLeas: 0, cOv: 0, spkPenCount: 0 };
     let tvc = { totalUnit: 0, gi: 0, rd: 0 };
@@ -101,7 +98,7 @@ function updateDashboard(data) {
         }
     });
 
-    // Update Tampilan Angka (Ringkasan)
+    // Update UI Ringkasan
     document.getElementById('total-os').innerText = fmtIDR(s.os);
     document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
@@ -116,12 +113,12 @@ function updateDashboard(data) {
     document.getElementById('spk-penalty').innerText = `${s.spkPenCount} SPK`;
     document.getElementById('badge-overdue').innerText = `${s.cOv} SPK LEWAT TOP`;
 
-    // --- RENDER ISI TAB TAMBAHAN ---
-    renderLeasingTabTable(mapLeasing); // Isi Tab Leasing
-    renderOverdueTabTable(data);       // Isi Tab Overdue
-    renderFullDatabaseTable(data);     // Isi Tab Database
+    // Render Tab Content
+    renderLeasingTabTable(mapLeasing);
+    renderOverdueTabTable(data);
+    renderFullDatabaseTable(data); // Fungsi yang dimodifikasi
 
-    // Jalankan Fungsi Render Visual
+    // Render Charts & Lists
     renderCharts(s.cash, s.leas, aging);
     renderLeasingList(mapLeasing, s.os);
     renderTopList('list-sales', mapSales, 'text-blue-600');
@@ -134,8 +131,80 @@ function updateDashboard(data) {
     document.getElementById('bar-leasing').style.width = `${100 - cashPct}%`;
 }
 
-// --- FUNGSI RENDERER UNTUK ISI TAB (LEASING, OVERDUE, DATABASE) ---
+// --- FUNGSI RENDERER TAB DATABASE (FITUR UPDATE) ---
+function renderFullDatabaseTable(data) {
+    const el = document.getElementById('tab-database-body');
+    if (!el) return;
 
+    // Filter khusus TAFS & ACC
+    const tvcData = data.filter(d => 
+        ['TAFS', 'ACC'].includes((d.leasing_name || '').toUpperCase().trim())
+    );
+
+    el.innerHTML = tvcData.map((d, i) => `
+        <tr class="hover:bg-slate-50 border-b border-slate-50">
+            <td class="p-4 text-slate-400 font-bold">${i+1}</td>
+            <td class="p-4 font-bold uppercase text-slate-700">${d.customer_name}</td>
+            <td class="p-4 uppercase text-slate-500 font-medium">${d.leasing_name}</td>
+            <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
+            
+            <td class="p-2">
+                <textarea id="plan-${d.id}" 
+                    class="w-full border border-slate-200 rounded p-2 text-[10px] focus:ring-1 focus:ring-blue-500 outline-none" 
+                    rows="2" placeholder="Rencana bayar...">${d.keterangan_cabang || ''}</textarea>
+            </td>
+            
+            <td class="p-2">
+                <textarea id="ket-leas-${d.id}" 
+                    class="w-full border border-slate-200 rounded p-2 text-[10px] focus:ring-1 focus:ring-red-500 outline-none" 
+                    rows="2" placeholder="Keterangan leasing...">${d.keterangan_leasing || ''}</textarea>
+            </td>
+
+            <td class="p-4 text-center">
+                <button onclick="saveRemarks('${d.id}')" 
+                    class="bg-[#1B2559] text-white px-4 py-2 rounded-lg text-[9px] font-bold uppercase hover:bg-emerald-600 transition-all">
+                    Update
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// --- FUNGSI SIMPAN KE SUPABASE ---
+window.saveRemarks = async function(id) {
+    const btn = event.target;
+    const originalText = btn.innerText;
+    
+    const planVal = document.getElementById(`plan-${id}`).value;
+    const leasVal = document.getElementById(`ket-leas-${id}`).value;
+
+    try {
+        btn.innerText = "SAVING...";
+        btn.disabled = true;
+
+        const { error } = await supabase
+            .from('ar_unit')
+            .update({ 
+                keterangan_cabang: planVal, 
+                keterangan_leasing: leasVal 
+            })
+            .eq('id', id);
+
+        if (error) throw error;
+        
+        alert("Berhasil Update!");
+        fetchData(); // Refresh semua data dashboard
+        
+    } catch (err) {
+        console.error("Gagal simpan:", err.message);
+        alert("Gagal simpan ke database.");
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+};
+
+// --- RENDERER LAINNYA ---
 function renderLeasingTabTable(mapLeasing) {
     const el = document.getElementById('tab-leasing-list');
     if (!el) return;
@@ -160,21 +229,6 @@ function renderOverdueTabTable(data) {
         </div>`).join('');
 }
 
-function renderFullDatabaseTable(data) {
-    const el = document.getElementById('tab-database-body');
-    if (!el) return;
-    el.innerHTML = data.map((d, i) => `
-        <tr class="hover:bg-slate-50 border-b border-slate-50">
-            <td class="p-3 text-slate-400 font-bold">${i+1}</td>
-            <td class="p-3 font-bold uppercase text-slate-700">${d.customer_name}</td>
-            <td class="p-3 uppercase text-slate-500">${d.leasing_name || 'CASH'}</td>
-            <td class="p-3 font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
-            <td class="p-3 font-black text-red-500">${fmtIDR(d.total_overdue)}</td>
-            <td class="p-3 uppercase text-slate-400 italic">${d.salesman_name}</td>
-        </tr>`).join('');
-}
-
-// (Fungsi renderCharts, renderTopList, renderTopSpv, renderLeasingList, renderTvcList tetap sama seperti kodingan Anda)
 function renderCharts(cash, leas, aging) {
     if (!charts.bar) {
         charts.bar = new ApexCharts(document.querySelector("#chart-aging"), {
