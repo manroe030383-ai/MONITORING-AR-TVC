@@ -9,96 +9,187 @@ let charts = {};
 
 // Helper Format Angka
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
+const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
 
-// --- FUNGSI AMBIL DATA ---
+// 2. Fungsi Utama Ambil Data
 async function fetchData() {
     try {
+        const statusEl = document.getElementById('status-update');
+        statusEl.innerText = "MENYINKRONKAN DATA...";
+
         const { data, error } = await supabase.from('ar_unit').select('*');
+        
         if (error) throw error;
 
-        if (data) {
+        if (data && data.length > 0) {
             updateDashboard(data);
-            document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
+            statusEl.innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
+            statusEl.className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic";
+        } else {
+            statusEl.innerText = "DATA KOSONG DI SUPABASE";
         }
     } catch (e) {
-        console.error("Error Fetching:", e);
+        console.error("Detail Error:", e);
+        document.getElementById('status-update').innerText = "ERROR: PERIKSA NAMA KOLOM TABEL";
     }
 }
 
-// --- DISTRIBUSI DATA KE TAB ---
+// 3. Logika Perhitungan Dashboard
 function updateDashboard(data) {
-    // 1. Data Ringkasan (Gunakan kodingan ringkasan Anda yang sudah ada di sini)
-    // ...
+    let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, unitCash: 0, unitLeas: 0, cOv: 0, spkPenCount: 0 };
+    let tvc = { totalUnit: 0, gi: 0, rd: 0 };
+    let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
+    let mapTvcDetail = { 'TAFS': 0, 'ACC': 0 };
+    let mapLeasing = {}, mapSales = {}, mapOverdue = {}, mapSpv = {};
 
-    // 2. Render Tab Leasing (Sesuai Judul)
-    renderTabLeasing(data);
+    data.forEach(d => {
+        const valOs = Number(d.os_balance || 0);
+        const lName = (d.leasing_name || 'CASH').toUpperCase().trim();
+        
+        // Akumulasi Statistik Utama
+        s.os += valOs;
+        s.ov += Number(d.total_overdue || 0);
+        s.pen += Number(d.penalty_amount || 0);
+        s.lan += Number(d.lancar || 0);
+        
+        if (Number(d.penalty_amount) > 0) s.spkPenCount++;
+        if (Number(d.total_overdue) > 0) s.cOv++;
 
-    // 3. Render Tab Overdue (Hanya yang memiliki Overdue > 0)
-    renderTabOverdue(data);
+        // Akumulasi Aging (dalam Juta)
+        aging['LANCAR'] += Number(d.lancar || 0) / 1000000;
+        aging['1-30 H'] += Number(d.hari_1_30 || 0) / 1000000;
+        aging['31-60 H'] += Number(d.hari_31_60 || 0) / 1000000;
+        aging['>60 H'] += Number(d.lebih_60_hari || 0) / 1000000;
 
-    // 4. Render Tab Database Lengkap (Semua Data - Sesuai image_3b9f33.png)
-    renderTabDatabaseLengkap(data);
+        // Pemisahan Cash & Leasing
+        if (["CASH", "CASH TERIMA", ""].includes(lName)) {
+            s.cash += valOs; s.unitCash++;
+        } else {
+            s.leas += valOs; s.unitLeas++;
+            mapLeasing[lName] = (mapLeasing[lName] || 0) + valOs;
+            
+            // Logika TVC (Hanya TAFS/ACC)
+            if (lName === 'TAFS' || lName === 'ACC') {
+                tvc.totalUnit++;
+                if (d.gl_date) tvc.gi++; else tvc.rd++;
+                mapTvcDetail[lName]++;
+            }
+        }
+
+        // Mapping untuk Top List
+        mapSales[d.salesman_name || 'N/A'] = (mapSales[d.salesman_name] || 0) + valOs;
+        mapSpv[d.spv_name || 'N/A'] = (mapSpv[d.spv_name] || 0) + valOs;
+        if (Number(d.total_overdue) > 0) {
+            mapOverdue[d.customer_name || 'CUST'] = (mapOverdue[d.customer_name] || 0) + Number(d.total_overdue);
+        }
+    });
+
+    // Update Tampilan Angka
+    document.getElementById('total-os').innerText = fmtIDR(s.os);
+    document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
+    document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
+    document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
+    document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
+    document.getElementById('unit-total-cash').innerText = `${s.unitCash} Unit`;
+    document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
+    document.getElementById('unit-total-leas').innerText = `${s.unitLeas} Unit`;
+    document.getElementById('total-unit-tvc').innerText = `${tvc.totalUnit} Unit`;
+    document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
+    document.getElementById('unit-delivery-tvc').innerText = `${tvc.rd} Unit`;
+    document.getElementById('spk-penalty').innerText = `${s.spkPenCount} SPK`;
+    document.getElementById('badge-overdue').innerText = `${s.cOv} SPK LEWAT TOP`;
+
+    // Jalankan Fungsi Render Visual
+    renderCharts(s.cash, s.leas, aging);
+    renderLeasingList(mapLeasing, s.os);
+    renderTopList('list-sales', mapSales, 'text-blue-600');
+    renderTopList('list-overdue', mapOverdue, 'text-red-600');
+    renderTvcList(mapTvcDetail);
+    renderTopSpv(mapSpv, s.os);
+
+    // Update Progress Bar
+    const cashPct = s.os > 0 ? (s.cash / s.os) * 100 : 0;
+    document.getElementById('bar-cash').style.width = `${cashPct}%`;
+    document.getElementById('bar-leasing').style.width = `${100 - cashPct}%`;
 }
 
-// --- RENDER TAB LEASING ---
-function renderTabLeasing(data) {
-    const el = document.getElementById('tab-leasing-list'); // Pastikan ID ini ada di HTML Anda
+// 4. Fungsi Render Komponen Visual
+function renderCharts(cash, leas, aging) {
+    if (!charts.bar) {
+        charts.bar = new ApexCharts(document.querySelector("#chart-aging"), {
+            series: [{ name: 'Juta', data: Object.values(aging) }],
+            chart: { type: 'bar', height: 250, toolbar: { show: false } },
+            colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
+            plotOptions: { bar: { borderRadius: 4, columnWidth: '50%', distributed: true } },
+            xaxis: { categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'] }
+        });
+        charts.bar.render();
+    } else { charts.bar.updateSeries([{ data: Object.values(aging) }]); }
+
+    if (!charts.donut) {
+        charts.donut = new ApexCharts(document.querySelector("#chart-donut-leasing"), {
+            series: [cash, leas],
+            labels: ['Cash', 'Leasing'],
+            chart: { type: 'donut', height: 230 },
+            colors: ['#10B981', '#2563EB'],
+            plotOptions: { pie: { donut: { size: '75%' } } }
+        });
+        charts.donut.render();
+    } else { charts.donut.updateSeries([cash, leas]); }
+}
+
+function renderTopList(id, map, colorClass) {
+    const el = document.getElementById(id);
     if (!el) return;
-    
-    // Filter hanya data yang bukan CASH
-    const leasingData = data.filter(d => d.leasing_name && !['CASH', ''].includes(d.leasing_name.toUpperCase().trim()));
-    
-    el.innerHTML = leasingData.map((d, i) => `
-        <div class="flex justify-between items-center p-4 border-b border-slate-50">
-            <div class="text-[10px]">
-                <p class="font-bold text-slate-700 uppercase">${d.customer_name}</p>
-                <p class="text-slate-400">${d.leasing_name}</p>
-            </div>
-            <div class="text-right">
-                <p class="font-black text-blue-600 text-xs">${fmtIDR(d.os_balance)}</p>
-                <p class="text-[8px] italic text-slate-400">${d.salesman_name || '-'}</p>
-            </div>
-        </div>
-    `).join('');
+    el.innerHTML = Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 5).map((item, i) => `
+        <div class="flex justify-between items-center text-[10px] border-b border-slate-50 py-2">
+            <span class="font-bold text-slate-600 uppercase truncate w-32">${i+1}. ${item[0]}</span>
+            <span class="${colorClass} font-black text-xs">${fmtJuta(item[1])}</span>
+        </div>`).join('');
 }
 
-// --- RENDER TAB OVERDUE ---
-function renderTabOverdue(data) {
-    const el = document.getElementById('tab-overdue-list');
+function renderTopSpv(map, total) {
+    const el = document.getElementById('list-spv');
     if (!el) return;
-    
-    // Filter data yang memiliki total_overdue lebih dari 0
-    const overdueData = data.filter(d => Number(d.total_overdue) > 0).sort((a, b) => b.total_overdue - a.total_overdue);
-    
-    el.innerHTML = overdueData.map((d) => `
-        <div class="flex justify-between items-center p-4 border-b border-red-50 bg-red-50/20">
-            <div class="text-[10px]">
-                <p class="font-bold text-slate-800 uppercase">${d.customer_name}</p>
-                <p class="text-[8px] text-slate-400">${d.leasing_name || 'CASH'}</p>
+    el.innerHTML = Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 5).map((item, i) => {
+        const pct = total > 0 ? ((item[1] / total) * 100).toFixed(1) : 0;
+        return `
+        <div class="space-y-1 mb-2">
+            <div class="flex justify-between text-[10px] font-bold">
+                <span class="text-slate-600 uppercase truncate w-32">${i+1}. ${item[0]}</span>
+                <span class="text-purple-600 font-black text-xs">${fmtJuta(item[1])}</span>
             </div>
-            <div class="text-right">
-                <p class="font-black text-red-600 text-xs">${fmtIDR(d.total_overdue)}</p>
-                <p class="text-[8px] text-slate-500">Sales: ${d.salesman_name || '-'}</p>
+            <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                <div class="bg-purple-500 h-full" style="width: ${pct}%"></div>
             </div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 }
 
-// --- RENDER TAB DATABASE LENGKAP (STRUKTUR TABEL SESUAI GAMBAR) ---
-function renderTabDatabaseLengkap(data) {
-    const el = document.getElementById('tab-database-body');
+function renderLeasingList(map, total) {
+    const el = document.getElementById('leasing-list');
     if (!el) return;
-
-    el.innerHTML = data.map((d, i) => `
-        <tr class="hover:bg-slate-50 border-b border-slate-50 text-[10px]">
-            <td class="p-3 text-slate-400 font-bold">${i + 1}</td>
-            <td class="p-3 font-bold uppercase text-slate-700">${d.customer_name}</td>
-            <td class="p-3 text-slate-500 uppercase">${d.leasing_name || 'CASH'}</td>
-            <td class="p-3 text-right font-bold text-blue-600">${fmtIDR(d.os_balance)}</td>
-            <td class="p-3 text-right font-bold text-red-600">${fmtIDR(d.total_overdue)}</td>
-            <td class="p-3 text-slate-400 italic uppercase">${d.salesman_name || '-'}</td>
-        </tr>
-    `).join('');
+    el.innerHTML = Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 4).map(([n, v]) => `
+        <div class="space-y-1 mb-2">
+            <div class="flex justify-between text-[9px] font-bold">
+                <span class="text-slate-500">${n}</span>
+                <span class="text-slate-700">${total > 0 ? ((v/total)*100).toFixed(1) : 0}%</span>
+            </div>
+            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-blue-600 h-full" style="width: ${total > 0 ? (v/total)*100 : 0}%"></div>
+            </div>
+        </div>`).join('');
 }
 
+function renderTvcList(map) {
+    const el = document.getElementById('tvc-detail-list');
+    if (!el) return;
+    el.innerHTML = ['TAFS', 'ACC'].map(name => `
+        <div class="flex justify-between items-center text-[10px] border-b border-slate-50 py-2">
+            <span class="font-bold text-slate-500 uppercase">${name}</span>
+            <span class="font-black text-blue-600 text-xs">${map[name] || 0} Unit</span>
+        </div>`).join('');
+}
+
+// Jalankan saat halaman siap
 document.addEventListener('DOMContentLoaded', fetchData);
