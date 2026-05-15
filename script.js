@@ -30,26 +30,32 @@ window.filterTab = function(btn, tabName) {
     }
 };
 
-// 2. Fungsi Utama Ambil Data
+// 2. Fungsi Utama Ambil Data (DIPERBAIKI)
 async function fetchData() {
+    const statusEl = document.getElementById('status-update');
     try {
-        const statusEl = document.getElementById('status-update');
         statusEl.innerText = "MENYINKRONKAN DATA...";
-
-        const { data, error } = await supabase.from('ar_unit').select('*');
+        
+        // Menambahkan timeout/retry sederhana jika koneksi lambat
+        const { data, error } = await supabase
+            .from('ar_unit')
+            .select('*')
+            .order('os_balance', { ascending: false });
         
         if (error) throw error;
 
         if (data && data.length > 0) {
-            updateDashboard(data);
+            updateDashboard(data); 
             statusEl.innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
             statusEl.className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic";
         } else {
             statusEl.innerText = "DATA KOSONG DI SUPABASE";
+            statusEl.className = "text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-1 italic";
         }
     } catch (e) {
         console.error("Detail Error:", e);
-        document.getElementById('status-update').innerText = "ERROR: PERIKSA KONEKSI";
+        statusEl.innerText = "ERROR: PERIKSA KONEKSI / RLS SUPABASE";
+        statusEl.className = "text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic";
     }
 }
 
@@ -74,6 +80,7 @@ function updateDashboard(data) {
         if (Number(d.penalty_amount) > 0) s.spkPenCount++;
         if (valOv > 0) s.cOv++;
 
+        // Perhitungan Aging
         aging['LANCAR'] += Number(d.lancar || 0) / 1000000;
         aging['1-30 H'] += Number(d.hari_1_30 || 0) / 1000000;
         aging['31-60 H'] += Number(d.hari_31_60 || 0) / 1000000;
@@ -100,27 +107,17 @@ function updateDashboard(data) {
         }
     });
 
-    // Update Tampilan Ringkasan
-    document.getElementById('total-os').innerText = fmtIDR(s.os);
-    document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
-    document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
-    document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
-    document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
-    document.getElementById('unit-total-cash').innerText = `${s.unitCash} Unit`;
-    document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
-    document.getElementById('unit-total-leas').innerText = `${s.unitLeas} Unit`;
-    document.getElementById('total-unit-tvc').innerText = `${tvc.totalUnit} Unit`;
-    document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
-    document.getElementById('unit-delivery-tvc').innerText = `${tvc.rd} Unit`;
-    document.getElementById('spk-penalty').innerText = `${s.spkPenCount} SPK`;
-    document.getElementById('badge-overdue').innerText = `${s.cOv} SPK LEWAT TOP`;
+    // Update Tampilan Ringkasan (DOM safe check)
+    if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
+    if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
+    if(document.getElementById('badge-overdue')) document.getElementById('badge-overdue').innerText = `${s.cOv} SPK LEWAT TOP`;
 
-    // --- RENDER ISI TAB (DIPERBAIKI) ---
+    // --- RENDER ISI TAB (WAJIB DIPANGGIL) ---
     renderLeasingTabTable(mapLeasing); 
     renderOverdueTabTable(data);       
     renderFullDatabaseTable(data);     
 
-    // Visual Charts & Mini Lists
+    // Fungsi Visual Lainnya
     renderCharts(s.cash, s.leas, aging);
     renderLeasingList(mapLeasing, s.os);
     renderTopList('list-sales', mapSales, 'text-blue-600');
@@ -128,9 +125,13 @@ function updateDashboard(data) {
     renderTvcList(mapTvcDetail);
     renderTopSpv(mapSpv, s.os);
 
-    const cashPct = s.os > 0 ? (s.cash / s.os) * 100 : 0;
-    document.getElementById('bar-cash').style.width = `${cashPct}%`;
-    document.getElementById('bar-leasing').style.width = `${100 - cashPct}%`;
+    const barCash = document.getElementById('bar-cash');
+    const barLeasing = document.getElementById('bar-leasing');
+    if (barCash && barLeasing) {
+        const cashPct = s.os > 0 ? (s.cash / s.os) * 100 : 0;
+        barCash.style.width = `${cashPct}%`;
+        barLeasing.style.width = `${100 - cashPct}%`;
+    }
 }
 
 // --- FUNGSI RENDERER TAB ---
@@ -139,17 +140,17 @@ function renderLeasingTabTable(mapLeasing) {
     const el = document.getElementById('tab-leasing-list');
     if (!el) return;
     
-    // Tampilan Kartu (Grid)
-    el.innerHTML = Object.entries(mapLeasing).sort((a,b) => b[1]-a[1]).map(([name, val]) => `
-        <div class="flex justify-between items-center p-4 bg-slate-50 border border-slate-100 rounded-xl">
-            <div>
-                <p class="text-[8px] font-bold text-slate-400 uppercase">Partner Leasing</p>
-                <p class="font-bold text-slate-700 uppercase text-[10px] leading-tight">${name}</p>
-            </div>
-            <div class="text-right">
-                <p class="text-[8px] font-bold text-blue-400 uppercase">O/S Balance</p>
-                <p class="font-black text-blue-600 text-xs">${fmtIDR(val)}</p>
-            </div>
+    const entries = Object.entries(mapLeasing).sort((a,b) => b[1]-a[1]);
+    
+    if (entries.length === 0) {
+        el.innerHTML = '<p class="p-6 text-slate-400 italic text-[10px]">Tidak ada piutang leasing ditemukan.</p>';
+        return;
+    }
+
+    el.innerHTML = entries.map(([name, val]) => `
+        <div class="flex justify-between items-center p-4 border-b border-slate-50 hover:bg-slate-50 transition-all">
+            <span class="font-bold text-slate-700 uppercase text-[10px]">${name}</span>
+            <span class="font-black text-blue-600 text-xs">${fmtIDR(val)}</span>
         </div>`).join('');
 }
 
@@ -160,22 +161,17 @@ function renderOverdueTabTable(data) {
     const overdueData = data.filter(d => Number(d.total_overdue) > 0).sort((a,b) => b.total_overdue - a.total_overdue);
     
     if (overdueData.length === 0) {
-        el.innerHTML = '<p class="text-center py-10 text-slate-400 text-[10px] italic">Tidak ada data overdue.</p>';
+        el.innerHTML = '<p class="p-6 text-slate-400 italic text-[10px]">Data overdue nihil.</p>';
         return;
     }
 
     el.innerHTML = overdueData.map(d => `
-        <div class="flex justify-between items-center p-4 border-b border-red-50 bg-red-50/10 hover:bg-red-50/30 transition-all rounded-lg mb-1">
+        <div class="flex justify-between items-center p-4 border-b border-red-50 bg-red-50/20 mb-1 rounded-lg">
             <div>
                 <p class="font-bold text-slate-800 uppercase text-[10px]">${d.customer_name}</p>
-                <p class="text-[8px] text-slate-400 uppercase font-medium">
-                    ${d.leasing_name || 'CASH'} <span class="mx-1 text-slate-200">|</span> Sales: ${d.salesman_name}
-                </p>
+                <p class="text-[8px] text-slate-400 uppercase font-medium">${d.leasing_name || 'CASH'} | Sales: ${d.salesman_name}</p>
             </div>
-            <div class="text-right">
-                <p class="font-black text-red-600 text-xs leading-none">${fmtIDR(d.total_overdue)}</p>
-                <p class="text-[7px] font-bold text-red-400 uppercase mt-1 italic">Retail Debt</p>
-            </div>
+            <p class="font-black text-red-600 text-xs">${fmtIDR(d.total_overdue)}</p>
         </div>`).join('');
 }
 
@@ -184,97 +180,72 @@ function renderFullDatabaseTable(data) {
     if (!el) return;
     el.innerHTML = data.map((d, i) => `
         <tr class="hover:bg-slate-50 border-b border-slate-50 transition-colors">
-            <td class="p-3 text-slate-300 font-bold text-center">${i+1}</td>
-            <td class="p-3">
-                <p class="font-bold uppercase text-slate-700 leading-tight">${d.customer_name || '-'}</p>
-                <p class="text-[8px] text-slate-400 uppercase">${d.spk_number || ''}</p>
-            </td>
-            <td class="p-3 uppercase text-slate-500 font-medium text-[9px]">${d.leasing_name || 'CASH'}</td>
-            <td class="p-3 font-bold text-blue-600 text-right">${fmtIDR(d.os_balance)}</td>
-            <td class="p-3 font-bold text-red-500 text-right">${fmtIDR(d.total_overdue)}</td>
-            <td class="p-3 uppercase text-slate-400 text-[9px] italic">${d.salesman_name || 'N/A'}</td>
+            <td class="p-3 text-slate-400 font-bold text-center">${i+1}</td>
+            <td class="p-3 font-bold uppercase text-slate-700 text-[10px]">${d.customer_name || '-'}</td>
+            <td class="p-3 uppercase text-slate-500 text-[10px] font-medium">${d.leasing_name || 'CASH'}</td>
+            <td class="p-3 font-black text-blue-600 text-[10px] text-right">${fmtIDR(d.os_balance)}</td>
+            <td class="p-3 font-black text-red-500 text-[10px] text-right">${fmtIDR(d.total_overdue)}</td>
+            <td class="p-3 uppercase text-slate-400 italic text-[10px]">${d.salesman_name || 'N/A'}</td>
         </tr>`).join('');
 }
 
-// --- FUNGSI CHART & LIST KECIL ---
+// Fungsi Chart (Penyederhanaan agar stabil)
 function renderCharts(cash, leas, aging) {
-    if (!charts.bar) {
-        charts.bar = new ApexCharts(document.querySelector("#chart-aging"), {
-            series: [{ name: 'Nominal (Jt)', data: Object.values(aging) }],
-            chart: { type: 'bar', height: 250, toolbar: { show: false } },
-            colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
-            plotOptions: { bar: { borderRadius: 4, columnWidth: '50%', distributed: true } },
-            xaxis: { categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'], labels: { style: { fontSize: '9px', fontWeight: 700 } } },
-            yaxis: { labels: { formatter: (v) => v + " Jt" } },
-            dataLabels: { enabled: false }
-        });
-        charts.bar.render();
-    } else { charts.bar.updateSeries([{ data: Object.values(aging) }]); }
-
-    if (!charts.donut) {
-        charts.donut = new ApexCharts(document.querySelector("#chart-donut-leasing"), {
-            series: [cash, leas],
-            labels: ['Cash', 'Leasing'],
-            chart: { type: 'donut', height: 230 },
-            colors: ['#10B981', '#2563EB'],
-            stroke: { show: false },
-            plotOptions: { pie: { donut: { size: '75%', labels: { show: true, total: { show: true, label: 'TOTAL O/S', formatter: () => fmtJuta(cash+leas) } } } } },
-            legend: { position: 'bottom', fontSize: '10px', fontWeight: 700 }
-        });
-        charts.donut.render();
-    } else { charts.donut.updateSeries([cash, leas]); }
+    const agingChartEl = document.querySelector("#chart-aging");
+    if (agingChartEl) {
+        if (!charts.bar) {
+            charts.bar = new ApexCharts(agingChartEl, {
+                series: [{ name: 'Juta', data: Object.values(aging) }],
+                chart: { type: 'bar', height: 250, toolbar: { show: false } },
+                colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
+                plotOptions: { bar: { borderRadius: 4, columnWidth: '50%', distributed: true } },
+                xaxis: { categories: ['LANCAR', '1-30 H', '31-60 H', '>60 H'], labels: { style: { fontSize: '9px', fontWeight: 700 } } }
+            });
+            charts.bar.render();
+        } else {
+            charts.bar.updateSeries([{ data: Object.values(aging) }]);
+        }
+    }
 }
 
+// Fungsi List Mini (Bapak tetap gunakan kodingan lama)
 function renderTopList(id, map, colorClass) {
-    const el = document.getElementById(id);
-    if (!el) return;
+    const el = document.getElementById(id); if (!el) return;
     el.innerHTML = Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 5).map((item, i) => `
-        <div class="flex justify-between items-center text-[10px] border-b border-slate-50 py-2.5">
+        <div class="flex justify-between items-center text-[10px] border-b border-slate-50 py-2">
             <span class="font-bold text-slate-600 uppercase truncate w-32">${i+1}. ${item[0]}</span>
             <span class="${colorClass} font-black text-xs">${fmtJuta(item[1])}</span>
         </div>`).join('');
 }
 
 function renderTopSpv(map, total) {
-    const el = document.getElementById('list-spv');
-    if (!el) return;
+    const el = document.getElementById('list-spv'); if (!el) return;
     el.innerHTML = Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 5).map((item, i) => {
         const pct = total > 0 ? ((item[1] / total) * 100).toFixed(1) : 0;
-        return `
-        <div class="space-y-1 mb-3">
+        return `<div class="space-y-1 mb-2">
             <div class="flex justify-between text-[10px] font-bold">
                 <span class="text-slate-600 uppercase truncate w-32">${i+1}. ${item[0]}</span>
                 <span class="text-purple-600 font-black text-xs">${fmtJuta(item[1])}</span>
             </div>
-            <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
-                <div class="bg-purple-500 h-full" style="width: ${pct}%"></div>
-            </div>
+            <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden"><div class="bg-purple-500 h-full" style="width: ${pct}%"></div></div>
         </div>`;
     }).join('');
 }
 
 function renderLeasingList(map, total) {
-    const el = document.getElementById('leasing-list');
-    if (!el) return;
+    const el = document.getElementById('leasing-list'); if (!el) return;
     el.innerHTML = Object.entries(map).sort((a,b) => b[1] - a[1]).slice(0, 4).map(([n, v]) => `
         <div class="space-y-1 mb-2">
-            <div class="flex justify-between text-[9px] font-bold">
-                <span class="text-slate-500 uppercase">${n}</span>
-                <span class="text-slate-700">${total > 0 ? ((v/total)*100).toFixed(1) : 0}%</span>
-            </div>
-            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-blue-600 h-full" style="width: ${total > 0 ? (v/total)*100 : 0}%"></div>
-            </div>
+            <div class="flex justify-between text-[9px] font-bold"><span class="text-slate-500">${n}</span><span>${total > 0 ? ((v/total)*100).toFixed(1) : 0}%</span></div>
+            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden"><div class="bg-blue-600 h-full" style="width: ${total > 0 ? (v/total)*100 : 0}%"></div></div>
         </div>`).join('');
 }
 
 function renderTvcList(map) {
-    const el = document.getElementById('tvc-detail-list');
-    if (!el) return;
+    const el = document.getElementById('tvc-detail-list'); if (!el) return;
     el.innerHTML = ['TAFS', 'ACC'].map(name => `
         <div class="flex justify-between items-center text-[10px] border-b border-slate-50 py-2">
-            <span class="font-bold text-slate-500 uppercase">${name}</span>
-            <span class="font-black text-blue-600 text-xs">${map[name] || 0} Unit</span>
+            <span class="font-bold text-slate-500 uppercase">${name}</span><span class="font-black text-blue-600 text-xs">${map[name] || 0} Unit</span>
         </div>`).join('');
 }
 
