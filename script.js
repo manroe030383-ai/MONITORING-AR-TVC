@@ -15,12 +15,15 @@ async function fetchData() {
         if (error) throw error;
         if (data) {
             updateDashboard(data);
-            document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
-            document.getElementById('status-update').classList.replace('text-red-600', 'text-emerald-600');
+            const statusEl = document.getElementById('status-update');
+            statusEl.innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
+            statusEl.classList.replace('text-red-600', 'text-emerald-600');
         }
     } catch (e) {
         console.error(e);
-        document.getElementById('status-update').innerText = "KONEKSI GAGAL!";
+        const statusEl = document.getElementById('status-update');
+        statusEl.innerText = "KONEKSI GAGAL!";
+        statusEl.classList.replace('text-emerald-600', 'text-red-600');
     }
 }
 
@@ -35,28 +38,29 @@ function updateDashboard(data) {
         const ov = Number(d.total_overdue || 0);
         const l = (d.leasing_name || 'CASH').toUpperCase().trim();
         
-        s.os += os; s.ov += ov; s.pen += Number(d.penalty_amount || 0); s.lan += Number(d.lancar || 0);
-        
-        // PERBAIKAN: Pastikan data masuk ke list Overdue jika nilai > 0
+        s.os += os; 
+        s.ov += ov; 
+        s.pen += Number(d.penalty_amount || 0); 
+        s.lan += Number(d.lancar || 0);
+
         if (ov > 0) { 
             s.countOv++; 
             mOverdueTop.push(d); 
         }
-        
         if (Number(d.penalty_amount) > 0) s.cPen++;
 
+        // Aging Analysis
         aging['LANCAR'] += Number(d.lancar || 0) / 1000000;
         aging['1-30 H'] += Number(d.hari_1_30 || 0) / 1000000;
         aging['31-60 H'] += Number(d.hari_31_60 || 0) / 1000000;
         aging['>60 H'] += Number(d.lebih_60_hari || 0) / 1000000;
 
-        if (["CASH", "CASH TERIMA", ""].includes(l)) { 
+        // Cash vs Leasing Logic
+        if (["CASH", "CASH TERIMA", "", "TUNAI"].includes(l)) { 
             s.cash += os; s.cCash++; 
         } else { 
             s.leas += os; s.cLeas++; 
-            // PERBAIKAN: Masukkan data ke mLeas agar Tab Leasing terisi
             mLeas[l] = (mLeas[l] || 0) + os; 
-            
             if (l.includes('TAFS') || l.includes('ACC')) {
                 tvc.total++;
                 if (d.status_tagih === 'SUDAH GI') tvc.gi++;
@@ -64,6 +68,7 @@ function updateDashboard(data) {
             }
         }
 
+        // Dinamis Nama: Salesman & Supervisor
         const rawSales = (d.salesman_name || "").trim();
         const rawSpv = (d.supervisor_name || "").trim();
         const finalSales = rawSales !== "" ? rawSales : (rawSpv !== "" ? rawSpv : "OFFICE");
@@ -73,6 +78,7 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
+    // Render Header & Cards
     document.getElementById('total-os').innerText = fmtIDR(s.os);
     document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -80,17 +86,22 @@ function updateDashboard(data) {
     document.getElementById('badge-overdue').innerText = `${s.countOv} SPK LEWAT TOP`;
     document.getElementById('spk-penalty').innerText = `${s.cPen} SPK`;
     
-    document.getElementById('bar-cash').style.width = `${(s.cash/s.os)*100}%`;
-    document.getElementById('bar-leasing').style.width = `${(s.leas/s.os)*100}%`;
+    // Progress Bars
+    const pctCash = (s.cash / (s.os || 1)) * 100;
+    const pctLeas = (s.leas / (s.os || 1)) * 100;
+    document.getElementById('bar-cash').style.width = `${pctCash}%`;
+    document.getElementById('bar-leasing').style.width = `${pctLeas}%`;
     document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
     document.getElementById('unit-total-cash').innerText = `${s.cCash} Unit`;
     document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
     document.getElementById('unit-total-leas').innerText = `${s.cLeas} Unit`;
 
+    // TVC Section
     document.getElementById('total-unit-tvc').innerText = `${tvc.total} Unit`;
     document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
+    // Render All Views
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
@@ -128,52 +139,76 @@ function renderDonutLeasing(mLeas) {
     else { charts.donut = new ApexCharts(document.querySelector("#chart-donut-leasing"), options); charts.donut.render(); }
 }
 
-// PERBAIKAN: Fungsi penarik data ke List Leasing
 function renderLeasingList(map, total) {
-    const sortedLeasing = Object.entries(map).sort((a, b) => b[1] - a[1]);
-    document.getElementById('leasing-list').innerHTML = sortedLeasing.slice(0, 5).map(([n, v]) => `
-        <div class="mb-3">
-            <div class="flex justify-between text-[9px] font-bold mb-1 uppercase">
+    const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
+    const html = sorted.map(([n, v]) => `
+        <div class="mb-4 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+            <div class="flex justify-between text-[10px] font-bold mb-2 uppercase text-slate-700">
                 <span>${n}</span>
-                <span>${((v / (total || 1)) * 100).toFixed(1)}%</span>
+                <span class="text-blue-600">${fmtIDR(v)} (${((v / (total || 1)) * 100).toFixed(1)}%)</span>
             </div>
-            <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
-                <div class="bg-blue-600 h-full" style="width: ${(v / (total || 1)) * 100}%"></div>
+            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div class="bg-blue-500 h-full" style="width: ${(v / (total || 1)) * 100}%"></div>
             </div>
         </div>`).join('');
+    
+    // Update ke container leasing-list (Ringkasan) dan detail-leasing-tab (Tab Leasing)
+    if(document.getElementById('leasing-list')) document.getElementById('leasing-list').innerHTML = html;
+    if(document.getElementById('detail-leasing-tab')) document.getElementById('detail-leasing-tab').innerHTML = html;
 }
 
 function renderTopList(map, id, colorClass) {
-    document.getElementById(id).innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5).map((x,i) => `
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5).map((x,i) => `
         <div class="flex justify-between items-center py-3 border-b border-slate-50 uppercase font-bold">
             <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${x[0]}</span>
             <span class="text-[10px] ${colorClass}">${fmtJuta(x[1])}</span>
         </div>`).join('');
 }
 
-// PERBAIKAN: Fungsi penarik data ke List Overdue (Urutan Berdasarkan Nominal Terbesar)
 function renderOverdueTop(data) {
-    const sortedOverdue = [...data].sort((a, b) => Number(b.total_overdue) - Number(a.total_overdue));
-    document.getElementById('list-overdue').innerHTML = sortedOverdue.slice(0, 5).map((d, i) => `
-        <div class="flex justify-between py-2 border-b border-slate-50 uppercase font-bold">
-            <span class="text-[10px] text-slate-600 truncate w-32">${i + 1}. ${d.customer_name}</span>
-            <span class="text-[10px] text-red-500">${fmtJuta(d.total_overdue)}</span>
-        </div>`).join('');
+    const sorted = [...data].sort((a, b) => Number(b.total_overdue) - Number(a.total_overdue));
+    
+    // Render Ringkasan
+    if(document.getElementById('list-overdue')) {
+        document.getElementById('list-overdue').innerHTML = sorted.slice(0,5).map((d,i) => `
+            <div class="flex justify-between py-2 border-b border-slate-50 uppercase font-bold text-red-500">
+                <span class="text-[10px] truncate w-32">${i+1}. ${d.customer_name}</span>
+                <span class="text-[10px]">${fmtJuta(d.total_overdue)}</span>
+            </div>`).join('');
+    }
+
+    // Render Tab Overdue
+    if(document.getElementById('detail-overdue-tab')) {
+        document.getElementById('detail-overdue-tab').innerHTML = sorted.map(d => `
+            <div class="flex justify-between items-center p-4 border-b border-red-50 bg-red-50/10 mb-2 rounded-lg">
+                <div>
+                    <p class="font-bold text-[11px] uppercase text-slate-800">${d.customer_name}</p>
+                    <p class="text-[9px] text-slate-500">${d.leasing_name || 'CASH'}</p>
+                </div>
+                <div class="text-right">
+                    <p class="font-black text-red-600">${fmtIDR(d.total_overdue)}</p>
+                    <p class="text-[8px] text-slate-400">SALES: ${d.salesman_name || 'OFFICE'}</p>
+                </div>
+            </div>`).join('');
+    }
 }
 
 function renderTabDatabase(data) {
-    document.getElementById('tab-database-body').innerHTML = data.map((d, i) => `
+    const el = document.getElementById('tab-database-body');
+    if (!el) return;
+    el.innerHTML = data.map((d, i) => `
         <tr class="hover:bg-slate-50 transition-colors">
             <td class="p-4 text-slate-400 font-bold">${i+1}</td>
             <td class="p-4">
-                <p class="font-bold uppercase">${d.customer_name}</p>
+                <p class="font-bold uppercase text-slate-700">${d.customer_name}</p>
                 <p class="text-[8px] text-slate-400">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
             </td>
-            <td class="p-4 uppercase font-bold text-slate-600">${d.leasing_name || 'CASH'}</td>
+            <td class="p-4 uppercase font-bold text-slate-600 text-[10px]">${d.leasing_name || 'CASH'}</td>
             <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
-            <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
-            <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
-            <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
+            <td class="p-4 text-right font-bold text-red-500">${fmtIDR(d.total_overdue)}</td>
+            <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all shadow-sm">💾</button></td>
         </tr>`).join('');
 }
 
