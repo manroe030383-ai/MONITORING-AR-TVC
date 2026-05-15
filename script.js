@@ -36,21 +36,27 @@ function updateDashboard(data) {
         const l = (d.leasing_name || 'CASH').toUpperCase().trim();
         
         s.os += os; s.ov += ov; s.pen += Number(d.penalty_amount || 0); s.lan += Number(d.lancar || 0);
-        if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
+        
+        // PERBAIKAN: Pastikan data masuk ke list Overdue jika nilai > 0
+        if (ov > 0) { 
+            s.countOv++; 
+            mOverdueTop.push(d); 
+        }
+        
         if (Number(d.penalty_amount) > 0) s.cPen++;
 
-        // Aging Logic
         aging['LANCAR'] += Number(d.lancar || 0) / 1000000;
         aging['1-30 H'] += Number(d.hari_1_30 || 0) / 1000000;
         aging['31-60 H'] += Number(d.hari_31_60 || 0) / 1000000;
         aging['>60 H'] += Number(d.lebih_60_hari || 0) / 1000000;
 
-        // Cash vs Leasing
         if (["CASH", "CASH TERIMA", ""].includes(l)) { 
             s.cash += os; s.cCash++; 
         } else { 
             s.leas += os; s.cLeas++; 
+            // PERBAIKAN: Masukkan data ke mLeas agar Tab Leasing terisi
             mLeas[l] = (mLeas[l] || 0) + os; 
+            
             if (l.includes('TAFS') || l.includes('ACC')) {
                 tvc.total++;
                 if (d.status_tagih === 'SUDAH GI') tvc.gi++;
@@ -58,21 +64,15 @@ function updateDashboard(data) {
             }
         }
 
-        // LOGIKA DINAMIS NAMA SALESMAN & SUPERVISOR
         const rawSales = (d.salesman_name || "").trim();
         const rawSpv = (d.supervisor_name || "").trim();
-
-        // Jika Salesman kosong, gunakan nama Supervisor. Jika dua-duanya kosong, pakai 'OFFICE'
         const finalSales = rawSales !== "" ? rawSales : (rawSpv !== "" ? rawSpv : "OFFICE");
-        
-        // List SPV menggunakan kolom supervisor_name sesuai gambar database
         const finalSpv = rawSpv !== "" ? rawSpv : "OFFICE";
 
         mSales[finalSales] = (mSales[finalSales] || 0) + os;
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // Update Header Cards
     document.getElementById('total-os').innerText = fmtIDR(s.os);
     document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -80,7 +80,6 @@ function updateDashboard(data) {
     document.getElementById('badge-overdue').innerText = `${s.countOv} SPK LEWAT TOP`;
     document.getElementById('spk-penalty').innerText = `${s.cPen} SPK`;
     
-    // Progress Bars
     document.getElementById('bar-cash').style.width = `${(s.cash/s.os)*100}%`;
     document.getElementById('bar-leasing').style.width = `${(s.leas/s.os)*100}%`;
     document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
@@ -88,7 +87,6 @@ function updateDashboard(data) {
     document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
     document.getElementById('unit-total-leas').innerText = `${s.cLeas} Unit`;
 
-    // TVC Breakdown
     document.getElementById('total-unit-tvc').innerText = `${tvc.total} Unit`;
     document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
@@ -130,11 +128,18 @@ function renderDonutLeasing(mLeas) {
     else { charts.donut = new ApexCharts(document.querySelector("#chart-donut-leasing"), options); charts.donut.render(); }
 }
 
+// PERBAIKAN: Fungsi penarik data ke List Leasing
 function renderLeasingList(map, total) {
-    document.getElementById('leasing-list').innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([n, v]) => `
+    const sortedLeasing = Object.entries(map).sort((a, b) => b[1] - a[1]);
+    document.getElementById('leasing-list').innerHTML = sortedLeasing.slice(0, 5).map(([n, v]) => `
         <div class="mb-3">
-            <div class="flex justify-between text-[9px] font-bold mb-1 uppercase"><span>${n}</span><span>${((v/total)*100).toFixed(1)}%</span></div>
-            <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden"><div class="bg-blue-600 h-full" style="width: ${(v/total)*100}%"></div></div>
+            <div class="flex justify-between text-[9px] font-bold mb-1 uppercase">
+                <span>${n}</span>
+                <span>${((v / (total || 1)) * 100).toFixed(1)}%</span>
+            </div>
+            <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                <div class="bg-blue-600 h-full" style="width: ${(v / (total || 1)) * 100}%"></div>
+            </div>
         </div>`).join('');
 }
 
@@ -146,10 +151,12 @@ function renderTopList(map, id, colorClass) {
         </div>`).join('');
 }
 
+// PERBAIKAN: Fungsi penarik data ke List Overdue (Urutan Berdasarkan Nominal Terbesar)
 function renderOverdueTop(data) {
-    document.getElementById('list-overdue').innerHTML = data.slice(0,5).map((d,i) => `
+    const sortedOverdue = [...data].sort((a, b) => Number(b.total_overdue) - Number(a.total_overdue));
+    document.getElementById('list-overdue').innerHTML = sortedOverdue.slice(0, 5).map((d, i) => `
         <div class="flex justify-between py-2 border-b border-slate-50 uppercase font-bold">
-            <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${d.customer_name}</span>
+            <span class="text-[10px] text-slate-600 truncate w-32">${i + 1}. ${d.customer_name}</span>
             <span class="text-[10px] text-red-500">${fmtJuta(d.total_overdue)}</span>
         </div>`).join('');
 }
