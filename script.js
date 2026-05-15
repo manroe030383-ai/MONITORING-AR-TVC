@@ -46,19 +46,30 @@ function updateDashboard(data) {
         aging['>60 H'] += Number(d.lebih_60_hari || 0) / 1000000;
 
         // Cash vs Leasing
-        if (["CASH", "CASH TERIMA", ""].includes(l)) { s.cash += os; s.cCash++; }
-        else { 
+        if (["CASH", "CASH TERIMA", ""].includes(l)) { 
+            s.cash += os; s.cCash++; 
+        } else { 
             s.leas += os; s.cLeas++; 
             mLeas[l] = (mLeas[l] || 0) + os; 
-            // Logic TVC (TAFS & ACC)
             if (l.includes('TAFS') || l.includes('ACC')) {
                 tvc.total++;
                 if (d.status_tagih === 'SUDAH GI') tvc.gi++;
                 else tvc.deliv++;
             }
         }
-        mSales[d.salesman_name || 'N/A'] = (mSales[d.salesman_name] || 0) + os;
-        mSpv[d.spv_name || 'N/A'] = (mSpv[d.spv_name] || 0) + os;
+
+        // LOGIKA DINAMIS NAMA SALESMAN & SUPERVISOR
+        const rawSales = (d.salesman_name || "").trim();
+        const rawSpv = (d.supervisor_name || "").trim();
+
+        // Jika Salesman kosong, gunakan nama Supervisor. Jika dua-duanya kosong, pakai 'OFFICE'
+        const finalSales = rawSales !== "" ? rawSales : (rawSpv !== "" ? rawSpv : "OFFICE");
+        
+        // List SPV menggunakan kolom supervisor_name sesuai gambar database
+        const finalSpv = rawSpv !== "" ? rawSpv : "OFFICE";
+
+        mSales[finalSales] = (mSales[finalSales] || 0) + os;
+        mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
     // Update Header Cards
@@ -69,7 +80,7 @@ function updateDashboard(data) {
     document.getElementById('badge-overdue').innerText = `${s.countOv} SPK LEWAT TOP`;
     document.getElementById('spk-penalty').innerText = `${s.cPen} SPK`;
     
-    // Update Progress Bars (Cash vs Leasing)
+    // Progress Bars
     document.getElementById('bar-cash').style.width = `${(s.cash/s.os)*100}%`;
     document.getElementById('bar-leasing').style.width = `${(s.leas/s.os)*100}%`;
     document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
@@ -77,7 +88,7 @@ function updateDashboard(data) {
     document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
     document.getElementById('unit-total-leas').innerText = `${s.cLeas} Unit`;
 
-    // TVC Breakdown Update
+    // TVC Breakdown
     document.getElementById('total-unit-tvc').innerText = `${tvc.total} Unit`;
     document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
@@ -88,8 +99,6 @@ function updateDashboard(data) {
     renderTopList(mSales, 'list-sales', 'text-blue-600');
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
-    
-    // Tab Data
     renderTabDatabase(data);
 }
 
@@ -123,7 +132,7 @@ function renderDonutLeasing(mLeas) {
 
 function renderLeasingList(map, total) {
     document.getElementById('leasing-list').innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([n, v]) => `
-        <div>
+        <div class="mb-3">
             <div class="flex justify-between text-[9px] font-bold mb-1 uppercase"><span>${n}</span><span>${((v/total)*100).toFixed(1)}%</span></div>
             <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden"><div class="bg-blue-600 h-full" style="width: ${(v/total)*100}%"></div></div>
         </div>`).join('');
@@ -149,11 +158,14 @@ function renderTabDatabase(data) {
     document.getElementById('tab-database-body').innerHTML = data.map((d, i) => `
         <tr class="hover:bg-slate-50 transition-colors">
             <td class="p-4 text-slate-400 font-bold">${i+1}</td>
-            <td class="p-4"><p class="font-bold uppercase">${d.customer_name}</p><p class="text-[8px] text-slate-400">SALES: ${d.salesman_name}</p></td>
+            <td class="p-4">
+                <p class="font-bold uppercase">${d.customer_name}</p>
+                <p class="text-[8px] text-slate-400">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+            </td>
             <td class="p-4 uppercase font-bold text-slate-600">${d.leasing_name || 'CASH'}</td>
             <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
-            <td class="p-4"><input type="text" class="input-custom" placeholder="Tgl Rencana Bayar..." value="${d.plan_bayar || ''}"></td>
-            <td class="p-4"><input type="text" class="input-custom" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
+            <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
+            <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
             <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
         </tr>`).join('');
 }
