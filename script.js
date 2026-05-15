@@ -11,6 +11,28 @@ let charts = {};
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
 
+// --- FUNGSI NAVIGASI TAB (WAJIB ADA) ---
+window.filterTab = function(btn, tabName) {
+    // 1. Update UI Tombol
+    document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.remove('nav-active');
+        b.classList.add('bg-white', 'text-slate-500');
+    });
+    btn.classList.add('nav-active');
+    btn.classList.remove('bg-white', 'text-slate-500');
+
+    // 2. Tampilkan Konten yang Sesuai
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    document.getElementById(`content-${tabName}`).classList.remove('hidden');
+
+    // 3. Fix Grafik agar tidak gepeng saat kembali ke Ringkasan
+    if (tabName === 'ringkasan') {
+        window.dispatchEvent(new Event('resize'));
+    }
+};
+
 // 2. Fungsi Utama Ambil Data
 async function fetchData() {
     try {
@@ -22,7 +44,7 @@ async function fetchData() {
         if (error) throw error;
 
         if (data && data.length > 0) {
-            updateDashboard(data);
+            updateDashboard(data); // Memanggil logika perhitungan Anda
             statusEl.innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
             statusEl.className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic";
         } else {
@@ -30,11 +52,11 @@ async function fetchData() {
         }
     } catch (e) {
         console.error("Detail Error:", e);
-        document.getElementById('status-update').innerText = "ERROR: PERIKSA NAMA KOLOM TABEL";
+        document.getElementById('status-update').innerText = "ERROR: PERIKSA KONEKSI";
     }
 }
 
-// 3. Logika Perhitungan Dashboard
+// 3. Logika Perhitungan Dashboard (MODIFIKASI: Ditambah Renderer Tab)
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, unitCash: 0, unitLeas: 0, cOv: 0, spkPenCount: 0 };
     let tvc = { totalUnit: 0, gi: 0, rd: 0 };
@@ -46,7 +68,6 @@ function updateDashboard(data) {
         const valOs = Number(d.os_balance || 0);
         const lName = (d.leasing_name || 'CASH').toUpperCase().trim();
         
-        // Akumulasi Statistik Utama
         s.os += valOs;
         s.ov += Number(d.total_overdue || 0);
         s.pen += Number(d.penalty_amount || 0);
@@ -55,20 +76,17 @@ function updateDashboard(data) {
         if (Number(d.penalty_amount) > 0) s.spkPenCount++;
         if (Number(d.total_overdue) > 0) s.cOv++;
 
-        // Akumulasi Aging (dalam Juta)
         aging['LANCAR'] += Number(d.lancar || 0) / 1000000;
         aging['1-30 H'] += Number(d.hari_1_30 || 0) / 1000000;
         aging['31-60 H'] += Number(d.hari_31_60 || 0) / 1000000;
         aging['>60 H'] += Number(d.lebih_60_hari || 0) / 1000000;
 
-        // Pemisahan Cash & Leasing
         if (["CASH", "CASH TERIMA", ""].includes(lName)) {
             s.cash += valOs; s.unitCash++;
         } else {
             s.leas += valOs; s.unitLeas++;
             mapLeasing[lName] = (mapLeasing[lName] || 0) + valOs;
             
-            // Logika TVC (Hanya TAFS/ACC)
             if (lName === 'TAFS' || lName === 'ACC') {
                 tvc.totalUnit++;
                 if (d.gl_date) tvc.gi++; else tvc.rd++;
@@ -76,7 +94,6 @@ function updateDashboard(data) {
             }
         }
 
-        // Mapping untuk Top List
         mapSales[d.salesman_name || 'N/A'] = (mapSales[d.salesman_name] || 0) + valOs;
         mapSpv[d.spv_name || 'N/A'] = (mapSpv[d.spv_name] || 0) + valOs;
         if (Number(d.total_overdue) > 0) {
@@ -84,7 +101,7 @@ function updateDashboard(data) {
         }
     });
 
-    // Update Tampilan Angka
+    // Update Tampilan Angka (Ringkasan)
     document.getElementById('total-os').innerText = fmtIDR(s.os);
     document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
@@ -99,6 +116,11 @@ function updateDashboard(data) {
     document.getElementById('spk-penalty').innerText = `${s.spkPenCount} SPK`;
     document.getElementById('badge-overdue').innerText = `${s.cOv} SPK LEWAT TOP`;
 
+    // --- RENDER ISI TAB TAMBAHAN ---
+    renderLeasingTabTable(mapLeasing); // Isi Tab Leasing
+    renderOverdueTabTable(data);       // Isi Tab Overdue
+    renderFullDatabaseTable(data);     // Isi Tab Database
+
     // Jalankan Fungsi Render Visual
     renderCharts(s.cash, s.leas, aging);
     renderLeasingList(mapLeasing, s.os);
@@ -107,13 +129,52 @@ function updateDashboard(data) {
     renderTvcList(mapTvcDetail);
     renderTopSpv(mapSpv, s.os);
 
-    // Update Progress Bar
     const cashPct = s.os > 0 ? (s.cash / s.os) * 100 : 0;
     document.getElementById('bar-cash').style.width = `${cashPct}%`;
     document.getElementById('bar-leasing').style.width = `${100 - cashPct}%`;
 }
 
-// 4. Fungsi Render Komponen Visual
+// --- FUNGSI RENDERER UNTUK ISI TAB (LEASING, OVERDUE, DATABASE) ---
+
+function renderLeasingTabTable(mapLeasing) {
+    const el = document.getElementById('tab-leasing-list');
+    if (!el) return;
+    el.innerHTML = Object.entries(mapLeasing).sort((a,b) => b[1]-a[1]).map(([name, val]) => `
+        <div class="flex justify-between items-center p-4 border-b border-slate-50">
+            <span class="font-bold text-slate-700 uppercase text-[10px]">${name}</span>
+            <span class="font-black text-blue-600 text-xs">${fmtIDR(val)}</span>
+        </div>`).join('');
+}
+
+function renderOverdueTabTable(data) {
+    const el = document.getElementById('tab-overdue-list');
+    if (!el) return;
+    const overdueData = data.filter(d => Number(d.total_overdue) > 0).sort((a,b) => b.total_overdue - a.total_overdue);
+    el.innerHTML = overdueData.map(d => `
+        <div class="flex justify-between items-center p-4 border-b border-red-50 bg-red-50/20">
+            <div>
+                <p class="font-bold text-slate-800 uppercase text-[10px]">${d.customer_name}</p>
+                <p class="text-[8px] text-slate-400">${d.leasing_name} | Sales: ${d.salesman_name}</p>
+            </div>
+            <p class="font-black text-red-600 text-xs">${fmtIDR(d.total_overdue)}</p>
+        </div>`).join('');
+}
+
+function renderFullDatabaseTable(data) {
+    const el = document.getElementById('tab-database-body');
+    if (!el) return;
+    el.innerHTML = data.map((d, i) => `
+        <tr class="hover:bg-slate-50 border-b border-slate-50">
+            <td class="p-3 text-slate-400 font-bold">${i+1}</td>
+            <td class="p-3 font-bold uppercase text-slate-700">${d.customer_name}</td>
+            <td class="p-3 uppercase text-slate-500">${d.leasing_name || 'CASH'}</td>
+            <td class="p-3 font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
+            <td class="p-3 font-black text-red-500">${fmtIDR(d.total_overdue)}</td>
+            <td class="p-3 uppercase text-slate-400 italic">${d.salesman_name}</td>
+        </tr>`).join('');
+}
+
+// (Fungsi renderCharts, renderTopList, renderTopSpv, renderLeasingList, renderTvcList tetap sama seperti kodingan Anda)
 function renderCharts(cash, leas, aging) {
     if (!charts.bar) {
         charts.bar = new ApexCharts(document.querySelector("#chart-aging"), {
@@ -191,5 +252,4 @@ function renderTvcList(map) {
         </div>`).join('');
 }
 
-// Jalankan saat halaman siap
 document.addEventListener('DOMContentLoaded', fetchData);
