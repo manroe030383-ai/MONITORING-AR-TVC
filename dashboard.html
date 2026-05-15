@@ -12,7 +12,6 @@
         .card-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04); }
         .nav-active { background-color: #1B2559 !important; color: white !important; }
         .tab-content.hidden { display: none; }
-        .box-total { border-radius: 12px; padding: 12px; }
     </style>
 </head>
 <body class="bg-[#F8FAFC] min-h-screen flex text-[#1B2559]">
@@ -66,9 +65,17 @@
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                     <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total Overdue (> TOP)</p>
                     <h3 id="total-overdue" class="text-xl font-black text-red-600 tracking-tighter">Rp 0</h3>
-                    <span id="badge-overdue" class="text-[9px] font-bold text-red-400 mt-2 block uppercase italic text-red-400">0 SPK Lewat TOP</span>
+                    <span id="badge-overdue" class="text-[9px] font-bold text-red-400 mt-2 block uppercase italic">0 SPK Lewat TOP</span>
                 </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total Piutang Lancar</p>
+                    <h3 id="total-lancar" class="text-xl font-black text-emerald-600 tracking-tighter">Rp 0</h3>
                 </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Estimasi Penalti</p>
+                    <h3 id="total-penalty" class="text-xl font-black text-orange-500 tracking-tighter">Rp 0</h3>
+                </div>
+            </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
@@ -78,14 +85,25 @@
                 <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow lg:col-span-2">
                     <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">Breakdown Penjualan</h4>
                     <div id="leasing-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    <hr class="my-4 border-slate-50">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h5 class="text-[9px] font-bold text-blue-500 uppercase mb-3">Top 5 Sales (O/S)</h5>
+                            <div id="list-sales"></div>
+                        </div>
+                        <div>
+                            <h5 class="text-[9px] font-bold text-purple-500 uppercase mb-3">Top 5 SPV (O/S)</h5>
+                            <div id="list-spv"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div id="content-leasing" class="tab-content hidden">
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest text-blue-600">Detail Kontribusi Leasing</h4>
-                <div id="tab-leasing-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="bg-transparent space-y-4">
+                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest text-blue-600">Detail Kontribusi Leasing</h4>
+                <div id="tab-leasing-list">
                     </div>
             </div>
         </div>
@@ -93,8 +111,7 @@
         <div id="content-overdue" class="tab-content hidden">
             <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
                 <h4 class="text-[10px] font-bold text-red-500 uppercase mb-4 italic tracking-widest">⚠️ Semua Data Overdue Unit</h4>
-                <div id="tab-overdue-list" class="space-y-2">
-                    </div>
+                <div id="tab-overdue-list" class="space-y-2"></div>
             </div>
         </div>
 
@@ -121,8 +138,10 @@
     </main>
 
     <script type="module" src="script.js"></script>
+
     <script>
         function filterTab(btn, tabName) {
+            // Update Style Tombol
             document.querySelectorAll('.nav-btn').forEach(b => {
                 b.classList.remove('nav-active');
                 b.classList.add('bg-white', 'text-slate-500');
@@ -130,8 +149,12 @@
             btn.classList.add('nav-active');
             btn.classList.remove('bg-white', 'text-slate-500');
 
+            // Toggle Konten
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            const target = document.getElementById(`content-${tabName}`);
+            if(target) target.classList.remove('hidden');
+
+            // Refresh Grafik jika kembali ke ringkasan
             if (tabName === 'ringkasan') window.dispatchEvent(new Event('resize'));
         }
     </script>
