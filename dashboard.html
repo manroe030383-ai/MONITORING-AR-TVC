@@ -31,10 +31,9 @@
     </aside>
 
     <main class="flex-1 p-6 overflow-x-hidden">
-        
         <div class="flex justify-between items-start mb-6">
             <div>
-                <p id="status-update" class="text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic">MEMUAT DATA...</p>
+                <p id="status-update" class="text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic">MENYINKRONKAN DATA...</p>
                 <h2 class="text-2xl font-extrabold tracking-tight">Overview AR Unit</h2>
                 <div class="flex gap-2 mt-4">
                     <button onclick="filterTab(this, 'ringkasan')" class="nav-btn nav-active px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Ringkasan</button>
@@ -57,7 +56,7 @@
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                     <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total O/S Balance</p>
                     <h3 id="total-os" class="text-xl font-black mb-4 tracking-tighter">Rp 0</h3>
-                    <div class="h-1.5 w-full bg-slate-100 rounded-full flex overflow-hidden mb-1">
+                    <div class="h-1.5 w-full bg-slate-100 rounded-full flex overflow-hidden">
                         <div id="bar-cash" class="bg-emerald-400 h-full" style="width: 0%"></div>
                         <div id="bar-leasing" class="bg-blue-600 h-full" style="width: 0%"></div>
                     </div>
@@ -65,7 +64,7 @@
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                     <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total Overdue (> TOP)</p>
                     <h3 id="total-overdue" class="text-xl font-black text-red-600 tracking-tighter">Rp 0</h3>
-                    <span id="badge-overdue" class="text-[9px] font-bold text-red-400 mt-2 block uppercase italic">0 SPK Lewat TOP</span>
+                    <span id="badge-overdue" class="text-[9px] font-bold text-red-400 mt-2 block uppercase italic text-xs">0 SPK LEWAT TOP</span>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                     <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total Piutang Lancar</p>
@@ -79,21 +78,21 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
-                    <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-10">Aging Analysis</h4>
+                    <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-6 tracking-widest">Aging Analysis</h4>
                     <div id="chart-aging"></div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow lg:col-span-2">
-                    <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">Breakdown Penjualan</h4>
-                    <div id="leasing-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-                    <hr class="my-4 border-slate-50">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">Breakdown Penjualan</h4>
+                    <div id="leasing-list" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mb-6"></div>
+                    <hr class="my-6 border-slate-50">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <h5 class="text-[9px] font-bold text-blue-500 uppercase mb-3">Top 5 Sales (O/S)</h5>
-                            <div id="list-sales"></div>
+                            <h5 class="text-[9px] font-black text-blue-500 uppercase mb-4">Top 5 Sales (O/S)</h5>
+                            <div id="list-sales" class="space-y-1"></div>
                         </div>
                         <div>
-                            <h5 class="text-[9px] font-bold text-purple-500 uppercase mb-3">Top 5 SPV (O/S)</h5>
-                            <div id="list-spv"></div>
+                            <h5 class="text-[9px] font-black text-purple-500 uppercase mb-4">Top 5 SPV (O/S)</h5>
+                            <div id="list-spv" class="space-y-1"></div>
                         </div>
                     </div>
                 </div>
@@ -101,61 +100,44 @@
         </div>
 
         <div id="content-leasing" class="tab-content hidden">
-            <div class="bg-transparent space-y-4">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest text-blue-600">Detail Kontribusi Leasing</h4>
-                <div id="tab-leasing-list">
-                    </div>
-            </div>
+            <div id="tab-leasing-list" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
         </div>
 
         <div id="content-overdue" class="tab-content hidden">
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-red-500 uppercase mb-4 italic tracking-widest">⚠️ Semua Data Overdue Unit</h4>
-                <div id="tab-overdue-list" class="space-y-2"></div>
-            </div>
+            <div id="tab-overdue-list" class="space-y-2"></div>
         </div>
 
         <div id="content-database" class="tab-content hidden">
             <div class="bg-white rounded-2xl border border-slate-100 card-shadow overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-[10px]">
-                        <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100">
-                            <tr>
-                                <th class="p-4 text-center">No</th>
-                                <th class="p-4">Customer</th>
-                                <th class="p-4">Leasing</th>
-                                <th class="p-4 text-right">O/S Balance</th>
-                                <th class="p-4 text-right text-red-500">Overdue</th>
-                                <th class="p-4">Salesman</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tab-database-body" class="divide-y divide-slate-50"></tbody>
-                    </table>
-                </div>
+                <table class="w-full text-[10px]">
+                    <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b">
+                        <tr>
+                            <th class="p-4">No</th>
+                            <th class="p-4 text-left">Customer</th>
+                            <th class="p-4 text-left">Leasing</th>
+                            <th class="p-4 text-right">O/S Balance</th>
+                            <th class="p-4 text-right">Overdue</th>
+                            <th class="p-4 text-left">Salesman</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tab-database-body"></tbody>
+                </table>
             </div>
         </div>
-
     </main>
 
     <script type="module" src="script.js"></script>
-
     <script>
         function filterTab(btn, tabName) {
-            // Update Style Tombol
             document.querySelectorAll('.nav-btn').forEach(b => {
                 b.classList.remove('nav-active');
                 b.classList.add('bg-white', 'text-slate-500');
             });
             btn.classList.add('nav-active');
             btn.classList.remove('bg-white', 'text-slate-500');
-
-            // Toggle Konten
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            const target = document.getElementById(`content-${tabName}`);
-            if(target) target.classList.remove('hidden');
-
-            // Refresh Grafik jika kembali ke ringkasan
-            if (tabName === 'ringkasan') window.dispatchEvent(new Event('resize'));
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            if (tabName === 'ringkasan') setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
         }
     </script>
 </body>
