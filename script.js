@@ -6,6 +6,9 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
+let currentTab = 'DATABASE LENGKAP'; // Menyimpan status tab aktif
+let globalMasterData = [];          // Menyimpan data asli dari Supabase agar bisa difilter secara dinamis
+
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
 
@@ -14,6 +17,7 @@ async function fetchData() {
         const { data, error } = await supabase.from('ar_unit').select('*').order('os_balance', { ascending: false });
         if (error) throw error;
         if (data) {
+            globalMasterData = data; // Simpan data ke variabel global sebelum difilter
             updateDashboard(data);
             document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
             document.getElementById('status-update').classList.replace('text-red-600', 'text-emerald-600');
@@ -99,6 +103,8 @@ function updateDashboard(data) {
     renderTopList(mSales, 'list-sales', 'text-blue-600');
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
+    
+    // Panggil fungsi render tabel (otomatis merujuk ke filter active tab)
     renderTabDatabase(data);
 }
 
@@ -154,8 +160,22 @@ function renderOverdueTop(data) {
         </div>`).join('');
 }
 
+// FUNGSI RENDER TABEL YANG SUDAH DILENGKAPI FILTER SEUAI KLIK TAB
 function renderTabDatabase(data) {
-    document.getElementById('tab-database-body').innerHTML = data.map((d, i) => `
+    let filteredData = data;
+
+    // Filter data berdasarkan tombol navigasi aktif yang ditekan user
+    if (currentTab === 'LEASING') {
+        filteredData = data.filter(d => {
+            const l = (d.leasing_name || 'CASH').toUpperCase().trim();
+            return !["CASH", "CASH TERIMA", ""].includes(l); // Hanya tampilkan data leasing (Bukan Cash)
+        });
+    } else if (currentTab === 'OVERDUE') {
+        filteredData = data.filter(d => Number(d.total_overdue || 0) > 0); // Hanya tampilkan data yang memiliki nilai overdue
+    }
+
+    // Render data hasil filter ke tabel HTML
+    document.getElementById('tab-database-body').innerHTML = filteredData.map((d, i) => `
         <tr class="hover:bg-slate-50 transition-colors">
             <td class="p-4 text-slate-400 font-bold">${i+1}</td>
             <td class="p-4">
@@ -169,5 +189,29 @@ function renderTabDatabase(data) {
             <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
         </tr>`).join('');
 }
+
+// LOGIKA MENANGKAP EVENT KLIK PADA TOMBOL TAB DI ATAS SECARA OTOMATIS
+document.addEventListener('click', function (e) {
+    // Mencari element tombol tab berdasarkan teks tombolnya
+    if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'DIV')) {
+        const targetText = e.target.innerText.toUpperCase().trim();
+        
+        if (['LEASING', 'OVERDUE', 'DATABASE LENGKAP'].includes(targetText)) {
+            currentTab = targetText;
+            
+            // Proses ganti style tombol aktif biar kelihatan elegan (Opsional, silakan sesuaikan class CSS Anda)
+            const siblingButtons = e.target.parentElement.children;
+            for (let btn of siblingButtons) {
+                // Menghapus class active bawaan template Anda
+                btn.classList.remove('bg-blue-950', 'text-white', 'dark:bg-blue-900'); 
+            }
+            // Menambahkan warna aktif pada tombol yang diklik
+            e.target.classList.add('bg-blue-950', 'text-white'); 
+
+            // Jalankan fungsi filter ulang tabel tanpa memuat ulang API Supabase
+            renderTabDatabase(globalMasterData);
+        }
+    }
+});
 
 document.addEventListener('DOMContentLoaded', fetchData);
