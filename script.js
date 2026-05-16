@@ -6,8 +6,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
-let currentTab = 'DATABASE LENGKAP'; // Default tab utama sesuai gambar Anda
-let globalMasterData = [];          // Menyimpan data asli dari Supabase
+let currentTab = 'DATABASE LENGKAP'; // State awal tab aktif
+let globalMasterData = [];          // Cadangan data murni dari database
 
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
@@ -24,7 +24,7 @@ async function fetchData() {
         }
     } catch (e) {
         console.error(e);
-        document.getElementById('status-update').innerText = "KONEKSI GAGAL!";
+        if(document.getElementById('status-update')) document.getElementById('status-update').innerText = "KONEKSI GAGAL!";
     }
 }
 
@@ -69,33 +69,17 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
+    // Update elemen widget ringskasan jika ada di halaman
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
     if(document.getElementById('total-penalty')) document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
-    if(document.getElementById('badge-overdue')) document.getElementById('badge-overdue').innerText = `${s.countOv} SPK LEWAT TOP`;
-    if(document.getElementById('spk-penalty')) document.getElementById('spk-penalty').innerText = `${s.cPen} SPK`;
     
-    if(document.getElementById('bar-cash')) document.getElementById('bar-cash').style.width = `${(s.cash/s.os)*100}%`;
-    if(document.getElementById('bar-leasing')) document.getElementById('bar-leasing').style.width = `${(s.leas/s.os)*100}%`;
-    if(document.getElementById('val-total-cash')) document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
-    if(document.getElementById('unit-total-cash')) document.getElementById('unit-total-cash').innerText = `${s.cCash} Unit`;
-    if(document.getElementById('val-total-leas')) document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
-    if(document.getElementById('unit-total-leas')) document.getElementById('unit-total-leas').innerText = `${s.cLeas} Unit`;
-
-    if(document.getElementById('total-unit-tvc')) document.getElementById('total-unit-tvc').innerText = `${tvc.total} Unit`;
-    if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
-    if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
-
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
-    renderLeasingList(mLeas, s.os);
-    renderTopList(mSales, 'list-sales', 'text-blue-600');
-    renderTopList(mSpv, 'list-spv', 'text-purple-600');
-    renderOverdueTop(mOverdueTop);
     
-    // Render tampilan halaman berdasarkan tab aktif
-    renderHalamanAktif(data);
+    // Jalankan render tabel utama secara menyeluruh
+    renderTabelDataUtama(data);
 }
 
 function renderAgingChart(agingData) {
@@ -130,203 +114,148 @@ function renderDonutLeasing(mLeas) {
     else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
 }
 
-function renderLeasingList(map, total) {
-    const el = document.getElementById('leasing-list');
-    if (!el) return;
-    el.innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([n, v]) => `
-        <div class="mb-3">
-            <div class="flex justify-between text-[9px] font-bold mb-1 uppercase"><span>${n}</span><span>${((v/total)*100).toFixed(1)}%</span></div>
-            <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden"><div class="bg-blue-600 h-full" style="width: ${(v/total)*100}%"></div></div>
-        </div>`).join('');
-}
 
-function renderTopList(map, id, colorClass) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5).map((x,i) => `
-        <div class="flex justify-between items-center py-3 border-b border-slate-50 uppercase font-bold">
-            <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${x[0]}</span>
-            <span class="text-[10px] ${colorClass}">${fmtJuta(x[1])}</span>
-        </div>`).join('');
-}
+// ================= FUNGSI RE-RENDER TABEL ANTI-GAGAL =================
+function renderTabelDataUtama(data) {
+    const tbody = document.getElementById('tab-database-body');
+    if (!tbody) return;
 
-function renderOverdueTop(data) {
-    const el = document.getElementById('list-overdue');
-    if (!el) return;
-    el.innerHTML = data.slice(0,5).map((d,i) => `
-        <div class="flex justify-between py-2 border-b border-slate-50 uppercase font-bold">
-            <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${d.customer_name}</span>
-            <span class="text-[10px] text-red-500">${fmtJuta(d.total_overdue)}</span>
-        </div>`).join('');
-}
+    let filteredData = data;
 
-
-// ================= FUNGSI MESIN RE-RENDER UTAMA (SANGAT AMAN) =================
-function renderHalamanAktif(data) {
-    // Mencari box putih besar tempat judul "DETAIL KONTRIBUSI LEASING" atau "SEMUA DATA OVERDUE UNIT" berada
-    const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
-    let targetBox = null;
-
-    boxes.forEach(box => {
-        const txt = box.innerText.toUpperCase();
-        if (txt.includes('DETAIL KONTRIBUSI LEASING') || txt.includes('SEMUA DATA OVERDUE UNIT') || txt.includes('DATABASE LENGKAP') || box.id === 'box-konten-utama') {
-            targetBox = box;
-        }
-    });
-
-    if (!targetBox) return;
-    targetBox.id = "box-konten-utama"; // Mengunci ID agar mudah ditemukan javascript
-
+    // 1. Filter data secara presisi sesuai Tab Aktif
     if (currentTab === 'LEASING') {
-        const leasingData = data.filter(d => {
+        // Hanya tampilkan unit non-CASH (Leasing)
+        filteredData = data.filter(d => {
             const l = (d.leasing_name || 'CASH').toUpperCase().trim();
             return !["CASH", "CASH TERIMA", ""].includes(l);
         });
-
-        // TAMPILAN INDAH TAB LEASING: Bersih, Tanpa Inputan Rencana & Keterangan
-        targetBox.innerHTML = `
-            <div class="p-2">
-                <div class="flex justify-between items-center mb-4 pb-2 border-b">
-                    <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase">📊 DETAIL KONTRIBUSI LEASING</h3>
-                    <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-full">${leasingData.length} UNIT</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead>
-                            <tr class="border-b text-slate-400 font-bold bg-slate-50/50">
-                                <th class="p-3 w-12 text-center">NO</th>
-                                <th class="p-3">CUSTOMER NAME</th>
-                                <th class="p-3">LEASING</th>
-                                <th class="p-3 text-right">O/S BALANCE</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${leasingData.map((d, i) => `
-                                <tr class="border-b hover:bg-slate-50 font-bold uppercase">
-                                    <td class="p-3 text-center text-slate-400 font-medium">${i+1}</td>
-                                    <td class="p-3">
-                                        <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
-                                        <p class="text-[9px] text-slate-400 font-normal mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-                                    </td>
-                                    <td class="p-3">
-                                        <span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px] font-black">${d.leasing_name}</span>
-                                    </td>
-                                    <td class="p-3 text-right text-blue-600 font-black text-[12px]">${fmtIDR(d.os_balance)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>`;
-
     } else if (currentTab === 'OVERDUE') {
-        const overdueData = data.filter(d => Number(d.total_overdue || 0) > 0);
+        // Hanya tampilkan data yang benar-benar menunggak (total_overdue > 0)
+        filteredData = data.filter(d => Number(d.total_overdue || 0) > 0);
+    }
 
-        // TAMPILAN INDAH TAB OVERDUE: Menampilkan Data Keterlambatan dengan Sempurna
-        targetBox.innerHTML = `
-            <div class="p-2">
-                <div class="flex justify-between items-center mb-4 pb-2 border-b">
-                    <h3 class="text-xs font-black text-red-600 tracking-wider uppercase">🚨 SEMUA DATA OVERDUE UNIT</h3>
-                    <span class="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">${overdueData.length} CUSTOMER</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead>
-                            <tr class="border-b text-slate-400 font-bold bg-slate-50/50">
-                                <th class="p-3 w-12 text-center">NO</th>
-                                <th class="p-3">CUSTOMER NAME</th>
-                                <th class="p-3">LEASING</th>
-                                <th class="p-3 text-right text-red-600 bg-red-50/30">TOTAL OVERDUE</th>
-                                <th class="p-3 text-right">O/S BALANCE</th>
-                                <th class="p-3">PLAN BAYAR (CABANG)</th>
-                                <th class="p-3">KETERANGAN LEASING</th>
-                                <th class="p-3 text-center">AKSI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${overdueData.map((d, i) => `
-                                <tr class="border-b hover:bg-slate-50 font-bold uppercase">
-                                    <td class="p-3 text-center text-slate-400 font-medium">${i+1}</td>
-                                    <td class="p-3">
-                                        <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
-                                        <p class="text-[9px] text-slate-400 font-normal mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-                                    </td>
-                                    <td class="p-3 text-slate-600">${d.leasing_name || 'CASH'}</td>
-                                    <td class="p-3 text-right font-black text-red-600 bg-red-50/20">${fmtIDR(d.total_overdue)}</td>
-                                    <td class="p-3 text-right text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
-                                    <td class="p-3"><input type="text" class="border p-1 rounded text-[10px] w-full" value="${d.plan_bayar || ''}" placeholder="Tgl Rencana..."></td>
-                                    <td class="p-3"><input type="text" class="border p-1 rounded text-[10px] w-full" value="${d.keterangan_leasing || ''}" placeholder="Keterangan..."></td>
-                                    <td class="p-3 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-1 rounded">💾</button></td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>`;
+    // 2. Tulis data baris demi baris ke dalam tabel HTML asli bawaan template
+    tbody.innerHTML = filteredData.map((d, i) => {
+        const isLeasingMode = (currentTab === 'LEASING');
+        const isOverdueMode = (currentTab === 'OVERDUE');
 
-    } else if (currentTab === 'DATABASE LENGKAP') {
-        // TAMPILAN BAWAAN TAB DATABASE LENGKAP ASLI ANDA
-        targetBox.innerHTML = `
-            <div class="p-2">
-                <div class="flex justify-between items-center mb-4 pb-2 border-b">
-                    <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase">📝 DATABASE LENGKAP AR UNIT</h3>
-                    <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full">${data.length} TOTAL DATA</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead>
-                            <tr class="border-b text-slate-400 font-bold bg-slate-50">
-                                <th class="p-4 w-12 text-center">NO</th>
-                                <th class="p-4">CUSTOMER NAME</th>
-                                <th class="p-4">LEASING</th>
-                                <th class="p-4 text-right">O/S BALANCE</th>
-                                <th class="p-4">PLAN BAYAR (CABANG)</th>
-                                <th class="p-4">KETERANGAN LEASING</th>
-                                <th class="p-4 text-center">AKSI</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tab-database-body"></tbody>
-                    </table>
-                </div>
-            </div>`;
-        
-        // Render baris data untuk Database Lengkap ke id body-nya
-        const tbody = document.getElementById('tab-database-body');
-        if (tbody) {
-            tbody.innerHTML = data.map((d, i) => `
-                <tr class="hover:bg-slate-50 transition-colors uppercase font-bold">
-                    <td class="p-4 text-slate-400 text-center">${i+1}</td>
-                    <td class="p-4">
-                        <p class="font-bold text-slate-800">${d.customer_name}</p>
-                        <p class="text-[8px] text-slate-400 font-normal">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-                    </td>
-                    <td class="p-4 text-slate-600">${d.leasing_name || 'CASH'}</td>
-                    <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
-                    <td class="p-4"><input type="text" class="border p-1 rounded text-[10px] w-full" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
-                    <td class="p-4"><input type="text" class="border p-1 rounded text-[10px] w-full" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
-                    <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-1 rounded">💾</button></td>
-                </tr>`).join('');
-        }
+        return `
+        <tr class="hover:bg-slate-50 transition-colors uppercase font-bold text-xs">
+            <td class="p-4 text-slate-400 text-center">${i + 1}</td>
+            <td class="p-4">
+                <p class="font-bold text-slate-800 text-[11px]">${d.customer_name}</p>
+                <p class="text-[8px] text-slate-400 font-normal">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+            </td>
+            <td class="p-4 text-slate-600">
+                <span class="${d.leasing_name && d.leasing_name !== 'CASH' ? 'bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px]' : ''}">
+                    ${d.leasing_name || 'CASH'}
+                </span>
+            </td>
+            
+            ${isOverdueMode ? `<td class="p-4 text-right font-black text-red-600 bg-red-50/20 cell-overdue-value">${fmtIDR(d.total_overdue)}</td>` : ''}
+            
+            <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
+            
+            <td class="p-4 cell-plan-bayar"><input type="text" class="border p-1 rounded text-[10px] w-full" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
+            <td class="p-4 cell-ket-leasing"><input type="text" class="border p-1 rounded text-[10px] w-full" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
+            <td class="p-4 text-center cell-aksi-simpan"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-1 rounded">💾</button></td>
+        </tr>`;
+    }).join('');
+
+    // 3. Sesuaikan struktur header (Th) dan sembunyikan kolom inputan lewat fungsi CSS helper
+    sinkronkanStrukturKolomTabel(filteredData.length);
+}
+
+// Fungsi helper penataan visual kolom (Header Th & Body Td) agar singkron tanpa merusak DOM
+function sinkronkanStrukturKolomTabel(totalRow) {
+    const table = document.getElementById('tab-database-body')?.closest('table');
+    if (!table) return;
+
+    const thead = table.querySelector('thead tr');
+    if (!thead) return;
+
+    // SINKRONISASI TAMPILAN HEADER (THEAD) BERDASARKAN TAB AKTIF
+    if (currentTab === 'LEASING') {
+        thead.innerHTML = `
+            <th class="p-4 text-center w-12">NO</th>
+            <th class="p-4">CUSTOMER NAME</th>
+            <th class="p-4">LEASING</th>
+            <th class="p-4 text-right">O/S BALANCE</th>
+            <th class="p-4 cell-plan-bayar" style="display:none">PLAN BAYAR</th>
+            <th class="p-4 cell-ket-leasing" style="display:none">KETERANGAN LEASING</th>
+            <th class="p-4 text-center cell-aksi-simpan" style="display:none">AKSI</th>
+        `;
+    } else if (currentTab === 'OVERDUE') {
+        thead.innerHTML = `
+            <th class="p-4 text-center w-12">NO</th>
+            <th class="p-4">CUSTOMER NAME</th>
+            <th class="p-4">LEASING</th>
+            <th class="p-4 text-right text-red-600 bg-red-50/40">TOTAL OVERDUE</th>
+            <th class="p-4 text-right">O/S BALANCE</th>
+            <th class="p-4 cell-plan-bayar">PLAN BAYAR (CABANG)</th>
+            <th class="p-4 cell-ket-leasing">KETERANGAN LEASING</th>
+            <th class="p-4 text-center cell-aksi-simpan">AKSI</th>
+        `;
+    } else {
+        // Default: DATABASE LENGKAP
+        thead.innerHTML = `
+            <th class="p-4 w-12 text-center">NO</th>
+            <th class="p-4">CUSTOMER NAME</th>
+            <th class="p-4">LEASING</th>
+            <th class="p-4 text-right">O/S BALANCE</th>
+            <th class="p-4 cell-plan-bayar">PLAN BAYAR (CABANG)</th>
+            <th class="p-4 cell-ket-leasing">KETERANGAN LEASING</th>
+            <th class="p-4 text-center cell-aksi-simpan">AKSI</th>
+        `;
+    }
+
+    // MANIPULASI ELEMENT BARIS INPUT BERDASARKAN DISPLAY STYLE
+    const planCells = table.querySelectorAll('.cell-plan-bayar');
+    const ketCells = table.querySelectorAll('.cell-ket-leasing');
+    const aksiCells = table.querySelectorAll('.cell-aksi-simpan');
+
+    if (currentTab === 'LEASING') {
+        planCells.forEach(c => c.style.display = 'none');
+        ketCells.forEach(c => c.style.display = 'none');
+        aksiCells.forEach(c => c.style.display = 'none');
+    } else {
+        planCells.forEach(c => c.style.display = '');
+        ketCells.forEach(c => c.style.display = '');
+        aksiCells.forEach(c => c.style.display = '');
+    }
+
+    // Update nilai Badge total data/customer di samping teks judul panel putih Anda
+    const badgeContainer = document.querySelector('.bg-white span, .rounded-2xl span, .rounded-xl span');
+    if (badgeContainer && !badgeContainer.id) {
+        badgeContainer.innerText = `${totalRow} CUSTOMER`;
     }
 }
 
-// ================= LOGIKA PASANG EVENT DETEKSI ELEMEN NAVIGATION TAB =================
+// ================= HANDLER PASANG KLIK NAVIGATION TAB =================
 document.addEventListener('click', function (e) {
     if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'DIV' || e.target.tagName === 'SPAN')) {
         const txt = e.target.innerText.toUpperCase().trim();
         
-        if (['LEASING', 'OVERDUE', 'DATABASE LENGKAP', 'RINGKASAN'].includes(txt)) {
+        if (['LEASING', 'OVERDUE', 'DATABASE LENGKAP'].includes(txt)) {
             currentTab = txt;
             
-            // Pengelolaan style CSS warna tombol aktif (Gelap saat diklik)
+            // Atur CSS tombol aktif dan tidak aktif
             const siblingButtons = e.target.parentElement.children;
             for (let btn of siblingButtons) {
                 btn.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-white text-slate-600 border border-slate-100";
             }
             e.target.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-blue-950 text-white shadow-sm"; 
 
-            // Re-render isi kotak putih secara instan dan dinamis
-            renderHalamanAktif(globalMasterData);
+            // Ubah teks judul statis di dalam Box Putih Utama Anda
+            const boxTitle = document.querySelector('.bg-white h3, .bg-white div font, .rounded-2xl div h3');
+            if (boxTitle) {
+                if (currentTab === 'LEASING') boxTitle.innerText = "📊 DETAIL KONTRIBUSI LEASING";
+                if (currentTab === 'OVERDUE') boxTitle.innerText = "🚨 SEMUA DATA OVERDUE UNIT";
+                if (currentTab === 'DATABASE LENGKAP') boxTitle.innerText = "📝 DATABASE LENGKAP AR UNIT";
+            }
+
+            // Picu penyaringan data tabel secara instan tanpa mengosongkan layar
+            renderTabelDataUtama(globalMasterData);
         }
     }
 });
