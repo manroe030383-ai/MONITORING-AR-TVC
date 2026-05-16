@@ -6,7 +6,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
-let currentTab = 'DATABASE LENGKAP'; // Default tab utama sesuai tampilan awal Anda
+let currentTab = 'DATABASE LENGKAP'; // Default tab utama
 let globalMasterData = [];          // Menyimpan data asli dari Supabase
 
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
@@ -72,7 +72,6 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // Update Header Cards jika elemen tersedia
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -98,7 +97,7 @@ function updateDashboard(data) {
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
     
-    // Panggil fungsi render tabel utama
+    // Render tabel utama
     renderTabDatabase(data);
 }
 
@@ -164,14 +163,14 @@ function renderOverdueTop(data) {
         </div>`).join('');
 }
 
-// ================= FUNGSI RENDER UTAMA (MENGGUNAKAN STRUKTUR TABEL ASLI) =================
+// ================= FUNGSI RENDER TABEL (AMAN & AKURAT) =================
 function renderTabDatabase(data) {
     const tbody = document.getElementById('tab-database-body');
     if (!tbody) return;
 
     let filteredData = data;
 
-    // 1. Saring data berdasarkan tab aktif
+    // Saring data berdasarkan tab aktif
     if (currentTab === 'LEASING') {
         filteredData = data.filter(d => {
             const l = (d.leasing_name || 'CASH').toUpperCase().trim();
@@ -181,105 +180,90 @@ function renderTabDatabase(data) {
         filteredData = data.filter(d => Number(d.total_overdue || 0) > 0);
     }
 
-    // 2. Kontrol visibilitas Header Kolom secara dinamis agar tampilan bersih
-    sesuaikanHeaderKolomTabel();
-
-    // 3. Petakan data ke dalam tabel HTML
+    // Render baris data ke tabel menggunakan DOM asli bawaan template Anda
     tbody.innerHTML = filteredData.map((d, i) => {
-        const isLeasingMode = (currentTab === 'LEASING');
-        const isOverdueMode = (currentTab === 'OVERDUE');
+        // Jika di tab Overdue, tampilkan nilai overdue di samping nama customer agar informatif
+        const overdueInfo = (currentTab === 'OVERDUE') ? `<p class="text-[10px] text-red-600 font-black mt-1">🚨 OVERDUE: ${fmtIDR(d.total_overdue)}</p>` : '';
 
         return `
-        <tr class="hover:bg-slate-50/80 transition-colors font-bold uppercase text-xs">
-            <td class="p-4 text-slate-400 text-center">${i+1}</td>
+        <tr class="hover:bg-slate-50 transition-colors">
+            <td class="p-4 text-slate-400 font-bold">${i+1}</td>
             <td class="p-4">
-                <p class="text-slate-800 font-extrabold text-[11px]">${d.customer_name}</p>
-                <p class="text-[9px] text-slate-400 font-normal mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+                <p class="font-bold uppercase text-slate-800">${d.customer_name}</p>
+                <p class="text-[8px] text-slate-400">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+                ${overdueInfo}
             </td>
-            <td class="p-4">
-                <span class="${d.leasing_name && d.leasing_name !== 'CASH' ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded text-[10px] font-black' : 'text-slate-600'}">${d.leasing_name || 'CASH'}</span>
+            <td class="p-4 uppercase font-bold text-slate-600">
+                <span class="${d.leasing_name && d.leasing_name !== 'CASH' ? 'bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px]' : ''}">${d.leasing_name || 'CASH'}</span>
             </td>
-            
-            ${isOverdueMode ? `<td class="p-4 text-right text-red-600 font-black bg-red-50/30">${fmtIDR(d.total_overdue)}</td>` : ''}
-            
             <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
-            
-            ${!isLeasingMode ? `
-                <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
-                <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
-                <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
-            ` : ''}
+            <td class="p-4 kolom-input-rencana"><input type="text" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
+            <td class="p-4 kolom-input-keterangan"><input type="text" class="input-custom text-[10px]" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
+            <td class="p-4 text-center kolom-aksi-simpan"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
         </tr>`;
     }).join('');
+
+    // Jalankan kontrol sembunyikan/tampilkan kolom dengan CSS (Jauh lebih aman dan anti-bug kosong)
+    kontrolVisibilitasKolom();
 }
 
-// Fungsi pembantu untuk mengubah text header tabel agar sinkron dan tidak bergeser
-function sesuaikanHeaderKolomTabel() {
-    const tableElement = document.getElementById('tab-database-body')?.closest('table');
-    if (!tableElement) return;
+// Fungsi menyembunyikan kolom Plan & Keterangan secara bersih jika berada di Tab Leasing
+function kontrolVisibilitasKolom() {
+    const table = document.getElementById('tab-database-body')?.closest('table');
+    if (!table) return;
 
-    const thead = tableElement.querySelector('thead tr');
-    if (!thead) return;
+    // Ambil elemen th (header kolom) berdasarkan nomor urutan indeksnya (0-based index)
+    const headers = table.querySelectorAll('thead th');
+    const inputRencanaCells = table.querySelectorAll('.kolom-input-rencana');
+    const inputKeteranganCells = table.querySelectorAll('.kolom-input-keterangan');
+    const aksiSimpanCells = table.querySelectorAll('.kolom-aksi-simpan');
 
     if (currentTab === 'LEASING') {
-        thead.innerHTML = `
-            <th class="p-4 text-center w-12">NO</th>
-            <th class="p-4">CUSTOMER NAME</th>
-            <th class="p-4">LEASING</th>
-            <th class="p-4 text-right">O/S BALANCE</th>
-        `;
-    } else if (currentTab === 'OVERDUE') {
-        thead.innerHTML = `
-            <th class="p-4 text-center w-12">NO</th>
-            <th class="p-4">CUSTOMER NAME</th>
-            <th class="p-4">LEASING</th>
-            <th class="p-4 text-right text-red-600 bg-red-50/40">TOTAL OVERDUE</th>
-            <th class="p-4 text-right">O/S BALANCE</th>
-            <th class="p-4">PLAN BAYAR (CABANG)</th>
-            <th class="p-4">KETERANGAN LEASING</th>
-            <th class="p-4 text-center">AKSI</th>
-        `;
+        // Sembunyikan Header Kolom ke-4, ke-5, dan ke-6 (Plan bayar, Keterangan, Aksi)
+        if(headers[4]) headers[4].style.display = 'none';
+        if(headers[5]) headers[5].style.display = 'none';
+        if(headers[6]) headers[6].style.display = 'none';
+
+        // Sembunyikan semua isi baris inputannya
+        inputRencanaCells.forEach(c => c.style.display = 'none');
+        inputKeteranganCells.forEach(c => c.style.display = 'none');
+        aksiSimpanCells.forEach(c => c.style.display = 'none');
     } else {
-        // Tampilan standar "DATABASE LENGKAP"
-        thead.innerHTML = `
-            <th class="p-4 w-12">NO</th>
-            <th class="p-4">CUSTOMER NAME</th>
-            <th class="p-4">LEASING</th>
-            <th class="p-4 text-right">O/S BALANCE</th>
-            <th class="p-4">PLAN BAYAR (CABANG)</th>
-            <th class="p-4">KETERANGAN LEASING</th>
-            <th class="p-4 text-center">AKSI</th>
-        `;
+        // Tampilkan kembali seluruh kolom secara normal untuk tab yang lain
+        if(headers[4]) headers[4].style.display = '';
+        if(headers[5]) headers[5].style.display = '';
+        if(headers[6]) headers[6].style.display = '';
+
+        inputRencanaCells.forEach(c => c.style.display = '');
+        inputKeteranganCells.forEach(c => c.style.display = '');
+        aksiSimpanCells.forEach(c => c.style.display = '');
     }
 }
 
-// ================= LOGIKA DETEKSI EVENT KLIK PADA TOMBOL NAVIGATION TAB =================
-document.addEventListener('click', function(e) {
+// ================= LOGIKA EVENT KLIK NAVIGATION TAB =================
+document.addEventListener('click', function (e) {
     if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'DIV' || e.target.tagName === 'SPAN')) {
         const txt = e.target.innerText.toUpperCase().trim();
-        if (['RINGKASAN', 'LEASING', 'OVERDUE', 'DATABASE LENGKAP'].includes(txt)) {
+        
+        if (['LEASING', 'OVERDUE', 'DATABASE LENGKAP'].includes(txt)) {
             currentTab = txt;
             
-            // Kelola class active CSS tombol agar terlihat berganti dengan rapi
-            const parent = e.target.parentElement;
-            if (parent) {
-                Array.from(parent.children).forEach(btn => {
-                    btn.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-white text-slate-600 border border-slate-100";
-                });
+            // Ganti style warna aktif tombol
+            const siblingButtons = e.target.parentElement.children;
+            for (let btn of siblingButtons) {
+                btn.classList.remove('bg-blue-950', 'text-white'); 
             }
-            
-            // Set tombol yang dipilih menjadi warna biru gelap active
-            e.target.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-blue-950 text-white shadow-sm"; 
+            e.target.classList.add('bg-blue-950', 'text-white'); 
 
-            // Ubah teks Judul Statis di dalam Kotak Putih Anda secara dinamis agar sesuai tabnya
-            const headingBox = document.querySelector('.bg-white h3, .rounded-2xl div, font');
-            if (headingBox) {
-                if (currentTab === 'LEASING') headingBox.innerText = "DETAIL KONTRIBUSI LEASING";
-                if (currentTab === 'OVERDUE') headingBox.innerText = "SEMUA DATA OVERDUE UNIT";
-                if (currentTab === 'DATABASE LENGKAP') headingBox.innerText = "DATABASE LENGKAP AR UNIT";
+            // Sinkronkan judul teks besar di atas kotak putih Anda agar dinamis mengikuti klik
+            const dynamicTitle = document.querySelector('.bg-white div font, .bg-white h3, .rounded-xl div');
+            if (dynamicTitle) {
+                if (currentTab === 'LEASING') dynamicTitle.innerText = "DETAIL KONTRIBUSI LEASING";
+                if (currentTab === 'OVERDUE') dynamicTitle.innerText = "SEMUA DATA OVERDUE UNIT";
+                if (currentTab === 'DATABASE LENGKAP') dynamicTitle.innerText = "DATABASE LENGKAP AR UNIT";
             }
 
-            // Jalankan ulang penyaringan baris tabel tanpa mematikan element HTML asli
+            // Jalankan filter ulang baris tabel secara instan
             renderTabDatabase(globalMasterData);
         }
     }
