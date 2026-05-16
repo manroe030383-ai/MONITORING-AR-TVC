@@ -2,12 +2,12 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 // KONFIGURASI SUPABASE
 const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA9MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
-let currentTab = 'DATABASE LENGKAP'; 
-let globalMasterData = [];          
+let currentTab = 'DATABASE LENGKAP'; // Default tab state sesuai gambar pertama Anda
+let globalMasterData = [];          // Menyimpan cadangan data asli dari Supabase
 
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
@@ -24,9 +24,7 @@ async function fetchData() {
         }
     } catch (e) {
         console.error(e);
-        if (document.getElementById('status-update')) {
-            document.getElementById('status-update').innerText = "KONEKSI GAGAL!";
-        }
+        document.getElementById('status-update').innerText = "KONEKSI GAGAL!";
     }
 }
 
@@ -64,7 +62,7 @@ function updateDashboard(data) {
             }
         }
 
-        // Logika Nama Salesman & Supervisor
+        // LOGIKA DINAMIS NAMA SALESMAN & SUPERVISOR
         const rawSales = (d.salesman_name || "").trim();
         const rawSpv = (d.supervisor_name || "").trim();
         const finalSales = rawSales !== "" ? rawSales : (rawSpv !== "" ? rawSpv : "OFFICE");
@@ -74,7 +72,7 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // Fill Widgets
+    // Validasi elemen sebelum diisi menghindari error jika template HTML berganti view
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -100,7 +98,7 @@ function updateDashboard(data) {
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
     
-    // Jalankan render tabel utama
+    // Alirkan data ke sistem manajemen Tab Aktif
     renderKontenPerTab(data);
 }
 
@@ -166,32 +164,17 @@ function renderOverdueTop(data) {
         </div>`).join('');
 }
 
-// ================= LOGIKA UTAMA MANAJEMEN TAB (FIXED 100%) =================
+// ================= LOGIKA UTAMA MANAJEMEN TAB KONTEN =================
 function renderKontenPerTab(data) {
-    // Gunakan ID statis agar pencarian box penampung tidak rusak saat teks berganti
-    let targetBox = document.getElementById('main-tab-box-container');
-
-    if (!targetBox) {
-        const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
-        boxes.forEach(box => {
-            const txt = box.innerText.toUpperCase();
-            if (txt.includes('DETAIL KONTRIBUSI LEASING') || txt.includes('SEMUA DATA OVERDUE UNIT') || txt.includes('DATABASE LENGKAP')) {
-                targetBox = box;
-                targetBox.id = 'main-tab-box-container'; // Kunci ID penampung secara permanen
-            }
-        });
-    }
-
-    if (!targetBox) return;
-
-    // KONDISI 1: JIKA USER MEMILIH TAB LEASING
     if (currentTab === 'LEASING') {
+        // Menyaring data khusus non-CASH
         const leasingData = data.filter(d => {
             const l = (d.leasing_name || 'CASH').toUpperCase().trim();
             return !["CASH", "CASH TERIMA", ""].includes(l);
         });
 
-        targetBox.innerHTML = `
+        // DESAIN BARU TAB LEASING: Bersih, Tanpa Plan Bayar & Keterangan, Tampilan Indah
+        let htmlLeasing = `
             <div class="p-2">
                 <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
                     <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase">📊 DETAIL KONTRIBUSI LEASING</h3>
@@ -202,47 +185,42 @@ function renderKontenPerTab(data) {
                         <thead>
                             <tr class="border-b border-slate-200 text-slate-400 font-bold bg-slate-50/50">
                                 <th class="p-4 w-12 text-center">NO</th>
-                                <th class="p-4">CUSTOMER NAME</th>
-                                <th class="p-4">LEASING</th>
+                                <th class="p-4">CUSTOMER & SALES INFO</th>
+                                <th class="p-4">NAMA LEASING</th>
                                 <th class="p-4 text-right pr-6">O/S BALANCE</th>
-                                <th class="p-4">PLAN BAYAR (CABANG)</th>
-                                <th class="p-4">KETERANGAN LEASING</th>
-                                <th class="p-4 text-center">AKSI</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${leasingData.map((d, i) => {
-                                const namaLeasing = (d.leasing_name || 'LEASING').toUpperCase().trim();
-                                return `
+                            ${leasingData.map((d, i) => `
                                 <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-all font-bold uppercase">
-                                    <td class="p-4 text-center text-slate-400 font-bold">${i+1}</td>
+                                    <td class="p-4 text-center text-slate-400 font-medium">${i+1}</td>
                                     <td class="p-4">
                                         <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
-                                        <p class="text-[8px] text-slate-400 font-normal mt-0.5">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+                                        <p class="text-[9px] text-slate-400 font-semibold mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
                                     </td>
-                                    <td class="p-4 text-slate-600 uppercase font-bold">
-                                        <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[10px] font-extrabold tracking-wide">${namaLeasing}</span>
+                                    <td class="p-4">
+                                        <span class="bg-slate-100 text-slate-700 px-2.5 py-1 rounded text-[10px] font-extrabold tracking-wide">${d.leasing_name}</span>
                                     </td>
-                                    <td class="p-4 text-right pr-6 text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
-                                    <td class="p-4"><input type="text" class="border p-1 rounded text-[10px] w-full font-bold uppercase" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
-                                    <td class="p-4"><input type="text" class="border p-1 rounded text-[10px] w-full font-bold uppercase" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
-                                    <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
-                                </tr>`;
-                            }).join('')}
+                                    <td class="p-4 text-right pr-6 text-blue-600 text-[12px] font-black">${fmtIDR(d.os_balance)}</td>
+                                </tr>
+                            `).join('')}
                         </tbody>
                     </table>
                 </div>
             </div>`;
+        
+        updateBoxKontenSecaraDinamis(htmlLeasing);
 
-    // KONDISI 2: JIKA USER MEMILIH TAB OVERDUE
     } else if (currentTab === 'OVERDUE') {
+        // Menyaring data yang memiliki nilai overdue > 0
         const overdueData = data.filter(d => Number(d.total_overdue || 0) > 0);
 
-        targetBox.innerHTML = `
+        // DESAIN TAB OVERDUE: Menampilkan tabel data penunggakan dengan rapi
+        let htmlOverdue = `
             <div class="p-2">
                 <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
                     <h3 class="text-xs font-black text-red-600 tracking-wider uppercase">🚨 SEMUA DATA OVERDUE UNIT</h3>
-                    <span class="bg-red-50 text-red-600 text-[10px] font-bold px-3 py-1 rounded-full">${overdueData.length} CUSTOMER</span>
+                    <span class="bg-red-50 text-red-600 text-[10px] font-bold px-3 py-1 rounded-full">${overdueData.length} CUSTOMER OVERDUE</span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse text-xs">
@@ -251,93 +229,118 @@ function renderKontenPerTab(data) {
                                 <th class="p-4 w-12 text-center">NO</th>
                                 <th class="p-4">CUSTOMER NAME</th>
                                 <th class="p-4">LEASING</th>
-                                <th class="p-4 text-right text-red-600 bg-red-50/20">TOTAL OVERDUE</th>
+                                <th class="p-4 text-right text-red-500 bg-red-50/30">TOTAL OVERDUE</th>
                                 <th class="p-4 text-right pr-6">O/S BALANCE</th>
-                                <th class="p-4">PLAN BAYAR (CABANG)</th>
-                                <th class="p-4">KETERANGAN LEASING</th>
-                                <th class="p-4 text-center">AKSI</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${overdueData.map((d, i) => `
                                 <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-all font-bold uppercase">
-                                    <td class="p-4 text-center text-slate-400 font-bold">${i+1}</td>
+                                    <td class="p-4 text-center text-slate-400 font-medium">${i+1}</td>
                                     <td class="p-4">
                                         <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
-                                        <p class="text-[8px] text-slate-400 font-normal mt-0.5">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+                                        <p class="text-[9px] text-slate-400 font-semibold mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
                                     </td>
-                                    <td class="p-4 uppercase font-bold text-slate-600">${d.leasing_name || 'CASH'}</td>
-                                    <td class="p-4 text-right font-black text-red-600 bg-red-50/20">${fmtIDR(d.total_overdue)}</td>
-                                    <td class="p-4 text-right pr-6 text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
-                                    <td class="p-4"><input type="text" class="border p-1 rounded text-[10px] w-full font-bold uppercase" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
-                                    <td class="p-4"><input type="text" class="border p-1 rounded text-[10px] w-full font-bold uppercase" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
-                                    <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
-                                </tr>`).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>`;
-
-    // KONDISI 3: JIKA USER MEMILIH TAB DATABASE LENGKAP
-    } else if (currentTab === 'DATABASE LENGKAP') {
-        targetBox.innerHTML = `
-            <div class="p-2">
-                <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
-                    <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase">📝 DATABASE LENGKAP AR UNIT</h3>
-                    <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-3 py-1 rounded-full">${data.length} TOTAL DATA</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50">
-                                <th class="p-4 w-12 text-center">NO</th>
-                                <th class="p-4">CUSTOMER NAME</th>
-                                <th class="p-4">LEASING</th>
-                                <th class="p-4 text-right pr-6">O/S BALANCE</th>
-                                <th class="p-4">PLAN BAYAR (CABANG)</th>
-                                <th class="p-4">KETERANGAN LEASING</th>
-                                <th class="p-4 text-center">AKSI</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tab-database-body">
-                            ${data.map((d, i) => `
-                                <tr class="hover:bg-slate-50 transition-colors uppercase font-bold text-xs border-b border-slate-100">
-                                    <td class="p-4 text-slate-400 text-center">${i+1}</td>
                                     <td class="p-4">
-                                        <p class="font-bold text-slate-800 text-[11px]">${d.customer_name}</p>
-                                        <p class="text-[8px] text-slate-400 font-normal mt-0.5">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+                                        <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px]">${d.leasing_name || 'CASH'}</span>
                                     </td>
-                                    <td class="p-4 text-slate-600">${d.leasing_name || 'CASH'}</td>
-                                    <td class="p-4 text-right pr-6 text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
-                                    <td class="p-4"><input type="text" class="border p-1 rounded text-[10px] w-full font-bold uppercase" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
-                                    <td class="p-4"><input type="text" class="border p-1 rounded text-[10px] w-full font-bold uppercase" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
-                                    <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
-                                </tr>`).join('')}
+                                    <td class="p-4 text-right font-black text-red-600 bg-red-50/20">${fmtIDR(d.total_overdue)}</td>
+                                    <td class="p-4 text-right pr-6 text-blue-600 text-[11px] font-bold">${fmtIDR(d.os_balance)}</td>
+                                </tr>
+                            `).join('')}
                         </tbody>
                     </table>
                 </div>
             </div>`;
+        
+        updateBoxKontenSecaraDinamis(htmlOverdue);
+
+    } else if (currentTab === 'DATABASE LENGKAP') {
+        // Tampilan bawaan utama Database Lengkap Anda
+        if (document.getElementById('tab-database-body')) {
+            renderTabDatabaseBiasa(data);
+        } else {
+            let htmlFullDB = `
+                <div class="p-2">
+                    <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase mb-4">📝 DATABASE LENGKAP AR UNIT</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50">
+                                    <th class="p-4">NO</th>
+                                    <th class="p-4">CUSTOMER NAME</th>
+                                    <th class="p-4">LEASING</th>
+                                    <th class="p-4 text-right">O/S BALANCE</th>
+                                    <th class="p-4">PLAN BAYAR (CABANG)</th>
+                                    <th class="p-4">KETERANGAN LEASING</th>
+                                    <th class="p-4 text-center">AKSI</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tab-database-body"></tbody>
+                        </table>
+                    </div>
+                </div>`;
+            updateBoxKontenSecaraDinamis(htmlFullDB);
+            renderTabDatabaseBiasa(data);
+        }
     }
 }
 
-// ================= HANDLER EVENT NAVIGATION TAB KLIK =================
+// Menangani render komponen html ke dalam box putih kontainer utama secara dinamis
+function updateBoxKontenSecaraDinamis(htmlString) {
+    const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
+    let targetBox = null;
+
+    boxes.forEach(box => {
+        const txt = box.innerText.toUpperCase();
+        if (txt.includes('DETAIL KONTRIBUSI LEASING') || txt.includes('SEMUA DATA OVERDUE UNIT') || txt.includes('DATABASE LENGKAP') || box.id === 'box-konten-tab-aktif') {
+            targetBox = box;
+        }
+    });
+
+    if (targetBox) {
+        targetBox.id = "box-konten-tab-aktif";
+        targetBox.innerHTML = htmlString;
+    }
+}
+
+function renderTabDatabaseBiasa(data) {
+    const tbody = document.getElementById('tab-database-body');
+    if (!tbody) return;
+    tbody.innerHTML = data.map((d, i) => `
+        <tr class="hover:bg-slate-50 transition-colors">
+            <td class="p-4 text-slate-400 font-bold">${i+1}</td>
+            <td class="p-4">
+                <p class="font-bold uppercase">${d.customer_name}</p>
+                <p class="text-[8px] text-slate-400">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+            </td>
+            <td class="p-4 uppercase font-bold text-slate-600">${d.leasing_name || 'CASH'}</td>
+            <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
+            <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
+            <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
+            <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
+        </tr>`).join('');
+}
+
+// LOGIKA DETEKSI DAN AKTIVASI EVENT KLIK PADA TOMBOL TAB NAVIGATION
 document.addEventListener('click', function(e) {
     if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'DIV' || e.target.tagName === 'SPAN')) {
         const txt = e.target.innerText.toUpperCase().trim();
-        
         if (['RINGKASAN', 'LEASING', 'OVERDUE', 'DATABASE LENGKAP'].includes(txt)) {
             currentTab = txt;
             
-            // Atur style tombol active/inactive
+            // Logika pengelolaan CSS tombol aktif (Menyesuaikan template gelap/terang Anda)
             const parent = e.target.parentElement;
             if (parent) {
                 Array.from(parent.children).forEach(btn => {
                     btn.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-white text-slate-600 border border-slate-100";
                 });
             }
+            
+            // Memberikan style biru tua tegas pada tab yang saat ini sedang aktif
             e.target.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-blue-950 text-white shadow-sm"; 
 
-            // Jalankan re-render instan menggunakan data yang benar
+            // Eksekusi render data sesuai tab tanpa memuat ulang API Supabase
             renderKontenPerTab(globalMasterData);
         }
     }
