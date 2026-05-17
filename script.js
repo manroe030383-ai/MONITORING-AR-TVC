@@ -345,36 +345,39 @@ document.addEventListener('click', function(e) {
         }
     }
 });
-// ================= KODE TAMBAHAN RECOVERY RENDER TAB LEASING (VERSI STABIL) =================
+// ================= KODE TAMBAHAN BYPASS KLIK & FORCE RENDER (PASTI BERHASIL) =================
 document.addEventListener('click', function(e) {
-    if (e.target && ['LEASING', 'OVERDUE', 'DATABASE LENGKAP'].includes(e.target.innerText.toUpperCase().trim())) {
-        
-        // Eksekusi berlapis menggunakan setTimeout untuk memastikan DOM stabil setelah fungsi bawaan berjalan
-        setTimeout(() => {
-            const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
-            let targetBox = document.getElementById('box-konten-tab-aktif');
+    // Mencari elemen tombol atau teks terdekat yang mengandung kata kunci tab
+    const targetElement = e.target.closest('button, div, span');
+    if (!targetElement) return;
 
-            // Jika id aktif belum terpasang otomatis, cari manual berdasarkan teks kontainer dasar
+    const txt = targetElement.innerText.toUpperCase().trim();
+    
+    // Jika terdeteksi aktivitas klik pada area Tab Leasing
+    if (txt.includes('LEASING')) {
+        setTimeout(() => {
+            // 1. Ambil kontainer box putih (baik yang sudah punya ID ataupun belum)
+            let targetBox = document.getElementById('box-konten-tab-aktif');
             if (!targetBox) {
+                const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
                 boxes.forEach(box => {
-                    const cleanText = box.innerText.toUpperCase().replace(/\s+/g, ' ');
-                    if (cleanText.includes('DETAIL KONTRIBUSI LEASING') || cleanText.includes('KONTRIBUSI LEASING')) {
+                    const cleanText = box.innerText.toUpperCase();
+                    if (cleanText.includes('KONTRIBUSI LEASING') || cleanText.includes('DETAIL KONTRIBUSI')) {
                         targetBox = box;
                         targetBox.id = "box-konten-tab-aktif";
                     }
                 });
             }
 
-            // Jika box ditemukan dan kondisinya masih kosong atau hanya berisi template bawaan (seperti gambar)
-            if (targetBox && (targetBox.children.length === 0 || targetBox.innerText.trim() === "DETAIL KONTRIBUSI LEASING")) {
-                
-                // Filter data khusus non-CASH dari globalMasterData
+            // 2. Jika box ditemukan, paksa render data dari globalMasterData
+            if (targetBox) {
+                // Filter data khusus non-CASH
                 const leasingData = globalMasterData.filter(d => {
                     const l = (d.leasing_name || 'CASH').toUpperCase().trim();
                     return !["CASH", "CASH TERIMA", ""].includes(l);
                 });
 
-                // Suntikkan struktur tabel data leasing secara paksa
+                // 3. Inject HTML Tabel Data secara paksa ke dalam DOM
                 targetBox.innerHTML = `
                     <div class="p-2">
                         <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
@@ -414,8 +417,7 @@ document.addEventListener('click', function(e) {
                         </div>
                     </div>`;
             }
-        }, 80); // Menggunakan jeda waktu sedikit lebih lama agar rendering browser tidak berbenturan
+        }, 100); // Jeda aman agar siklus rendering browser selesai sepenuhnya
     }
 });
-
 document.addEventListener('DOMContentLoaded', fetchData);
