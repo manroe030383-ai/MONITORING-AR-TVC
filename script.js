@@ -6,8 +6,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
-let currentTab = 'DATABASE LENGKAP'; // Default tab state sesuai gambar pertama Anda
-let globalMasterData = [];          // Menyimpan cadangan data asli dari Supabase
+let currentTab = 'DATABASE LENGKAP'; // Default awal
+let globalMasterData = [];          
 
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
@@ -19,12 +19,17 @@ async function fetchData() {
         if (data) {
             globalMasterData = data; 
             updateDashboard(data);
-            document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
-            document.getElementById('status-update').classList.replace('text-red-600', 'text-emerald-600');
+            if (document.getElementById('status-update')) {
+                document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
+                document.getElementById('status-update').classList.remove('text-red-600');
+                document.getElementById('status-update').classList.add('text-emerald-600');
+            }
         }
     } catch (e) {
         console.error(e);
-        document.getElementById('status-update').innerText = "KONEKSI GAGAL!";
+        if (document.getElementById('status-update')) {
+            document.getElementById('status-update').innerText = "KONEKSI GAGAL!";
+        }
     }
 }
 
@@ -43,13 +48,11 @@ function updateDashboard(data) {
         if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
         if (Number(d.penalty_amount) > 0) s.cPen++;
 
-        // Aging Logic
         aging['LANCAR'] += Number(d.lancar || 0) / 1000000;
         aging['1-30 H'] += Number(d.hari_1_30 || 0) / 1000000;
         aging['31-60 H'] += Number(d.hari_31_60 || 0) / 1000000;
         aging['>60 H'] += Number(d.lebih_60_hari || 0) / 1000000;
 
-        // Cash vs Leasing
         if (["CASH", "CASH TERIMA", ""].includes(l)) { 
             s.cash += os; s.cCash++; 
         } else { 
@@ -62,7 +65,6 @@ function updateDashboard(data) {
             }
         }
 
-        // LOGIKA DINAMIS NAMA SALESMAN & SUPERVISOR
         const rawSales = (d.salesman_name || "").trim();
         const rawSpv = (d.supervisor_name || "").trim();
         const finalSales = rawSales !== "" ? rawSales : (rawSpv !== "" ? rawSpv : "OFFICE");
@@ -72,7 +74,6 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // Validasi elemen sebelum diisi menghindari error jika template HTML berganti view
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -98,7 +99,6 @@ function updateDashboard(data) {
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
     
-    // Alirkan data ke sistem manajemen Tab Aktif
     renderKontenPerTab(data);
 }
 
@@ -164,16 +164,14 @@ function renderOverdueTop(data) {
         </div>`).join('');
 }
 
-// ================= LOGIKA UTAMA MANAJEMEN TAB KONTEN =================
+// ================= LOGIKA UTAMA MANAJEMEN KONTEN TAB =================
 function renderKontenPerTab(data) {
     if (currentTab === 'LEASING') {
-        // Menyaring data khusus non-CASH
         const leasingData = data.filter(d => {
             const l = (d.leasing_name || 'CASH').toUpperCase().trim();
             return !["CASH", "CASH TERIMA", ""].includes(l);
         });
 
-        // DESAIN BARU TAB LEASING: Bersih, Tanpa Plan Bayar & Keterangan, Tampilan Indah
         let htmlLeasing = `
             <div class="p-2">
                 <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
@@ -212,10 +210,8 @@ function renderKontenPerTab(data) {
         updateBoxKontenSecaraDinamis(htmlLeasing);
 
     } else if (currentTab === 'OVERDUE') {
-        // Menyaring data yang memiliki nilai overdue > 0
         const overdueData = data.filter(d => Number(d.total_overdue || 0) > 0);
 
-        // DESAIN TAB OVERDUE: Menampilkan tabel data penunggakan dengan rapi
         let htmlOverdue = `
             <div class="p-2">
                 <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
@@ -256,7 +252,7 @@ function renderKontenPerTab(data) {
         updateBoxKontenSecaraDinamis(htmlOverdue);
 
     } else if (currentTab === 'DATABASE LENGKAP') {
-        // PERBAIKAN UTAMA: Selalu render ulang kerangka tabel agar sinkronisasi targetBox tidak rusak/rusak DOM-nya
+        // PERBAIKAN FATAL: Memaksa render ulang kerangka tabel agar tidak macet di DOM
         let htmlFullDB = `
             <div class="p-2">
                 <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase mb-4">📝 DATABASE LENGKAP AR UNIT</h3>
@@ -282,7 +278,6 @@ function renderKontenPerTab(data) {
     }
 }
 
-// Menangani render komponen html ke dalam box putih kontainer utama secara dinamis
 function updateBoxKontenSecaraDinamis(htmlString) {
     const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
     let targetBox = null;
@@ -318,19 +313,18 @@ function renderTabDatabaseBiasa(data) {
         </tr>`).join('');
 }
 
-// LOGIKA DETEKSI DAN AKTIVASI EVENT KLIK PADA TOMBOL TAB NAVIGATION
+// FIX UTAMA: Menggunakan `.includes()` agar jika ada emoji atau spasi pada nama tombol HTML Anda, deteksi tidak gagal.
 document.addEventListener('click', function(e) {
     if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'DIV' || e.target.tagName === 'SPAN')) {
         const txt = e.target.innerText.toUpperCase().trim();
         
-        if (txt.includes('RINGKASAN') || txt.includes('LEASING') || txt.includes('OVERDUE') || txt.includes('DATABASE LENGKAP')) {
+        if (txt.includes('LEASING') || txt.includes('OVERDUE') || txt.includes('DATABASE LENGKAP') || txt.includes('RINGKASAN')) {
             
             if (txt.includes('DATABASE LENGKAP')) currentTab = 'DATABASE LENGKAP';
             else if (txt.includes('LEASING')) currentTab = 'LEASING';
             else if (txt.includes('OVERDUE')) currentTab = 'OVERDUE';
             else currentTab = 'RINGKASAN';
             
-            // Logika pengelolaan CSS tombol aktif (Menyesuaikan template gelap/terang Anda)
             const parent = e.target.parentElement;
             if (parent) {
                 Array.from(parent.children).forEach(btn => {
@@ -338,10 +332,8 @@ document.addEventListener('click', function(e) {
                 });
             }
             
-            // Memberikan style biru tua tegas pada tab yang saat ini sedang aktif
             e.target.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-blue-950 text-white shadow-sm"; 
 
-            // Eksekusi render data sesuai tab tanpa memuat ulang API Supabase
             renderKontenPerTab(globalMasterData);
         }
     }
