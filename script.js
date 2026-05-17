@@ -161,7 +161,7 @@ function renderOverdueTop(data) {
         </div>`).join('');
 }
 
-// ================= MANAGEMENT TAB KONTEN (SUDAH FIX BENTURAN RENDER) =================
+// ================= LOGIKA RENDER TAB KONTEN (STABIL & PRESET) =================
 function renderKontenPerTab(data) {
     if (currentTab === 'LEASING') {
         const leasingData = data.filter(d => {
@@ -274,24 +274,35 @@ function renderKontenPerTab(data) {
     }
 }
 
-// Deteksi Box Menggunakan ID Utama Terlebih Dahulu (Anti Gagal Selamanya)
+// ================= FIX TOTAL: SISTEM PENGUNCI CONTAINER KHUSUS =================
 function updateBoxKontenSecaraDinamis(htmlString) {
-    let targetBox = document.getElementById('box-konten-tab-aktif');
-
-    if (!targetBox) {
+    // Cari apakah element holder buatan kita sudah pernah dibuat sebelumnya
+    let holder = document.getElementById('konten-holder-utama');
+    
+    if (!holder) {
+        // Jika belum ada, temukan box putih terbesar di halaman (box konten utama bawah)
         const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
+        let mainBox = null;
+        
         boxes.forEach(box => {
             const txt = box.innerText.toUpperCase();
-            // Deteksi diperketat: utamakan deteksi container database murni di awal load
-            if (txt.includes('DATABASE LENGKAP AR UNIT') || txt.includes('CUSTOMER NAME') || txt.includes('DETAIL KONTRIBUSI')) {
-                targetBox = box;
+            // Mengunci box berdasarkan teks template bawaan HTML awal Anda
+            if (txt.includes('DETAIL KONTRIBUSI LEASING') || txt.includes('DATABASE LENGKAP AR UNIT') || box.id === 'box-konten-tab-aktif') {
+                mainBox = box;
             }
         });
+
+        if (mainBox) {
+            mainBox.id = "box-konten-tab-aktif";
+            // Bersihkan teks bawaan lalu buat div holder permanen di dalamnya
+            mainBox.innerHTML = `<div id="konten-holder-utama"></div>`;
+            holder = document.getElementById('konten-holder-utama');
+        }
     }
 
-    if (targetBox) {
-        targetBox.id = "box-konten-tab-aktif";
-        targetBox.innerHTML = htmlString;
+    // Suntikkan data secara langsung ke holder utama tanpa takut salah alamat atau overwrite
+    if (holder) {
+        holder.innerHTML = htmlString;
     }
 }
 
@@ -313,7 +324,7 @@ function renderTabDatabaseBiasa(data) {
         </tr>`).join('');
 }
 
-// LOGIKA KLIK AMAN & CLEAN (Tanpa Patch Menumpuk)
+// LOGIKA NAVIGASI KLIK TAB YANG AMAN & KONSISTEN
 document.addEventListener('click', function(e) {
     const target = e.target.closest('button, div, span');
     if (!target) return;
@@ -321,13 +332,11 @@ document.addEventListener('click', function(e) {
     const txt = target.innerText.toUpperCase().trim();
     const validTabs = ['RINGKASAN', 'LEASING', 'OVERDUE', 'DATABASE LENGKAP'];
 
-    // Cari tahu apakah item yang diklik adalah salah satu tab utama
     const matchedTab = validTabs.find(tab => txt.includes(tab));
 
     if (matchedTab) {
         currentTab = matchedTab;
         
-        // Atur styling active tab
         const parent = target.parentElement;
         if (parent) {
             Array.from(parent.children).forEach(btn => {
@@ -336,7 +345,6 @@ document.addEventListener('click', function(e) {
         }
         target.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-blue-950 text-white shadow-sm"; 
 
-        // Jalankan render konten tab tunggal secara aman
         renderKontenPerTab(globalMasterData);
     }
 });
