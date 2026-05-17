@@ -6,8 +6,6 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
-let currentTab = 'DATABASE LENGKAP'; // Default tab state
-let globalMasterData = [];          // Menyimpan cadangan data asli dari Supabase
 
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
@@ -17,7 +15,6 @@ async function fetchData() {
         const { data, error } = await supabase.from('ar_unit').select('*').order('os_balance', { ascending: false });
         if (error) throw error;
         if (data) {
-            globalMasterData = data; 
             updateDashboard(data);
             if (document.getElementById('status-update')) {
                 document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
@@ -75,6 +72,7 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
+    // PENGISIAN KARTU STATISTIK RINGKASAN
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -93,6 +91,7 @@ function updateDashboard(data) {
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
+    // Render Grafik & List Ringkasan
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
@@ -100,8 +99,10 @@ function updateDashboard(data) {
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
     
-    // Kirim data ke sistem management Tab Konten
-    renderKontenPerTab(data);
+    // MENYUPLAI DATA LANGSUNG KE TAB DETAIL MASING-MASING (Kunci Keberhasilan!)
+    renderTabLeasingFull(data);
+    renderTabOverdueFull(data);
+    renderTabDatabaseFull(data);
 }
 
 function renderAgingChart(agingData) {
@@ -166,146 +167,92 @@ function renderOverdueTop(data) {
         </div>`).join('');
 }
 
-// ================= LOGIKA UTAMA MANAJEMEN TAB KONTEN =================
-function renderKontenPerTab(data) {
-    if (currentTab === 'LEASING') {
-        const leasingData = data.filter(d => {
-            const l = (d.leasing_name || 'CASH').toUpperCase().trim();
-            return !["CASH", "CASH TERIMA", ""].includes(l);
-        });
+// ================= RENDER UTAMA DETAIL TIAP-TIAP TAB =================
 
-        let htmlLeasing = `
-            <div class="p-2">
-                <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
-                    <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase">📊 DETAIL KONTRIBUSI LEASING</h3>
-                    <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-3 py-1 rounded-full">${leasingData.length} UNIT LEASING</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="border-b border-slate-200 text-slate-400 font-bold bg-slate-50/50">
-                                <th class="p-4 w-12 text-center">NO</th>
-                                <th class="p-4">CUSTOMER & SALES INFO</th>
-                                <th class="p-4">NAMA LEASING</th>
-                                <th class="p-4 text-right pr-6">O/S BALANCE</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${leasingData.map((d, i) => `
-                                <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-all font-bold uppercase">
-                                    <td class="p-4 text-center text-slate-400 font-medium">${i+1}</td>
-                                    <td class="p-4">
-                                        <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
-                                        <p class="text-[9px] text-slate-400 font-semibold mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-                                    </td>
-                                    <td class="p-4">
-                                        <span class="bg-slate-100 text-slate-700 px-2.5 py-1 rounded text-[10px] font-extrabold tracking-wide">${d.leasing_name}</span>
-                                    </td>
-                                    <td class="p-4 text-right pr-6 text-blue-600 text-[12px] font-black">${fmtIDR(d.os_balance)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>`;
-        
-        updateBoxKontenSecaraDinamis(htmlLeasing);
+// TAB 2: DETAIL LEASING (Menyuplai ke ID: tab-leasing-full-list)
+function renderTabLeasingFull(data) {
+    const el = document.getElementById('tab-leasing-full-list');
+    if (!el) return;
 
-    } else if (currentTab === 'OVERDUE') {
-        const overdueData = data.filter(d => Number(d.total_overdue || 0) > 0);
+    const leasingData = data.filter(d => {
+        const l = (d.leasing_name || 'CASH').toUpperCase().trim();
+        return !["CASH", "CASH TERIMA", ""].includes(l);
+    });
 
-        let htmlOverdue = `
-            <div class="p-2">
-                <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
-                    <h3 class="text-xs font-black text-red-600 tracking-wider uppercase">🚨 SEMUA DATA OVERDUE UNIT</h3>
-                    <span class="bg-red-50 text-red-600 text-[10px] font-bold px-3 py-1 rounded-full">${overdueData.length} CUSTOMER OVERDUE</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="border-b border-slate-200 text-slate-400 font-bold bg-slate-50/50">
-                                <th class="p-4 w-12 text-center">NO</th>
-                                <th class="p-4">CUSTOMER NAME</th>
-                                <th class="p-4">LEASING</th>
-                                <th class="p-4 text-right text-red-500 bg-red-50/30">TOTAL OVERDUE</th>
-                                <th class="p-4 text-right pr-6">O/S BALANCE</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${overdueData.map((d, i) => `
-                                <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-all font-bold uppercase">
-                                    <td class="p-4 text-center text-slate-400 font-medium">${i+1}</td>
-                                    <td class="p-4">
-                                        <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
-                                        <p class="text-[9px] text-slate-400 font-semibold mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-                                    </td>
-                                    <td class="p-4">
-                                        <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px]">${d.leasing_name || 'CASH'}</span>
-                                    </td>
-                                    <td class="p-4 text-right font-black text-red-600 bg-red-50/20">${fmtIDR(d.total_overdue)}</td>
-                                    <td class="p-4 text-right pr-6 text-blue-600 text-[11px] font-bold">${fmtIDR(d.os_balance)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>`;
-        
-        updateBoxKontenSecaraDinamis(htmlOverdue);
-
-    } else if (currentTab === 'DATABASE LENGKAP') {
-        let htmlFullDB = `
-            <div class="p-2">
-                <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase mb-4">📝 DATABASE LENGKAP AR UNIT</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50">
-                                <th class="p-4">NO</th>
-                                <th class="p-4">CUSTOMER NAME</th>
-                                <th class="p-4">LEASING</th>
-                                <th class="p-4 text-right">O/S BALANCE</th>
-                                <th class="p-4">PLAN BAYAR (CABANG)</th>
-                                <th class="p-4">KETERANGAN LEASING</th>
-                                <th class="p-4 text-center">AKSI</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tab-database-body"></tbody>
-                    </table>
-                </div>
-            </div>`;
-        
-        updateBoxKontenSecaraDinamis(htmlFullDB);
-        renderTabDatabaseBiasa(data);
-    }
+    el.innerHTML = `
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-[10px]">
+                <thead>
+                    <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50 uppercase">
+                        <th class="p-3 w-12 text-center">No</th>
+                        <th class="p-3">Nama Customer / Sales</th>
+                        <th class="p-3">Nama Leasing</th>
+                        <th class="p-3 text-right pr-6">O/S Balance</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    ${leasingData.map((d, i) => `
+                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase">
+                            <td class="p-3 text-center text-slate-400">${i+1}</td>
+                            <td class="p-3">
+                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
+                                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+                            </td>
+                            <td class="p-3">
+                                <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${d.leasing_name}</span>
+                            </td>
+                            <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-black">${fmtIDR(d.os_balance)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>`;
 }
 
-// PERBAIKAN TOTAL: Sistem penargetan menggunakan Atribut Data khusus agar target tidak hilang dari DOM
-function updateBoxKontenSecaraDinamis(htmlString) {
-    // 1. Coba cari box yang sudah diberi penanda khusus terlebih dahulu
-    let targetBox = document.querySelector('[data-content-box="true"]');
+// TAB 3: DETAIL OVERDUE (Menyuplai ke ID: tab-overdue-full-list)
+function renderTabOverdueFull(data) {
+    const el = document.getElementById('tab-overdue-full-list');
+    if (!el) return;
 
-    // 2. Jika belum diberi penanda (saat pertama kali aplikasi dimuat), cari berdasarkan teks bawaan HTML Anda
-    if (!targetBox) {
-        const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
-        boxes.forEach(box => {
-            const txt = box.innerText.toUpperCase();
-            if (txt.includes('DATABASE LENGKAP') || txt.includes('DETAIL KONTRIBUSI LEASING') || txt.includes('SEMUA DATA OVERDUE UNIT')) {
-                targetBox = box;
-            }
-        });
-    }
+    const overdueData = data.filter(d => Number(d.total_overdue || 0) > 0);
 
-    // 3. Jika targetBox ditemukan, kunci posisinya dengan atribut data agar klik berikutnya tidak tersesat
-    if (targetBox) {
-        targetBox.setAttribute('data-content-box', 'true');
-        targetBox.innerHTML = htmlString;
-    }
+    el.innerHTML = `
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-[10px]">
+                <thead>
+                    <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50 uppercase">
+                        <th class="p-3 w-12 text-center">No</th>
+                        <th class="p-3">Nama Customer</th>
+                        <th class="p-3">Leasing</th>
+                        <th class="p-3 text-right text-red-500 bg-red-50/50">Total Overdue</th>
+                        <th class="p-3 text-right pr-6">O/S Balance</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    ${overdueData.map((d, i) => `
+                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase">
+                            <td class="p-3 text-center text-slate-400">${i+1}</td>
+                            <td class="p-3">
+                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
+                                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+                            </td>
+                            <td class="p-3">
+                                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${d.leasing_name || 'CASH'}</span>
+                            </td>
+                            <td class="p-3 text-right font-black text-red-600 bg-red-50/20">${fmtIDR(d.total_overdue)}</td>
+                            <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-bold">${fmtIDR(d.os_balance)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>`;
 }
 
-function renderTabDatabaseBiasa(data) {
+// TAB 4: DATABASE LENGKAP (Menyuplai ke ID: tab-database-body)
+function renderTabDatabaseFull(data) {
     const tbody = document.getElementById('tab-database-body');
     if (!tbody) return;
+
     tbody.innerHTML = data.map((d, i) => `
         <tr class="hover:bg-slate-50 transition-colors">
             <td class="p-4 text-slate-400 font-bold">${i+1}</td>
@@ -321,31 +268,5 @@ function renderTabDatabaseBiasa(data) {
         </tr>`).join('');
 }
 
-// EVENT KLIK TOMBOL TAB
-document.addEventListener('click', function(e) {
-    if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'DIV' || e.target.tagName === 'SPAN')) {
-        const txt = e.target.innerText.toUpperCase().trim();
-        
-        // Menggunakan `.includes` untuk menangani teks tombol yang memiliki ikon/emoji
-        if (txt.includes('LEASING') || txt.includes('OVERDUE') || txt.includes('DATABASE LENGKAP') || txt.includes('RINGKASAN')) {
-            
-            if (txt.includes('DATABASE LENGKAP')) currentTab = 'DATABASE LENGKAP';
-            else if (txt.includes('LEASING')) currentTab = 'LEASING';
-            else if (txt.includes('OVERDUE')) currentTab = 'OVERDUE';
-            else currentTab = 'RINGKASAN';
-            
-            const parent = e.target.parentElement;
-            if (parent) {
-                Array.from(parent.children).forEach(btn => {
-                    btn.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-white text-slate-600 border border-slate-100";
-                });
-            }
-            
-            e.target.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-blue-950 text-white shadow-sm"; 
-
-            renderKontenPerTab(globalMasterData);
-        }
-    }
-});
-
+// Jalankan pengambilan data saat halaman pertama dimuat
 document.addEventListener('DOMContentLoaded', fetchData);
