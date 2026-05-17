@@ -6,8 +6,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
-let currentTab = 'DATABASE LENGKAP'; // Default tab state sesuai gambar pertama Anda
-let globalMasterData = [];          // Menyimpan cadangan data asli dari Supabase
+let currentTab = 'DATABASE LENGKAP'; 
+let globalMasterData = [];          
 
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
@@ -62,7 +62,6 @@ function updateDashboard(data) {
             }
         }
 
-        // LOGIKA DINAMIS NAMA SALESMAN & SUPERVISOR
         const rawSales = (d.salesman_name || "").trim();
         const rawSpv = (d.supervisor_name || "").trim();
         const finalSales = rawSales !== "" ? rawSales : (rawSpv !== "" ? rawSpv : "OFFICE");
@@ -72,7 +71,6 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // Validasi elemen sebelum diisi menghindari error jika template HTML berganti view
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -98,7 +96,6 @@ function updateDashboard(data) {
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
     
-    // Alirkan data ke sistem manajemen Tab Aktif
     renderKontenPerTab(data);
 }
 
@@ -164,16 +161,14 @@ function renderOverdueTop(data) {
         </div>`).join('');
 }
 
-// ================= LOGIKA UTAMA MANAJEMEN TAB KONTEN =================
+// ================= MANAGEMENT TAB KONTEN (SUDAH FIX BENTURAN RENDER) =================
 function renderKontenPerTab(data) {
     if (currentTab === 'LEASING') {
-        // Menyaring data khusus non-CASH
         const leasingData = data.filter(d => {
             const l = (d.leasing_name || 'CASH').toUpperCase().trim();
             return !["CASH", "CASH TERIMA", ""].includes(l);
         });
 
-        // DESAIN BARU TAB LEASING: Bersih, Tanpa Plan Bayar & Keterangan, Tampilan Indah
         let htmlLeasing = `
             <div class="p-2">
                 <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
@@ -212,10 +207,8 @@ function renderKontenPerTab(data) {
         updateBoxKontenSecaraDinamis(htmlLeasing);
 
     } else if (currentTab === 'OVERDUE') {
-        // Menyaring data yang memiliki nilai overdue > 0
         const overdueData = data.filter(d => Number(d.total_overdue || 0) > 0);
 
-        // DESAIN TAB OVERDUE: Menampilkan tabel data penunggakan dengan rapi
         let htmlOverdue = `
             <div class="p-2">
                 <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
@@ -256,47 +249,45 @@ function renderKontenPerTab(data) {
         updateBoxKontenSecaraDinamis(htmlOverdue);
 
     } else if (currentTab === 'DATABASE LENGKAP') {
-        // Tampilan bawaan utama Database Lengkap Anda
-        if (document.getElementById('tab-database-body')) {
-            renderTabDatabaseBiasa(data);
-        } else {
-            let htmlFullDB = `
-                <div class="p-2">
-                    <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase mb-4">📝 DATABASE LENGKAP AR UNIT</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-xs">
-                            <thead>
-                                <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50">
-                                    <th class="p-4">NO</th>
-                                    <th class="p-4">CUSTOMER NAME</th>
-                                    <th class="p-4">LEASING</th>
-                                    <th class="p-4 text-right">O/S BALANCE</th>
-                                    <th class="p-4">PLAN BAYAR (CABANG)</th>
-                                    <th class="p-4">KETERANGAN LEASING</th>
-                                    <th class="p-4 text-center">AKSI</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tab-database-body"></tbody>
-                        </table>
-                    </div>
-                </div>`;
-            updateBoxKontenSecaraDinamis(htmlFullDB);
-            renderTabDatabaseBiasa(data);
-        }
+        let htmlFullDB = `
+            <div class="p-2">
+                <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase mb-4">📝 DATABASE LENGKAP AR UNIT</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50">
+                                <th class="p-4">NO</th>
+                                <th class="p-4">CUSTOMER NAME</th>
+                                <th class="p-4">LEASING</th>
+                                <th class="p-4 text-right">O/S BALANCE</th>
+                                <th class="p-4">PLAN BAYAR (CABANG)</th>
+                                <th class="p-4">KETERANGAN LEASING</th>
+                                <th class="p-4 text-center">AKSI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab-database-body"></tbody>
+                    </table>
+                </div>
+            </div>`;
+        updateBoxKontenSecaraDinamis(htmlFullDB);
+        renderTabDatabaseBiasa(data);
     }
 }
 
-// Menangani render komponen html ke dalam box putih kontainer utama secara dinamis
+// Deteksi Box Menggunakan ID Utama Terlebih Dahulu (Anti Gagal Selamanya)
 function updateBoxKontenSecaraDinamis(htmlString) {
-    const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
-    let targetBox = null;
+    let targetBox = document.getElementById('box-konten-tab-aktif');
 
-    boxes.forEach(box => {
-        const txt = box.innerText.toUpperCase();
-        if (txt.includes('DETAIL KONTRIBUSI LEASING') || txt.includes('SEMUA DATA OVERDUE UNIT') || txt.includes('DATABASE LENGKAP') || box.id === 'box-konten-tab-aktif') {
-            targetBox = box;
-        }
-    });
+    if (!targetBox) {
+        const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
+        boxes.forEach(box => {
+            const txt = box.innerText.toUpperCase();
+            // Deteksi diperketat: utamakan deteksi container database murni di awal load
+            if (txt.includes('DATABASE LENGKAP AR UNIT') || txt.includes('CUSTOMER NAME') || txt.includes('DETAIL KONTRIBUSI')) {
+                targetBox = box;
+            }
+        });
+    }
 
     if (targetBox) {
         targetBox.id = "box-konten-tab-aktif";
@@ -322,102 +313,32 @@ function renderTabDatabaseBiasa(data) {
         </tr>`).join('');
 }
 
-// LOGIKA DETEKSI DAN AKTIVASI EVENT KLIK PADA TOMBOL TAB NAVIGATION
+// LOGIKA KLIK AMAN & CLEAN (Tanpa Patch Menumpuk)
 document.addEventListener('click', function(e) {
-    if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'DIV' || e.target.tagName === 'SPAN')) {
-        const txt = e.target.innerText.toUpperCase().trim();
-        if (['RINGKASAN', 'LEASING', 'OVERDUE', 'DATABASE LENGKAP'].includes(txt)) {
-            currentTab = txt;
-            
-            // Logika pengelolaan CSS tombol aktif (Menyesuaikan template gelap/terang Anda)
-            const parent = e.target.parentElement;
-            if (parent) {
-                Array.from(parent.children).forEach(btn => {
-                    btn.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-white text-slate-600 border border-slate-100";
-                });
-            }
-            
-            // Memberikan style biru tua tegas pada tab yang saat ini sedang aktif
-            e.target.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-blue-950 text-white shadow-sm"; 
+    const target = e.target.closest('button, div, span');
+    if (!target) return;
 
-            // Eksekusi render data sesuai tab tanpa memuat ulang API Supabase
-            renderKontenPerTab(globalMasterData);
+    const txt = target.innerText.toUpperCase().trim();
+    const validTabs = ['RINGKASAN', 'LEASING', 'OVERDUE', 'DATABASE LENGKAP'];
+
+    // Cari tahu apakah item yang diklik adalah salah satu tab utama
+    const matchedTab = validTabs.find(tab => txt.includes(tab));
+
+    if (matchedTab) {
+        currentTab = matchedTab;
+        
+        // Atur styling active tab
+        const parent = target.parentElement;
+        if (parent) {
+            Array.from(parent.children).forEach(btn => {
+                btn.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-white text-slate-600 border border-slate-100";
+            });
         }
+        target.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-blue-950 text-white shadow-sm"; 
+
+        // Jalankan render konten tab tunggal secara aman
+        renderKontenPerTab(globalMasterData);
     }
 });
-// ================= KODE TAMBAHAN BYPASS KLIK & FORCE RENDER (PASTI BERHASIL) =================
-document.addEventListener('click', function(e) {
-    // Mencari elemen tombol atau teks terdekat yang mengandung kata kunci tab
-    const targetElement = e.target.closest('button, div, span');
-    if (!targetElement) return;
 
-    const txt = targetElement.innerText.toUpperCase().trim();
-    
-    // Jika terdeteksi aktivitas klik pada area Tab Leasing
-    if (txt.includes('LEASING')) {
-        setTimeout(() => {
-            // 1. Ambil kontainer box putih (baik yang sudah punya ID ataupun belum)
-            let targetBox = document.getElementById('box-konten-tab-aktif');
-            if (!targetBox) {
-                const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
-                boxes.forEach(box => {
-                    const cleanText = box.innerText.toUpperCase();
-                    if (cleanText.includes('KONTRIBUSI LEASING') || cleanText.includes('DETAIL KONTRIBUSI')) {
-                        targetBox = box;
-                        targetBox.id = "box-konten-tab-aktif";
-                    }
-                });
-            }
-
-            // 2. Jika box ditemukan, paksa render data dari globalMasterData
-            if (targetBox) {
-                // Filter data khusus non-CASH
-                const leasingData = globalMasterData.filter(d => {
-                    const l = (d.leasing_name || 'CASH').toUpperCase().trim();
-                    return !["CASH", "CASH TERIMA", ""].includes(l);
-                });
-
-                // 3. Inject HTML Tabel Data secara paksa ke dalam DOM
-                targetBox.innerHTML = `
-                    <div class="p-2">
-                        <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
-                            <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase">📊 DETAIL KONTRIBUSI LEASING</h3>
-                            <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-3 py-1 rounded-full">${leasingData.length} UNIT LEASING</span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse text-xs">
-                                <thead>
-                                    <tr class="border-b border-slate-200 text-slate-400 font-bold bg-slate-50/50">
-                                        <th class="p-4 w-12 text-center">NO</th>
-                                        <th class="p-4">CUSTOMER & SALES INFO</th>
-                                        <th class="p-4">NAMA LEASING</th>
-                                        <th class="p-4 text-right pr-6">O/S BALANCE</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${leasingData.length === 0 ? `
-                                        <tr>
-                                            <td colspan="4" class="p-8 text-center text-slate-400 font-bold">TIDAK ADA DATA LEASING YANG DITEMUKAN</td>
-                                        </tr>
-                                    ` : leasingData.map((d, i) => `
-                                        <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-all font-bold uppercase">
-                                            <td class="p-4 text-center text-slate-400 font-medium">${i+1}</td>
-                                            <td class="p-4">
-                                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
-                                                <p class="text-[9px] text-slate-400 font-semibold mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-                                            </td>
-                                            <td class="p-4">
-                                                <span class="bg-slate-100 text-slate-700 px-2.5 py-1 rounded text-[10px] font-extrabold tracking-wide">${d.leasing_name}</span>
-                                            </td>
-                                            <td class="p-4 text-right pr-6 text-blue-600 text-[12px] font-black">${fmtIDR(d.os_balance)}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>`;
-            }
-        }, 100); // Jeda aman agar siklus rendering browser selesai sepenuhnya
-    }
-});
 document.addEventListener('DOMContentLoaded', fetchData);
