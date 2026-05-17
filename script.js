@@ -345,25 +345,37 @@ document.addEventListener('click', function(e) {
         }
     }
 });
-
-// ================= KODE TAMBAHAN RECOVERY RENDER TAB LEASING =================
+// ================= KODE TAMBAHAN RECOVERY RENDER TAB LEASING (VERSI STABIL) =================
 document.addEventListener('click', function(e) {
     if (e.target && ['LEASING', 'OVERDUE', 'DATABASE LENGKAP'].includes(e.target.innerText.toUpperCase().trim())) {
-        // Memberikan jeda 50ms untuk memastikan DOM awal selesai dimuat oleh script utama
+        
+        // Eksekusi berlapis menggunakan setTimeout untuk memastikan DOM stabil setelah fungsi bawaan berjalan
         setTimeout(() => {
-            const activeBox = document.getElementById('box-konten-tab-aktif');
-            
-            // Jika box aktif ditemukan namun isinya masih kosong/hanya judul template (seperti gambar 3)
-            if (activeBox && (activeBox.children.length === 0 || activeBox.innerText.trim() === "DETAIL KONTRIBUSI LEASING")) {
+            const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
+            let targetBox = document.getElementById('box-konten-tab-aktif');
+
+            // Jika id aktif belum terpasang otomatis, cari manual berdasarkan teks kontainer dasar
+            if (!targetBox) {
+                boxes.forEach(box => {
+                    const cleanText = box.innerText.toUpperCase().replace(/\s+/g, ' ');
+                    if (cleanText.includes('DETAIL KONTRIBUSI LEASING') || cleanText.includes('KONTRIBUSI LEASING')) {
+                        targetBox = box;
+                        targetBox.id = "box-konten-tab-aktif";
+                    }
+                });
+            }
+
+            // Jika box ditemukan dan kondisinya masih kosong atau hanya berisi template bawaan (seperti gambar)
+            if (targetBox && (targetBox.children.length === 0 || targetBox.innerText.trim() === "DETAIL KONTRIBUSI LEASING")) {
                 
-                // Ambil data leasing non-CASH dari globalMasterData
+                // Filter data khusus non-CASH dari globalMasterData
                 const leasingData = globalMasterData.filter(d => {
                     const l = (d.leasing_name || 'CASH').toUpperCase().trim();
                     return !["CASH", "CASH TERIMA", ""].includes(l);
                 });
 
-                // Generate ulang HTML secara presisi ke dalam box kontainer
-                activeBox.innerHTML = `
+                // Suntikkan struktur tabel data leasing secara paksa
+                targetBox.innerHTML = `
                     <div class="p-2">
                         <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
                             <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase">📊 DETAIL KONTRIBUSI LEASING</h3>
@@ -380,7 +392,11 @@ document.addEventListener('click', function(e) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${leasingData.map((d, i) => `
+                                    ${leasingData.length === 0 ? `
+                                        <tr>
+                                            <td colspan="4" class="p-8 text-center text-slate-400 font-bold">TIDAK ADA DATA LEASING YANG DITEMUKAN</td>
+                                        </tr>
+                                    ` : leasingData.map((d, i) => `
                                         <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-all font-bold uppercase">
                                             <td class="p-4 text-center text-slate-400 font-medium">${i+1}</td>
                                             <td class="p-4">
@@ -398,7 +414,7 @@ document.addEventListener('click', function(e) {
                         </div>
                     </div>`;
             }
-        }, 50);
+        }, 80); // Menggunakan jeda waktu sedikit lebih lama agar rendering browser tidak berbenturan
     }
 });
 
