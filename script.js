@@ -6,8 +6,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
-let currentTab = 'DATABASE LENGKAP'; 
-let globalMasterData = [];          
+let currentTab = 'DATABASE LENGKAP'; // Default tab state sesuai gambar pertama Anda
+let globalMasterData = [];          // Menyimpan cadangan data asli dari Supabase
 
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
@@ -62,6 +62,7 @@ function updateDashboard(data) {
             }
         }
 
+        // LOGIKA DINAMIS NAMA SALESMAN & SUPERVISOR
         const rawSales = (d.salesman_name || "").trim();
         const rawSpv = (d.supervisor_name || "").trim();
         const finalSales = rawSales !== "" ? rawSales : (rawSpv !== "" ? rawSpv : "OFFICE");
@@ -71,6 +72,7 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
+    // Validasi elemen sebelum diisi menghindari error jika template HTML berganti view
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -96,6 +98,7 @@ function updateDashboard(data) {
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
     
+    // Alirkan data ke sistem manajemen Tab Aktif
     renderKontenPerTab(data);
 }
 
@@ -161,14 +164,16 @@ function renderOverdueTop(data) {
         </div>`).join('');
 }
 
-// ================= LOGIKA RENDER TAB KONTEN (STABIL & PRESET) =================
+// ================= LOGIKA UTAMA MANAJEMEN TAB KONTEN =================
 function renderKontenPerTab(data) {
     if (currentTab === 'LEASING') {
+        // Menyaring data khusus non-CASH
         const leasingData = data.filter(d => {
             const l = (d.leasing_name || 'CASH').toUpperCase().trim();
             return !["CASH", "CASH TERIMA", ""].includes(l);
         });
 
+        // DESAIN BARU TAB LEASING: Bersih, Tanpa Plan Bayar & Keterangan, Tampilan Indah
         let htmlLeasing = `
             <div class="p-2">
                 <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
@@ -207,146 +212,7 @@ function renderKontenPerTab(data) {
         updateBoxKontenSecaraDinamis(htmlLeasing);
 
     } else if (currentTab === 'OVERDUE') {
+        // Menyaring data yang memiliki nilai overdue > 0
         const overdueData = data.filter(d => Number(d.total_overdue || 0) > 0);
 
-        let htmlOverdue = `
-            <div class="p-2">
-                <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
-                    <h3 class="text-xs font-black text-red-600 tracking-wider uppercase">🚨 SEMUA DATA OVERDUE UNIT</h3>
-                    <span class="bg-red-50 text-red-600 text-[10px] font-bold px-3 py-1 rounded-full">${overdueData.length} CUSTOMER OVERDUE</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="border-b border-slate-200 text-slate-400 font-bold bg-slate-50/50">
-                                <th class="p-4 w-12 text-center">NO</th>
-                                <th class="p-4">CUSTOMER NAME</th>
-                                <th class="p-4">LEASING</th>
-                                <th class="p-4 text-right text-red-500 bg-red-50/30">TOTAL OVERDUE</th>
-                                <th class="p-4 text-right pr-6">O/S BALANCE</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${overdueData.map((d, i) => `
-                                <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-all font-bold uppercase">
-                                    <td class="p-4 text-center text-slate-400 font-medium">${i+1}</td>
-                                    <td class="p-4">
-                                        <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
-                                        <p class="text-[9px] text-slate-400 font-semibold mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-                                    </td>
-                                    <td class="p-4">
-                                        <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px]">${d.leasing_name || 'CASH'}</span>
-                                    </td>
-                                    <td class="p-4 text-right font-black text-red-600 bg-red-50/20">${fmtIDR(d.total_overdue)}</td>
-                                    <td class="p-4 text-right pr-6 text-blue-600 text-[11px] font-bold">${fmtIDR(d.os_balance)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>`;
-        
-        updateBoxKontenSecaraDinamis(htmlOverdue);
-
-    } else if (currentTab === 'DATABASE LENGKAP') {
-        let htmlFullDB = `
-            <div class="p-2">
-                <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase mb-4">📝 DATABASE LENGKAP AR UNIT</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50">
-                                <th class="p-4">NO</th>
-                                <th class="p-4">CUSTOMER NAME</th>
-                                <th class="p-4">LEASING</th>
-                                <th class="p-4 text-right">O/S BALANCE</th>
-                                <th class="p-4">PLAN BAYAR (CABANG)</th>
-                                <th class="p-4">KETERANGAN LEASING</th>
-                                <th class="p-4 text-center">AKSI</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tab-database-body"></tbody>
-                    </table>
-                </div>
-            </div>`;
-        updateBoxKontenSecaraDinamis(htmlFullDB);
-        renderTabDatabaseBiasa(data);
-    }
-}
-
-// ================= FIX TOTAL: SISTEM PENGUNCI CONTAINER KHUSUS =================
-function updateBoxKontenSecaraDinamis(htmlString) {
-    // Cari apakah element holder buatan kita sudah pernah dibuat sebelumnya
-    let holder = document.getElementById('konten-holder-utama');
-    
-    if (!holder) {
-        // Jika belum ada, temukan box putih terbesar di halaman (box konten utama bawah)
-        const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
-        let mainBox = null;
-        
-        boxes.forEach(box => {
-            const txt = box.innerText.toUpperCase();
-            // Mengunci box berdasarkan teks template bawaan HTML awal Anda
-            if (txt.includes('DETAIL KONTRIBUSI LEASING') || txt.includes('DATABASE LENGKAP AR UNIT') || box.id === 'box-konten-tab-aktif') {
-                mainBox = box;
-            }
-        });
-
-        if (mainBox) {
-            mainBox.id = "box-konten-tab-aktif";
-            // Bersihkan teks bawaan lalu buat div holder permanen di dalamnya
-            mainBox.innerHTML = `<div id="konten-holder-utama"></div>`;
-            holder = document.getElementById('konten-holder-utama');
-        }
-    }
-
-    // Suntikkan data secara langsung ke holder utama tanpa takut salah alamat atau overwrite
-    if (holder) {
-        holder.innerHTML = htmlString;
-    }
-}
-
-function renderTabDatabaseBiasa(data) {
-    const tbody = document.getElementById('tab-database-body');
-    if (!tbody) return;
-    tbody.innerHTML = data.map((d, i) => `
-        <tr class="hover:bg-slate-50 transition-colors">
-            <td class="p-4 text-slate-400 font-bold">${i+1}</td>
-            <td class="p-4">
-                <p class="font-bold uppercase">${d.customer_name}</p>
-                <p class="text-[8px] text-slate-400">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-            </td>
-            <td class="p-4 uppercase font-bold text-slate-600">${d.leasing_name || 'CASH'}</td>
-            <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
-            <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
-            <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
-            <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
-        </tr>`).join('');
-}
-
-// LOGIKA NAVIGASI KLIK TAB YANG AMAN & KONSISTEN
-document.addEventListener('click', function(e) {
-    const target = e.target.closest('button, div, span');
-    if (!target) return;
-
-    const txt = target.innerText.toUpperCase().trim();
-    const validTabs = ['RINGKASAN', 'LEASING', 'OVERDUE', 'DATABASE LENGKAP'];
-
-    const matchedTab = validTabs.find(tab => txt.includes(tab));
-
-    if (matchedTab) {
-        currentTab = matchedTab;
-        
-        const parent = target.parentElement;
-        if (parent) {
-            Array.from(parent.children).forEach(btn => {
-                btn.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-white text-slate-600 border border-slate-100";
-            });
-        }
-        target.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-blue-950 text-white shadow-sm"; 
-
-        renderKontenPerTab(globalMasterData);
-    }
-});
-
-document.addEventListener('DOMContentLoaded', fetchData);
+        // DESAIN
