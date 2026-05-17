@@ -19,16 +19,12 @@ async function fetchData() {
         if (data) {
             globalMasterData = data; 
             updateDashboard(data);
-            if (document.getElementById('status-update')) {
-                document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
-                document.getElementById('status-update').classList.replace('text-red-600', 'text-emerald-600');
-            }
+            document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
+            document.getElementById('status-update').classList.replace('text-red-600', 'text-emerald-600');
         }
     } catch (e) {
         console.error(e);
-        if (document.getElementById('status-update')) {
-            document.getElementById('status-update').innerText = "KONEKSI GAGAL!";
-        }
+        document.getElementById('status-update').innerText = "KONEKSI GAGAL!";
     }
 }
 
@@ -171,7 +167,7 @@ function renderOverdueTop(data) {
 // ================= LOGIKA UTAMA MANAJEMEN TAB KONTEN =================
 function renderKontenPerTab(data) {
     if (currentTab === 'LEASING') {
-        // Menyaring data khusus non-CASH dari data Supabase
+        // Menyaring data khusus non-CASH
         const leasingData = data.filter(d => {
             const l = (d.leasing_name || 'CASH').toUpperCase().trim();
             return !["CASH", "CASH TERIMA", ""].includes(l);
@@ -216,7 +212,7 @@ function renderKontenPerTab(data) {
         updateBoxKontenSecaraDinamis(htmlLeasing);
 
     } else if (currentTab === 'OVERDUE') {
-        // Menyaring data yang memiliki nilai overdue > 0 dari data Supabase
+        // Menyaring data yang memiliki nilai overdue > 0
         const overdueData = data.filter(d => Number(d.total_overdue || 0) > 0);
 
         // DESAIN TAB OVERDUE: Menampilkan tabel data penunggakan dengan rapi
@@ -260,50 +256,49 @@ function renderKontenPerTab(data) {
         updateBoxKontenSecaraDinamis(htmlOverdue);
 
     } else if (currentTab === 'DATABASE LENGKAP') {
-        let htmlFullDB = `
-            <div class="p-2">
-                <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase mb-4">📝 DATABASE LENGKAP AR UNIT</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50">
-                                <th class="p-4">NO</th>
-                                <th class="p-4">CUSTOMER NAME</th>
-                                <th class="p-4">LEASING</th>
-                                <th class="p-4 text-right">O/S BALANCE</th>
-                                <th class="p-4">PLAN BAYAR (CABANG)</th>
-                                <th class="p-4">KETERANGAN LEASING</th>
-                                <th class="p-4 text-center">AKSI</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tab-database-body"></tbody>
-                    </table>
-                </div>
-            </div>`;
-        
-        updateBoxKontenSecaraDinamis(htmlFullDB);
-        renderTabDatabaseBiasa(data);
+        // Tampilan bawaan utama Database Lengkap Anda
+        if (document.getElementById('tab-database-body')) {
+            renderTabDatabaseBiasa(data);
+        } else {
+            let htmlFullDB = `
+                <div class="p-2">
+                    <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase mb-4">📝 DATABASE LENGKAP AR UNIT</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50">
+                                    <th class="p-4">NO</th>
+                                    <th class="p-4">CUSTOMER NAME</th>
+                                    <th class="p-4">LEASING</th>
+                                    <th class="p-4 text-right">O/S BALANCE</th>
+                                    <th class="p-4">PLAN BAYAR (CABANG)</th>
+                                    <th class="p-4">KETERANGAN LEASING</th>
+                                    <th class="p-4 text-center">AKSI</th>
+                                </tr>
+                            </ul>
+                        </table>
+                    </div>
+                </div>`;
+            updateBoxKontenSecaraDinamis(htmlFullDB);
+            renderTabDatabaseBiasa(data);
+        }
     }
 }
 
-// Menangani pencarian box kontainer utama berdasarkan ID permanen agar target tidak berpindah atau hilang
+// Menangani render komponen html ke dalam box putih kontainer utama secara dinamis
 function updateBoxKontenSecaraDinamis(htmlString) {
-    let targetBox = document.getElementById('box-konten-tab-aktif');
+    const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
+    let targetBox = null;
 
-    // Jika ID belum terpasang, lakukan scanning berdasarkan teks awal bawaan HTML
-    if (!targetBox) {
-        const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
-        boxes.forEach(box => {
-            const txt = box.innerText.toUpperCase();
-            // Menemukan box utama yang memuat judul database lengkap di awal program dimuat
-            if (txt.includes('DATABASE LENGKAP AR UNIT') || txt.includes('DATABASE LENGKAP') || txt.includes('DETAIL KONTRIBUSI LEASING') || txt.includes('SEMUA DATA OVERDUE UNIT')) {
-                targetBox = box;
-            }
-        });
-    }
+    boxes.forEach(box => {
+        const txt = box.innerText.toUpperCase();
+        if (txt.includes('DETAIL KONTRIBUSI LEASING') || txt.includes('SEMUA DATA OVERDUE UNIT') || txt.includes('DATABASE LENGKAP') || box.id === 'box-konten-tab-aktif') {
+            targetBox = box;
+        }
+    });
 
     if (targetBox) {
-        targetBox.id = "box-konten-tab-aktif"; // Kunci ID-nya secara permanen agar di klik berikutnya tidak tersesat
+        targetBox.id = "box-konten-tab-aktif";
         targetBox.innerHTML = htmlString;
     }
 }
@@ -315,13 +310,13 @@ function renderTabDatabaseBiasa(data) {
         <tr class="hover:bg-slate-50 transition-colors">
             <td class="p-4 text-slate-400 font-bold">${i+1}</td>
             <td class="p-4">
-                <p class="font-bold uppercase text-slate-800">${d.customer_name || '-'}</p>
+                <p class="font-bold uppercase">${d.customer_name}</p>
                 <p class="text-[8px] text-slate-400">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
             </td>
             <td class="p-4 uppercase font-bold text-slate-600">${d.leasing_name || 'CASH'}</td>
             <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
-            <td class="p-4"><input type="text" class="border border-slate-200 rounded p-1 text-[10px] w-full" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
-            <td class="p-4"><input type="text" class="border border-slate-200 rounded p-1 text-[10px] w-full" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
+            <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
+            <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
             <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
         </tr>`).join('');
 }
@@ -331,6 +326,7 @@ document.addEventListener('click', function(e) {
     if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'DIV' || e.target.tagName === 'SPAN')) {
         const txt = e.target.innerText.toUpperCase().trim();
         
+        // TAMBAHAN PERBAIKAN: Menggunakan kondisi .includes() agar mendeteksi kata kunci tab walaupun ada tambahan emoji/spasi dari HTML Anda
         if (txt.includes('RINGKASAN') || txt.includes('LEASING') || txt.includes('OVERDUE') || txt.includes('DATABASE LENGKAP')) {
             
             if (txt.includes('DATABASE LENGKAP')) currentTab = 'DATABASE LENGKAP';
@@ -338,7 +334,7 @@ document.addEventListener('click', function(e) {
             else if (txt.includes('OVERDUE')) currentTab = 'OVERDUE';
             else currentTab = 'RINGKASAN';
             
-            // Logika pengelolaan CSS tombol aktif
+            // Logika pengelolaan CSS tombol aktif (Menyesuaikan template gelap/terang Anda)
             const parent = e.target.parentElement;
             if (parent) {
                 Array.from(parent.children).forEach(btn => {
