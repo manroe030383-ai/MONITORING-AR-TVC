@@ -98,142 +98,96 @@ function updateDashboard(data) {
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
     
-    // Alirkan data langsung ke tabel tanpa merusak Box Pembungkus HTML Anda
-    populasiTabelSecaraAman(data);
+    // Panggil fungsi pemrosesan data ke tabel secara aman
+    renderTabelSecaraAman(data);
 }
 
-// ================= PERBAIKAN TOTAL: INPUT DATA LANGSUNG KE TBODY =================
-function populasiTabelSecaraAman(data) {
-    // 1. Dapatkan Elemen Pembungkus Utama (Box Konten) tempat tabel Anda berada
-    let containerUtama = document.getElementById('box-konten-tab-aktif');
-    if (!containerUtama) {
-        // Jika belum ada ID, cari box putih besar yang memuat struktur tabel bawaan asli Anda
-        const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
-        boxes.forEach(box => {
-            if (box.innerText.toUpperCase().includes('DATABASE LENGKAP')) {
-                containerUtama = box;
-                containerUtama.id = 'box-konten-tab-aktif'; // Kunci ID permanen agar tidak hilang
-            }
-        });
-    }
+// ================= FUNGSI POPULASI TABEL AMAN TANPA MERUSAK LAYOUT HTML =================
+function renderTabelSecaraAman(data) {
+    // 1. CARI SEMUA ELEMEN KOTAK/TABLE KONTEN BERDASARKAN TEKS ATAU ID YANG ADA DI HTML ASLI ANDA
+    let boxDatabase = null, boxLeasing = null, boxOverdue = null;
+    const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
+    
+    boxes.forEach(box => {
+        const txt = box.innerText.toUpperCase();
+        if (txt.includes('DATABASE LENGKAP')) boxDatabase = box;
+        if (txt.includes('KONTRIBUSI LEASING')) boxLeasing = box;
+        if (txt.includes('OVERDUE UNIT')) boxOverdue = box;
+    });
 
-    if (!containerUtama) return; // Hentikan jika tidak ditemukan pembungkusnya
+    // 2. MANAJEMEN TAMPIL/SEMBUNYI BOX UTAMA (Menggunakan class 'hidden' Tailwind secara dinamis)
+    if (boxDatabase) boxDatabase.classList.toggle('hidden', currentTab !== 'DATABASE LENGKAP');
+    if (boxLeasing) boxLeasing.classList.toggle('hidden', currentTab !== 'LEASING');
+    if (boxOverdue) boxOverdue.classList.toggle('hidden', currentTab !== 'OVERDUE');
 
-    // 2. Render HTML berdasarkan Tab yang dipilih saat ini secara statis & presisi
-    if (currentTab === 'DATABASE LENGKAP') {
-        containerUtama.innerHTML = `
-            <div class="p-2">
-                <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase mb-4">📝 DATABASE LENGKAP AR UNIT</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50">
-                                <th class="p-4">NO</th>
-                                <th class="p-4">CUSTOMER NAME</th>
-                                <th class="p-4">LEASING</th>
-                                <th class="p-4 text-right">O/S BALANCE</th>
-                                <th class="p-4">PLAN BAYAR (CABANG)</th>
-                                <th class="p-4">KETERANGAN LEASING</th>
-                                <th class="p-4 text-center">AKSI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.map((d, i) => `
-                                <tr class="hover:bg-slate-50 transition-colors">
-                                    <td class="p-4 text-slate-400 font-bold">${i+1}</td>
-                                    <td class="p-4">
-                                        <p class="font-bold uppercase">${d.customer_name}</p>
-                                        <p class="text-[8px] text-slate-400">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-                                    </td>
-                                    <td class="p-4 uppercase font-bold text-slate-600">${d.leasing_name || 'CASH'}</td>
-                                    <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
-                                    <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
-                                    <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
-                                    <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
-                                </tr>`).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>`;
-
-    } else if (currentTab === 'LEASING') {
+    // 3. INJEKSI DATA SUPABASE HANYA KE DALAM TBODY MASING-MASING TAB (Layout HTML Anda 100% Utuh)
+    if (currentTab === 'DATABASE LENGKAP' && boxDatabase) {
+        const tbody = boxDatabase.querySelector('tbody');
+        if (tbody) {
+            tbody.innerHTML = data.map((d, i) => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 text-slate-400 font-bold">${i+1}</td>
+                    <td class="p-4">
+                        <p class="font-bold uppercase">${d.customer_name}</p>
+                        <p class="text-[8px] text-slate-400">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+                    </td>
+                    <td class="p-4 uppercase font-bold text-slate-600">${d.leasing_name || 'CASH'}</td>
+                    <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
+                    <td class="p-4"><input type="text" class="border border-slate-200 rounded p-1 text-[10px] w-full" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
+                    <td class="p-4"><input type="text" class="border border-slate-200 rounded p-1 text-[10px] w-full" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
+                    <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
+                </tr>`).join('');
+        }
+    } 
+    
+    else if (currentTab === 'LEASING' && boxLeasing) {
+        const tbody = boxLeasing.querySelector('tbody');
+        const badgeCount = boxLeasing.querySelector('.bg-blue-50, span'); // Update badge total data leasing jika ada
+        
         const leasingData = data.filter(d => {
             const l = (d.leasing_name || 'CASH').toUpperCase().trim();
             return !["CASH", "CASH TERIMA", ""].includes(l);
         });
 
-        containerUtama.innerHTML = `
-            <div class="p-2">
-                <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
-                    <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase">📊 DETAIL KONTRIBUSI LEASING</h3>
-                    <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-3 py-1 rounded-full">${leasingData.length} UNIT LEASING</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="border-b border-slate-200 text-slate-400 font-bold bg-slate-50/50">
-                                <th class="p-4 w-12 text-center">NO</th>
-                                <th class="p-4">CUSTOMER & SALES INFO</th>
-                                <th class="p-4">NAMA LEASING</th>
-                                <th class="p-4 text-right pr-6">O/S BALANCE</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${leasingData.map((d, i) => `
-                                <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-all font-bold uppercase">
-                                    <td class="p-4 text-center text-slate-400 font-medium">${i+1}</td>
-                                    <td class="p-4">
-                                        <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
-                                        <p class="text-[9px] text-slate-400 font-semibold mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-                                    </td>
-                                    <td class="p-4">
-                                        <span class="bg-slate-100 text-slate-700 px-2.5 py-1 rounded text-[10px] font-extrabold tracking-wide">${d.leasing_name}</span>
-                                    </td>
-                                    <td class="p-4 text-right pr-6 text-blue-600 text-[12px] font-black">${fmtIDR(d.os_balance)}</td>
-                                </tr>`).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>`;
+        if (badgeCount && badgeCount.innerText.includes('UNIT')) {
+            badgeCount.innerText = `${leasingData.length} UNIT LEASING`;
+        }
 
-    } else if (currentTab === 'OVERDUE') {
+        if (tbody) {
+            tbody.innerHTML = leasingData.map((d, i) => `
+                <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-all font-bold uppercase">
+                    <td class="p-4 text-center text-slate-400 font-medium">${i+1}</td>
+                    <td class="p-4">
+                        <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
+                        <p class="text-[9px] text-slate-400 font-semibold mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+                    </td>
+                    <td class="p-4">
+                        <span class="bg-slate-100 text-slate-700 px-2.5 py-1 rounded text-[10px] font-extrabold tracking-wide">${d.leasing_name}</span>
+                    </td>
+                    <td class="p-4 text-right pr-6 text-blue-600 text-[12px] font-black">${fmtIDR(d.os_balance)}</td>
+                </tr>`).join('');
+        }
+    } 
+    
+    else if (currentTab === 'OVERDUE' && boxOverdue) {
+        const tbody = boxOverdue.querySelector('tbody');
         const overdueData = data.filter(d => Number(d.total_overdue || 0) > 0);
 
-        containerUtama.innerHTML = `
-            <div class="p-2">
-                <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
-                    <h3 class="text-xs font-black text-red-600 tracking-wider uppercase">🚨 SEMUA DATA OVERDUE UNIT</h3>
-                    <span class="bg-red-50 text-red-600 text-[10px] font-bold px-3 py-1 rounded-full">${overdueData.length} CUSTOMER OVERDUE</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="border-b border-slate-200 text-slate-400 font-bold bg-slate-50/50">
-                                <th class="p-4 w-12 text-center">NO</th>
-                                <th class="p-4">CUSTOMER NAME</th>
-                                <th class="p-4">LEASING</th>
-                                <th class="p-4 text-right text-red-500 bg-red-50/30">TOTAL OVERDUE</th>
-                                <th class="p-4 text-right pr-6">O/S BALANCE</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${overdueData.map((d, i) => `
-                                <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-all font-bold uppercase">
-                                    <td class="p-4 text-center text-slate-400 font-medium">${i+1}</td>
-                                    <td class="p-4">
-                                        <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
-                                        <p class="text-[9px] text-slate-400 font-semibold mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-                                    </td>
-                                    <td class="p-4">
-                                        <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px]">${d.leasing_name || 'CASH'}</span>
-                                    </td>
-                                    <td class="p-4 text-right font-black text-red-600 bg-red-50/20">${fmtIDR(d.total_overdue)}</td>
-                                    <td class="p-4 text-right pr-6 text-blue-600 text-[11px] font-bold">${fmtIDR(d.os_balance)}</td>
-                                </tr>`).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>`;
+        if (tbody) {
+            tbody.innerHTML = overdueData.map((d, i) => `
+                <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-all font-bold uppercase">
+                    <td class="p-4 text-center text-slate-400 font-medium">${i+1}</td>
+                    <td class="p-4">
+                        <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
+                        <p class="text-[9px] text-slate-400 font-semibold mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+                    </td>
+                    <td class="p-4">
+                        <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px]">${d.leasing_name || 'CASH'}</span>
+                    </td>
+                    <td class="p-4 text-right font-black text-red-600 bg-red-50/20">${fmtIDR(d.total_overdue)}</td>
+                    <td class="p-4 text-right pr-6 text-blue-600 text-[11px] font-bold">${fmtIDR(d.os_balance)}</td>
+                </tr>`).join('');
+        }
     }
 }
 
@@ -270,7 +224,6 @@ function renderDonutLeasing(mLeas) {
     else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
 }
 
-// (Fungsi render tambahan list sales, spv, dll tetap dibiarkan utuh)
 function renderLeasingList(map, total) {
     const el = document.getElementById('leasing-list');
     if (!el) return;
@@ -301,13 +254,20 @@ function renderOverdueTop(data) {
         </div>`).join('');
 }
 
-// LOGIKA EVENT KLIK NAVIGATION TAB YANG AMAN
+// LOGIKA EVENT NAVIGATION TAB UTK INTERAKSI USER
 document.addEventListener('click', function(e) {
     if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'DIV' || e.target.tagName === 'SPAN')) {
         const txt = e.target.innerText.toUpperCase().trim();
-        if (['RINGKASAN', 'LEASING', 'OVERDUE', 'DATABASE LENGKAP'].includes(txt)) {
-            currentTab = txt;
+        
+        // Cek apakah yang diklik adalah salah satu tombol navigasi tab
+        if (txt.includes('RINGKASAN') || txt.includes('LEASING') || txt.includes('OVERDUE') || txt.includes('DATABASE LENGKAP')) {
             
+            if (txt.includes('RINGKASAN')) currentTab = 'RINGKASAN';
+            else if (txt.includes('LEASING')) currentTab = 'LEASING';
+            else if (txt.includes('OVERDUE')) currentTab = 'OVERDUE';
+            else if (txt.includes('DATABASE LENGKAP')) currentTab = 'DATABASE LENGKAP';
+
+            // Mengatur style aktif/nonaktif tombol tab navigasi secara aman
             const parent = e.target.parentElement;
             if (parent) {
                 Array.from(parent.children).forEach(btn => {
@@ -317,8 +277,8 @@ document.addEventListener('click', function(e) {
             
             e.target.className = "px-4 py-2 text-xs font-bold rounded-lg transition-all bg-blue-950 text-white shadow-sm"; 
 
-            // Render ulang data tabel ke pembungkus statis yang aman
-            populasiTabelSecaraAman(globalMasterData);
+            // Refresh tampilan tabel per tab berdasarkan data cadangan
+            renderTabelSecaraAman(globalMasterData);
         }
     }
 });
