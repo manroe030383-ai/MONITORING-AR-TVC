@@ -1,4 +1,5 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm'
 
 // KONFIGURASI SUPABASE
 const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
