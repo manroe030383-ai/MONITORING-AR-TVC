@@ -256,32 +256,29 @@ function renderKontenPerTab(data) {
         updateBoxKontenSecaraDinamis(htmlOverdue);
 
     } else if (currentTab === 'DATABASE LENGKAP') {
-        // Tampilan bawaan utama Database Lengkap Anda
-        if (document.getElementById('tab-database-body')) {
-            renderTabDatabaseBiasa(data);
-        } else {
-            let htmlFullDB = `
-                <div class="p-2">
-                    <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase mb-4">📝 DATABASE LENGKAP AR UNIT</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-xs">
-                            <thead>
-                                <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50">
-                                    <th class="p-4">NO</th>
-                                    <th class="p-4">CUSTOMER NAME</th>
-                                    <th class="p-4">LEASING</th>
-                                    <th class="p-4 text-right">O/S BALANCE</th>
-                                    <th class="p-4">PLAN BAYAR (CABANG)</th>
-                                    <th class="p-4">KETERANGAN LEASING</th>
-                                    <th class="p-4 text-center">AKSI</th>
-                                </tr>
-                            </ul>
-                        </table>
-                    </div>
-                </div>`;
-            updateBoxKontenSecaraDinamis(htmlFullDB);
-            renderTabDatabaseBiasa(data);
-        }
+        // PERBAIKAN UTAMA: Selalu render ulang kerangka tabel agar sinkronisasi targetBox tidak rusak/rusak DOM-nya
+        let htmlFullDB = `
+            <div class="p-2">
+                <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase mb-4">📝 DATABASE LENGKAP AR UNIT</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50">
+                                <th class="p-4">NO</th>
+                                <th class="p-4">CUSTOMER NAME</th>
+                                <th class="p-4">LEASING</th>
+                                <th class="p-4 text-right">O/S BALANCE</th>
+                                <th class="p-4">PLAN BAYAR (CABANG)</th>
+                                <th class="p-4">KETERANGAN LEASING</th>
+                                <th class="p-4 text-center">AKSI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab-database-body"></tbody>
+                    </table>
+                </div>
+            </div>`;
+        updateBoxKontenSecaraDinamis(htmlFullDB);
+        renderTabDatabaseBiasa(data);
     }
 }
 
@@ -326,7 +323,6 @@ document.addEventListener('click', function(e) {
     if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'DIV' || e.target.tagName === 'SPAN')) {
         const txt = e.target.innerText.toUpperCase().trim();
         
-        // TAMBAHAN PERBAIKAN: Menggunakan kondisi .includes() agar mendeteksi kata kunci tab walaupun ada tambahan emoji/spasi dari HTML Anda
         if (txt.includes('RINGKASAN') || txt.includes('LEASING') || txt.includes('OVERDUE') || txt.includes('DATABASE LENGKAP')) {
             
             if (txt.includes('DATABASE LENGKAP')) currentTab = 'DATABASE LENGKAP';
