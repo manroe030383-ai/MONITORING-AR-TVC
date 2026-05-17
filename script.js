@@ -7,6 +7,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
+let cachedData = []; // Menyimpan data global untuk fitur download
 
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
@@ -16,10 +17,19 @@ async function fetchData() {
         const { data, error } = await supabase.from('ar_unit').select('*').order('os_balance', { ascending: false });
         if (error) throw error;
         if (data) {
+            cachedData = data; // Simpan ke cache untuk download
             updateDashboard(data);
+            
+            // 1. UPDATE STATUS DATA DI HEADER
             if (document.getElementById('status-update')) {
                 document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
                 document.getElementById('status-update').classList.replace('text-red-600', 'text-emerald-600');
+            }
+
+            // 2. PERBAIKAN: UPDATE TANGGAL ARSIP DB AGAR TIDAK "MEMUAT..." LAGI
+            if (document.getElementById('tgl-arsip')) {
+                const opsiTanggal = { year: 'numeric', month: 'short', day: 'numeric' };
+                document.getElementById('tgl-arsip').innerText = new Date().toLocaleDateString('id-ID', opsiTanggal).toUpperCase();
             }
         }
     } catch (e) {
@@ -100,7 +110,7 @@ function updateDashboard(data) {
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
     
-    // MENYUPLAI DATA LANGSUNG KE TAB DETAIL MASING-MASING (Kunci Keberhasilan!)
+    // MENYUPLAI DATA LANGSUNG KE TAB DETAIL MASING-MASING
     renderTabLeasingFull(data);
     renderTabOverdueFull(data);
     renderTabDatabaseFull(data);
@@ -168,9 +178,6 @@ function renderOverdueTop(data) {
         </div>`).join('');
 }
 
-// ================= RENDER UTAMA DETAIL TIAP-TIAP TAB =================
-
-// TAB 2: DETAIL LEASING (Menyuplai ke ID: tab-leasing-full-list)
 function renderTabLeasingFull(data) {
     const el = document.getElementById('tab-leasing-full-list');
     if (!el) return;
@@ -210,7 +217,6 @@ function renderTabLeasingFull(data) {
         </div>`;
 }
 
-// TAB 3: DETAIL OVERDUE (Menyuplai ke ID: tab-overdue-full-list)
 function renderTabOverdueFull(data) {
     const el = document.getElementById('tab-overdue-full-list');
     if (!el) return;
@@ -249,7 +255,6 @@ function renderTabOverdueFull(data) {
         </div>`;
 }
 
-// TAB 4: DATABASE LENGKAP (Menyuplai ke ID: tab-database-body)
 function renderTabDatabaseFull(data) {
     const tbody = document.getElementById('tab-database-body');
     if (!tbody) return;
@@ -269,5 +274,44 @@ function renderTabDatabaseFull(data) {
         </tr>`).join('');
 }
 
-// Jalankan pengambilan data saat halaman pertama dimuat
-document.addEventListener('DOMContentLoaded', fetchData);
+// 3. TAMBAHAN BARU: FUNGSI DOWNLOAD EXCEL SINKRON DENGAN LIBRARY XLSX ESM
+function downloadExcel() {
+    if (cachedData.length === 0) {
+        alert("Data belum dimuat sepenuhnya. Mohon tunggu.");
+        return;
+    }
+
+    // Melakukan mapping data mentah agar nama kolom di excel lebih bersih dan rapi
+    const dataToExport = cachedData.map((d, idx) => ({
+        "No": idx + 1,
+        "Nama Customer": d.customer_name ? d.customer_name.toUpperCase() : "",
+        "Leasing": d.leasing_name ? d.leasing_name.toUpperCase() : "CASH",
+        "O/S Balance": d.os_balance || 0,
+        "Total Overdue": d.total_overdue || 0,
+        "Lancar": d.lancar || 0,
+        "1 - 30 Hari": d.hari_1_30 || 0,
+        "31 - 60 Hari": d.hari_31_60 || 0,
+        "Lebih 60 Hari": d.lebih_60_hari || 0,
+        "Salesman": d.salesman_name || "OFFICE",
+        "Supervisor": d.supervisor_name || "OFFICE",
+        "Plan Bayar": d.plan_bayar || "",
+        "Keterangan": d.keterangan_leasing || ""
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "AR Unit Overview");
+    
+    // Menghasilkan file excel dan mengunduhnya ke komputer
+    XLSX.writeFile(workbook, `AR_UNIT_REPORT_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+// Menghubungkan fungsi download ke tombol HTML setelah DOM siap
+document.addEventListener('DOMContentLoaded', () => {
+    fetchData();
+    
+    const btnDownload = document.getElementById('btn-download-excel');
+    if (btnDownload) {
+        btnDownload.addEventListener('click', downloadExcel);
+    }
+});

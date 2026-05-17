@@ -33,12 +33,11 @@
 </head>
 <body class="bg-[#F8FAFC] min-h-screen flex text-[#1B2559]">
 
-    <!-- SIDEBAR -->
     <aside class="w-64 bg-[#0B1324] text-slate-400 hidden lg:flex flex-col p-6 sticky top-0 h-screen">
         <div class="flex items-center gap-3 mb-10">
             <div class="bg-red-600 text-white w-9 h-9 rounded-lg flex items-center justify-center font-bold">A</div>
             <div>
-                <h1 class="text-white font-bold text-xs uppercase text-white">Auto2000</h1>
+                <h1 class="text-white font-bold text-xs uppercase">Auto2000</h1>
                 <p class="text-[8px] uppercase tracking-widest text-slate-500">Branch Control</p>
             </div>
         </div>
@@ -49,10 +48,8 @@
         </nav>
     </aside>
 
-    <!-- MAIN CONTENT -->
     <main class="flex-1 p-6 overflow-x-hidden">
         
-        <!-- HEADER & NAV TAB -->
         <div class="flex justify-between items-start mb-6">
             <div>
                 <p id="status-update" class="text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic">MEMUAT DATA...</p>
@@ -69,16 +66,12 @@
                     <span class="text-[8px] font-bold text-slate-400 uppercase">ARSIP DB:</span>
                     <span id="tgl-arsip" class="text-xs font-black">Memuat...</span>
                 </div>
-                <button class="bg-white border border-slate-200 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase hover:bg-slate-50">Download PDF</button>
+                <button id="btn-download-excel" class="bg-white border border-slate-200 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all">Download Excel</button>
             </div>
         </div>
 
-        <!-- ==========================================
-             TAB 1: RINGKASAN (Dashboard Utama)
-             ========================================== -->
         <div id="content-ringkasan" class="tab-content">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <!-- Stat Cards -->
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                     <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total O/S Balance</p>
                     <h3 id="total-os" class="text-xl font-black mb-4 tracking-tighter">Rp 0</h3>
@@ -111,7 +104,6 @@
                 </div>
             </div>
 
-            <!-- Charts & Composisi -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
                     <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-10">Aging Analysis (Nominal)</h4>
@@ -125,12 +117,12 @@
                             <div class="flex gap-4">
                                 <div class="box-total bg-emerald-50 border border-emerald-100 flex-1">
                                     <p class="text-[8px] font-bold text-emerald-600 uppercase mb-1">Total Cash</p>
-                                    <p id="val-total-cash" class="text-sm font-black text-emerald-700 font-bold">Rp 0</p>
+                                    <p id="val-total-cash" class="text-sm font-black text-emerald-700">Rp 0</p>
                                     <p id="unit-total-cash" class="text-[8px] font-bold text-emerald-500">0 Unit</p>
                                 </div>
                                 <div class="box-total bg-blue-50 border border-blue-100 flex-1">
                                     <p class="text-[8px] font-bold text-blue-600 uppercase mb-1">Total Leasing</p>
-                                    <p id="val-total-leas" class="text-sm font-black text-blue-700 font-bold">Rp 0</p>
+                                    <p id="val-total-leas" class="text-sm font-black text-blue-700">Rp 0</p>
                                     <p id="unit-total-leas" class="text-[8px] font-bold text-blue-500">0 Unit</p>
                                 </div>
                             </div>
@@ -140,9 +132,8 @@
                 </div>
             </div>
 
-            <!-- Table-like lists -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow text-white">
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                     <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">🏆 Top Sales O/S</h4>
                     <div id="list-sales" class="space-y-4"></div>
                 </div>
@@ -154,11 +145,11 @@
                     </div>
                     <div class="grid grid-cols-2 gap-2 mb-4">
                         <div class="bg-[#F0FDF4] p-3 rounded-xl text-center border border-emerald-100">
-                            <p class="text-[8px] font-bold text-emerald-600 uppercase mb-1 text-emerald-600">SUDAH GI / TAGIH</p>
+                            <p class="text-[8px] font-bold text-emerald-600 uppercase mb-1">SUDAH GI / TAGIH</p>
                             <p id="unit-gi-tvc" class="text-2xl font-black text-emerald-700">0 Unit</p>
                         </div>
                         <div class="bg-[#FFF7ED] p-3 rounded-xl text-center border border-orange-100">
-                            <p class="text-[8px] font-bold text-orange-600 uppercase mb-1 text-orange-600">BELUM DELIVERY</p>
+                            <p class="text-[8px] font-bold text-orange-600 uppercase mb-1">BELUM DELIVERY</p>
                             <p id="unit-delivery-tvc" class="text-2xl font-black text-orange-700">0 Unit</p>
                         </div>
                     </div>
@@ -175,9 +166,6 @@
             </div>
         </div>
 
-        <!-- ==========================================
-             TAB 2 & 3: LEASING & OVERDUE (Placeholder)
-             ========================================== -->
         <div id="content-leasing" class="tab-content hidden">
             <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
                 <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">Detail Kontribusi Leasing</h4>
@@ -192,9 +180,6 @@
             </div>
         </div>
 
-        <!-- ==========================================
-             TAB 4: DATABASE LENGKAP (KHUSUS TAFS & ACC)
-             ========================================== -->
         <div id="content-database" class="tab-content hidden">
             <div class="bg-white rounded-2xl border border-slate-100 card-shadow overflow-hidden">
                 <div class="overflow-x-auto">
@@ -211,8 +196,7 @@
                             </tr>
                         </thead>
                         <tbody id="tab-database-body" class="divide-y divide-slate-50">
-                            <!-- JS akan mengisi data di sini -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
@@ -220,10 +204,8 @@
 
     </main>
 
-    <!-- LOAD EXTERNAL SCRIPT -->
     <script type="module" src="script.js"></script>
 
-    <!-- TAB NAVIGATION LOGIC -->
     <script>
         function filterTab(btn, tabName) {
             // 1. Ganti UI Button
