@@ -346,4 +346,60 @@ document.addEventListener('click', function(e) {
     }
 });
 
+// ================= KODE TAMBAHAN RECOVERY RENDER TAB LEASING =================
+document.addEventListener('click', function(e) {
+    if (e.target && ['LEASING', 'OVERDUE', 'DATABASE LENGKAP'].includes(e.target.innerText.toUpperCase().trim())) {
+        // Memberikan jeda 50ms untuk memastikan DOM awal selesai dimuat oleh script utama
+        setTimeout(() => {
+            const activeBox = document.getElementById('box-konten-tab-aktif');
+            
+            // Jika box aktif ditemukan namun isinya masih kosong/hanya judul template (seperti gambar 3)
+            if (activeBox && (activeBox.children.length === 0 || activeBox.innerText.trim() === "DETAIL KONTRIBUSI LEASING")) {
+                
+                // Ambil data leasing non-CASH dari globalMasterData
+                const leasingData = globalMasterData.filter(d => {
+                    const l = (d.leasing_name || 'CASH').toUpperCase().trim();
+                    return !["CASH", "CASH TERIMA", ""].includes(l);
+                });
+
+                // Generate ulang HTML secara presisi ke dalam box kontainer
+                activeBox.innerHTML = `
+                    <div class="p-2">
+                        <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
+                            <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase">📊 DETAIL KONTRIBUSI LEASING</h3>
+                            <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-3 py-1 rounded-full">${leasingData.length} UNIT LEASING</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="border-b border-slate-200 text-slate-400 font-bold bg-slate-50/50">
+                                        <th class="p-4 w-12 text-center">NO</th>
+                                        <th class="p-4">CUSTOMER & SALES INFO</th>
+                                        <th class="p-4">NAMA LEASING</th>
+                                        <th class="p-4 text-right pr-6">O/S BALANCE</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${leasingData.map((d, i) => `
+                                        <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-all font-bold uppercase">
+                                            <td class="p-4 text-center text-slate-400 font-medium">${i+1}</td>
+                                            <td class="p-4">
+                                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
+                                                <p class="text-[9px] text-slate-400 font-semibold mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+                                            </td>
+                                            <td class="p-4">
+                                                <span class="bg-slate-100 text-slate-700 px-2.5 py-1 rounded text-[10px] font-extrabold tracking-wide">${d.leasing_name}</span>
+                                            </td>
+                                            <td class="p-4 text-right pr-6 text-blue-600 text-[12px] font-black">${fmtIDR(d.os_balance)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+            }
+        }, 50);
+    }
+});
+
 document.addEventListener('DOMContentLoaded', fetchData);
