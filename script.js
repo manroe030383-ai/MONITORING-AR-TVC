@@ -6,8 +6,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
-let currentTab = 'DATABASE LENGKAP'; // Default awal
-let globalMasterData = [];          
+let currentTab = 'DATABASE LENGKAP'; // Default tab state
+let globalMasterData = [];          // Menyimpan cadangan data asli dari Supabase
 
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
@@ -21,8 +21,7 @@ async function fetchData() {
             updateDashboard(data);
             if (document.getElementById('status-update')) {
                 document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
-                document.getElementById('status-update').classList.remove('text-red-600');
-                document.getElementById('status-update').classList.add('text-emerald-600');
+                document.getElementById('status-update').classList.replace('text-red-600', 'text-emerald-600');
             }
         }
     } catch (e) {
@@ -48,11 +47,13 @@ function updateDashboard(data) {
         if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
         if (Number(d.penalty_amount) > 0) s.cPen++;
 
+        // Aging Logic
         aging['LANCAR'] += Number(d.lancar || 0) / 1000000;
         aging['1-30 H'] += Number(d.hari_1_30 || 0) / 1000000;
         aging['31-60 H'] += Number(d.hari_31_60 || 0) / 1000000;
         aging['>60 H'] += Number(d.lebih_60_hari || 0) / 1000000;
 
+        // Cash vs Leasing
         if (["CASH", "CASH TERIMA", ""].includes(l)) { 
             s.cash += os; s.cCash++; 
         } else { 
@@ -99,6 +100,7 @@ function updateDashboard(data) {
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
     
+    // Kirim data ke sistem management Tab Konten
     renderKontenPerTab(data);
 }
 
@@ -164,7 +166,7 @@ function renderOverdueTop(data) {
         </div>`).join('');
 }
 
-// ================= LOGIKA UTAMA MANAJEMEN KONTEN TAB =================
+// ================= LOGIKA UTAMA MANAJEMEN TAB KONTEN =================
 function renderKontenPerTab(data) {
     if (currentTab === 'LEASING') {
         const leasingData = data.filter(d => {
@@ -252,7 +254,6 @@ function renderKontenPerTab(data) {
         updateBoxKontenSecaraDinamis(htmlOverdue);
 
     } else if (currentTab === 'DATABASE LENGKAP') {
-        // PERBAIKAN FATAL: Memaksa render ulang kerangka tabel agar tidak macet di DOM
         let htmlFullDB = `
             <div class="p-2">
                 <h3 class="text-xs font-black text-slate-700 tracking-wider uppercase mb-4">📝 DATABASE LENGKAP AR UNIT</h3>
@@ -273,24 +274,31 @@ function renderKontenPerTab(data) {
                     </table>
                 </div>
             </div>`;
+        
         updateBoxKontenSecaraDinamis(htmlFullDB);
         renderTabDatabaseBiasa(data);
     }
 }
 
+// PERBAIKAN TOTAL: Sistem penargetan menggunakan Atribut Data khusus agar target tidak hilang dari DOM
 function updateBoxKontenSecaraDinamis(htmlString) {
-    const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
-    let targetBox = null;
+    // 1. Coba cari box yang sudah diberi penanda khusus terlebih dahulu
+    let targetBox = document.querySelector('[data-content-box="true"]');
 
-    boxes.forEach(box => {
-        const txt = box.innerText.toUpperCase();
-        if (txt.includes('DETAIL KONTRIBUSI LEASING') || txt.includes('SEMUA DATA OVERDUE UNIT') || txt.includes('DATABASE LENGKAP') || box.id === 'box-konten-tab-aktif') {
-            targetBox = box;
-        }
-    });
+    // 2. Jika belum diberi penanda (saat pertama kali aplikasi dimuat), cari berdasarkan teks bawaan HTML Anda
+    if (!targetBox) {
+        const boxes = document.querySelectorAll('.bg-white, .rounded-xl, .rounded-2xl');
+        boxes.forEach(box => {
+            const txt = box.innerText.toUpperCase();
+            if (txt.includes('DATABASE LENGKAP') || txt.includes('DETAIL KONTRIBUSI LEASING') || txt.includes('SEMUA DATA OVERDUE UNIT')) {
+                targetBox = box;
+            }
+        });
+    }
 
+    // 3. Jika targetBox ditemukan, kunci posisinya dengan atribut data agar klik berikutnya tidak tersesat
     if (targetBox) {
-        targetBox.id = "box-konten-tab-aktif";
+        targetBox.setAttribute('data-content-box', 'true');
         targetBox.innerHTML = htmlString;
     }
 }
@@ -313,11 +321,12 @@ function renderTabDatabaseBiasa(data) {
         </tr>`).join('');
 }
 
-// FIX UTAMA: Menggunakan `.includes()` agar jika ada emoji atau spasi pada nama tombol HTML Anda, deteksi tidak gagal.
+// EVENT KLIK TOMBOL TAB
 document.addEventListener('click', function(e) {
     if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'DIV' || e.target.tagName === 'SPAN')) {
         const txt = e.target.innerText.toUpperCase().trim();
         
+        // Menggunakan `.includes` untuk menangani teks tombol yang memiliki ikon/emoji
         if (txt.includes('LEASING') || txt.includes('OVERDUE') || txt.includes('DATABASE LENGKAP') || txt.includes('RINGKASAN')) {
             
             if (txt.includes('DATABASE LENGKAP')) currentTab = 'DATABASE LENGKAP';
