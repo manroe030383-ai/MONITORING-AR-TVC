@@ -247,9 +247,11 @@ function renderTabDatabaseFull(data) {
     if (!tbody) return;
 
     tbody.innerHTML = data.map((d, i) => {
-        // Ambil data lama dengan aman baik dari key huruf kecil maupun besar
         const currentPlan = d.plan_bayar_leasing || d.Plan_bayar_leasing || '';
         const currentKet = d.ket_leasing || d.Keterangan_leasing || '';
+        
+        // Menggunakan no_spk (atau alternatif d.id jika no_spk kosong) sebagai ID elemen DOM
+        const uniqueKey = d.no_spk || d.id;
 
         return `
         <tr class="hover:bg-slate-50 transition-colors">
@@ -260,34 +262,32 @@ function renderTabDatabaseFull(data) {
             </td>
             <td class="p-4 uppercase font-bold text-slate-600">${d.leasing_name || 'CASH'}</td>
             <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
-            <td class="p-4"><input type="text" id="plan-${d.id}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${currentPlan}"></td>
-            <td class="p-4"><input type="text" id="ket-${d.id}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${currentKet}"></td>
+            <td class="p-4"><input type="text" id="plan-${uniqueKey}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${currentPlan}"></td>
+            <td class="p-4"><input type="text" id="ket-${uniqueKey}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${currentKet}"></td>
             <td class="p-4 text-center">
-                <button data-id="${d.id}" class="btn-save-row bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button>
+                <button data-id="${uniqueKey}" class="btn-save-row bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button>
             </td>
         </tr>`;
     }).join('');
 }
 
-// FUNGSI UTAMA SAVE: Menggunakan standar snake_case (huruf kecil semua) yang biasa dipakai Supabase
-async function saveRowData(id, buttonElement) {
-    const planValue = document.getElementById(`plan-${id}`).value;
-    const ketValue = document.getElementById(`ket-${id}`).value;
+// FUNGSI UTAMA SAVE: Menggunakan pencocokan 'no_spk' untuk mengganti kolom 'id' yang hilang
+async function saveRowData(uniqueKey, buttonElement) {
+    const planValue = document.getElementById(`plan-${uniqueKey}`).value;
+    const ketValue = document.getElementById(`ket-${uniqueKey}`).value;
 
     const originalIcon = buttonElement.innerText;
     buttonElement.innerText = "⏳";
     buttonElement.disabled = true;
 
     try {
-        const targetId = isNaN(id) ? id : parseInt(id, 10);
-
         const { error } = await supabase
             .from('ar_unit')
             .update({ 
-                plan_bayar_leasing: planValue, // Diubah ke huruf kecil semua (standard database)
-                ket_leasing: ketValue          // Tetap menggunakan ket_leasing
+                plan_bayar_leasing: planValue, 
+                ket_leasing: ketValue          
             })
-            .eq('id', targetId);
+            .eq('no_spk', uniqueKey); // Mengganti .eq('id', id) menjadi pelacakan berbasis nomor SPK cabang
 
         if (error) throw error;
 
@@ -321,6 +321,7 @@ function downloadExcel() {
     }
     const dataToExport = cachedData.map((d, idx) => ({
         "No": idx + 1,
+        "No SPK": d.no_spk || "",
         "Nama Customer": d.customer_name ? d.customer_name.toUpperCase() : "",
         "Leasing": d.leasing_name ? d.leasing_name.toUpperCase() : "CASH",
         "O/S Balance": d.os_balance || 0,
