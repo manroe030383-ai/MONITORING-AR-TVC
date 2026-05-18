@@ -107,7 +107,6 @@ function updateDashboard(data) {
     renderTabLeasingFull(data);
     renderTabOverdueFull(data);
     
-    // RENDER UTAMA KEDUA TABEL BARU
     renderTabDatabaseFull(data); 
     renderDataArUnitFull(data);  
 }
@@ -245,9 +244,8 @@ function renderTabOverdueFull(data) {
         </div>`;
 }
 
-// 1. DATA DATABASE LENGKAP: Berfokus Pada Rincian Piutang & Umur Aging (Semua Metode Pembayaran)
 function renderTabDatabaseFull(data) {
-    const targetElement = document.getElementById('tab-database-full-list'); // Mengarah ke Container Tab Utama
+    const targetElement = document.getElementById('tab-database-full-list'); 
     if (!targetElement) return;
 
     targetElement.innerHTML = `
@@ -282,8 +280,8 @@ function renderTabDatabaseFull(data) {
                             <td class="p-3 text-center text-slate-500">${d.due_date ? new Date(d.due_date).toLocaleDateString('id-ID') : '-'}</td>
                             <td class="p-3 text-center text-amber-600 font-black">${d.age || 0} HARI</td>
                             <td class="p-3 text-right text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
-                            <td class="p-3 text-right text-amber-500">${fmtIDR(d.hari_1_30)}</td>
-                            <td class="p-3 text-right text-orange-500">${fmtIDR(d.hari_31_60)}</td>
+                            <td class="p-3 text-right text-amber-500">${fmtIDR(d.lancar)}</td>
+                            <td class="p-3 text-right text-orange-500">${fmtIDR(d.hari_1_30)}</td>
                             <td class="p-3 text-right text-red-600">${fmtIDR(d.lebih_60_hari)}</td>
                         </tr>`).join('')}
                 </tbody>
@@ -291,60 +289,60 @@ function renderTabDatabaseFull(data) {
         </div>`;
 }
 
-// 2. DATA MENU UTAMA: DATA AR UNIT (Khusus Pembayaran ACC & TAFS + Kolom Catatan Kontrol Operasional)
+// =========================================================================
+// PERBAIKAN UTAMA: APALAGI UNTUK DATA AR UNIT MENU (SINKRON DENGAN HTML BARU)
+// =========================================================================
 function renderDataArUnitFull(data) {
-    const targetElement = document.getElementById('tab-ar-unit-content'); // Sesuaikan dengan ID Container Halaman Utama Menu AR Unit Anda
+    const targetElement = document.getElementById('tab-ar-unit-content'); 
     if (!targetElement) return;
 
-    // Filter Khusus Leasing internal ACC dan TAFS
+    // Bersihkan penumpukan data lama
+    targetElement.innerHTML = '';
+
+    // Filter Khusus Leasing ACC dan TAFS
     const filteredData = data.filter(d => {
         const lease = (d.leasing_name || '').toUpperCase().trim();
         return lease.includes('ACC') || lease.includes('TAFS');
     });
 
-    targetElement.innerHTML = `
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-[10px]">
-                <thead>
-                    <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50 uppercase whitespace-nowrap">
-                        <th class="p-4 text-center w-12">No</th>
-                        <th class="p-4">Nama Customer</th>
-                        <th class="p-4">Leasing</th>
-                        <th class="p-4">Ket Cabang</th>
-                        <th class="p-4 w-48">Keterangan Leasing</th>
-                        <th class="p-4 w-40">Plan Bayar Leasing</th>
-                        <th class="p-4 text-center w-20">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="ar-unit-body" class="divide-y divide-slate-50">
-                    ${filteredData.map((d, i) => {
-                        const currentPlan = d.plan_bayar_leasing || '';
-                        const currentKet = d.ket_leasing || '';
-                        const currentCabang = d.ket_cabang || '-';
-                        const uniqueKey = d.no_spk || d.id;
+    if (filteredData.length === 0) {
+        targetElement.innerHTML = `
+            <tr>
+                <td colspan="8" class="p-4 text-center text-slate-400 italic">
+                    Tidak ada data AR Unit dengan metode pembayaran ACC / TAFS.
+                </td>
+            </tr>`;
+        return;
+    }
 
-                        return `
-                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
-                            <td class="p-4 text-center text-slate-400">${i+1}</td>
-                            <td class="p-4">
-                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
-                                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-                            </td>
-                            <td class="p-4"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-black tracking-wide">${d.leasing_name}</span></td>
-                            <td class="p-4 text-slate-600 max-w-xs truncate">${currentCabang}</td>
-                            <td class="p-4"><input type="text" id="ket-${uniqueKey}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${currentKet}"></td>
-                            <td class="p-4"><input type="text" id="plan-${uniqueKey}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${currentPlan}"></td>
-                            <td class="p-4 text-center">
-                                <button data-id="${uniqueKey}" class="btn-save-row bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button>
-                            </td>
-                        </tr>`;
-                    }).join('')}
-                </tbody>
-            </table>
-        </div>`;
+    // Suntikkan baris data murni langsung ke elemen <tbody> yang sudah siap di HTML
+    targetElement.innerHTML = filteredData.map((d, i) => {
+        const currentPlan = d.plan_bayar_leasing || '';
+        const currentKet = d.keterangan_leasing || ''; // Menggunakan kolom keterangan_leasing asli Supabase
+        const currentCabang = d.ket_cabang || '-';
+        const currentOS = d.os_balance || 0;
+        const uniqueKey = d.no_spk || d.id; // Gunakan primary key unik cadangan
+
+        return `
+        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
+            <td class="p-4 text-center text-slate-400">${i + 1}</td>
+            <td class="p-4">
+                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
+                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+            </td>
+            <td class="p-4"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-black tracking-wide">${d.leasing_name}</span></td>
+            <td class="p-4 text-right font-bold text-blue-600 bg-blue-50/30">${fmtIDR(currentOS)}</td>
+            <td class="p-4 text-slate-600 max-w-xs truncate">${currentCabang}</td>
+            <td class="p-4"><input type="text" id="ket-${uniqueKey}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${currentKet}"></td>
+            <td class="p-4"><input type="text" id="plan-${uniqueKey}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${currentPlan}"></td>
+            <td class="p-4 text-center">
+                <button data-id="${uniqueKey}" class="btn-save-row bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all" title="Simpan Perubahan">💾</button>
+            </td>
+        </tr>`;
+    }).join('');
 }
 
-// FUNGSI SIMPAN BARIS BERBASIS UNIK NO_SPK CABANG
+// PERBAIKAN AKSI: UPDATE TARGET DATABASE SUPABASE SESUAI SKEMA SEBENARNYA
 async function saveRowData(uniqueKey, buttonElement) {
     const planValue = document.getElementById(`plan-${uniqueKey}`).value;
     const ketValue = document.getElementById(`ket-${uniqueKey}`).value;
@@ -358,7 +356,7 @@ async function saveRowData(uniqueKey, buttonElement) {
             .from('ar_unit')
             .update({ 
                 plan_bayar_leasing: planValue, 
-                ket_leasing: ketValue          
+                keterangan_leasing: ketValue // Menembak kolom keterangan_leasing (huruf kecil & pas)
             })
             .eq('no_spk', uniqueKey);
 
@@ -407,7 +405,7 @@ function downloadExcel() {
         "31 - 60 Hari": d.hari_31_60 || 0,
         "Lebih 60 Hari": d.lebih_60_hari || 0,
         "Ket Cabang": d.ket_cabang || "",
-        "Ket Leasing": d.ket_leasing || "",
+        "Ket Leasing": d.keterangan_leasing || "",
         "Plan Bayar": d.plan_bayar_leasing || ""
     }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);

@@ -18,13 +18,16 @@
         .input-custom {
             border: 1px solid #E2E8F0;
             border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 10px;
+            padding: 6px 10px;
+            font-size: 11px;
             width: 100%;
             transition: all 0.2s;
+            color: #1B2559;
+            background-color: #FAFAFA;
         }
         .input-custom:focus {
             border-color: #3B82F6;
+            background-color: #FFFFFF;
             outline: none;
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
         }
@@ -182,95 +185,3 @@
         <div id="content-overdue" class="tab-content hidden">
             <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
                 <h4 class="text-[10px] font-bold text-red-500 uppercase mb-4 italic">Semua Data Overdue Unit</h4>
-                <div id="tab-overdue-full-list" class="space-y-4"></div>
-            </div>
-        </div>
-
-        <div id="content-arunit" class="tab-content hidden">
-            <div class="bg-white rounded-2xl border border-slate-100 card-shadow overflow-hidden p-6">
-                <h4 class="text-[10px] font-bold text-blue-600 uppercase mb-4 tracking-widest">Data AR Unit (Khusus ACC & TAFS Penagihan)</h4>
-                
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-[10px]">
-                        <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100">
-                            <tr>
-                                <th class="p-4 w-12">No</th>
-                                <th class="p-4">Nama Customer</th>
-                                <th class="p-4">Leasing</th>
-                                <th class="p-4 text-right bg-blue-50/50 text-blue-700">O/S Balance</th>
-                                <th class="p-4">Ket Cabang</th>
-                                <th class="p-4">Keterangan Leasing</th>
-                                <th class="p-4">Plan Bayar Leasing</th>
-                                <th class="p-4 text-center w-20">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tab-ar-unit-content" class="divide-y divide-slate-50">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="content-database" class="tab-content hidden">
-            <div class="bg-white rounded-2xl border border-slate-100 card-shadow overflow-hidden p-6">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">Database Lengkap Piutang & Aging Penuaan Hari</h4>
-                <div id="tab-database-full-list"></div>
-            </div>
-        </div>
-
-    </main>
-
-    <script type="module" src="script.js"></script>
-
-    <script>
-        function filterTab(btn, tabName) {
-            // Reset status aktif tombol navigasi atas
-            document.querySelectorAll('.nav-btn').forEach(b => {
-                b.classList.remove('nav-active');
-                b.classList.add('bg-white', 'text-slate-500');
-            });
-
-            // Sinkronisasi logika aktif menu Sidebar Kiri
-            const sideDashboard = document.getElementById('side-btn-ringkasan');
-            const sideArUnit = document.getElementById('side-btn-arunit');
-            
-            if (sideDashboard && sideArUnit) {
-                [sideDashboard, sideArUnit].forEach(sb => {
-                    sb.classList.remove('bg-red-600', 'text-white', 'font-bold', 'shadow-lg');
-                    sb.classList.add('text-slate-400', 'font-medium');
-                });
-
-                if (['ringkasan', 'leasing', 'overdue', 'database'].includes(tabName)) {
-                    sideDashboard.classList.add('bg-red-600', 'text-white', 'font-bold', 'shadow-lg');
-                    sideDashboard.classList.remove('text-slate-400', 'font-medium');
-                } else if (tabName === 'arunit') {
-                    sideArUnit.classList.add('bg-red-600', 'text-white', 'font-bold', 'shadow-lg');
-                    sideArUnit.classList.remove('text-slate-400', 'font-medium');
-                }
-            }
-
-            // Aktifkan visual tombol navigasi atas jika sub-menu yang dipilih cocok
-            const targetTopBtn = document.querySelector(`button[onclick*="'${tabName}'"]`);
-            if (targetTopBtn && targetTopBtn.classList.contains('nav-btn')) {
-                targetTopBtn.classList.add('nav-active');
-                targetTopBtn.classList.remove('bg-white', 'text-slate-500');
-            }
-
-            // Sembunyikan seluruh kontainer tab
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.add('hidden');
-            });
-            
-            // Tampilkan kontainer tab yang dipilih
-            const targetContent = document.getElementById(`content-${tabName}`);
-            if (targetContent) {
-                targetContent.classList.remove('hidden');
-            }
-
-            if (tabName === 'ringkasan') {
-                window.dispatchEvent(new Event('resize'));
-            }
-        }
-    </script>
-</body>
-</html>
