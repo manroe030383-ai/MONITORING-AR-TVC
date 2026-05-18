@@ -242,7 +242,6 @@ function renderTabOverdueFull(data) {
         </div>`;
 }
 
-// FIX: Tombol save menggunakan data-id untuk pemicu Event Delegation (Jauh Lebih Stabil)
 function renderTabDatabaseFull(data) {
     const tbody = document.getElementById('tab-database-body');
     if (!tbody) return;
@@ -257,14 +256,14 @@ function renderTabDatabaseFull(data) {
             <td class="p-4 uppercase font-bold text-slate-600">${d.leasing_name || 'CASH'}</td>
             <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
             <td class="p-4"><input type="text" id="plan-${d.id}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
-            <td class="p-4"><input type="text" id="ket-${d.id}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
+            <td class="p-4"><input type="text" id="ket-${d.id}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${d.ket_leasing || ''}"></td>
             <td class="p-4 text-center">
                 <button data-id="${d.id}" class="btn-save-row bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button>
             </td>
         </tr>`).join('');
 }
 
-// FUNGSI UTAMA SAVE: Menggunakan validasi tipe data ID yang aman untuk Supabase
+// FUNGSI UTAMA SAVE: Menggunakan kolom ket_leasing yang sesuai dengan Supabase
 async function saveRowData(id, buttonElement) {
     const planValue = document.getElementById(`plan-${id}`).value;
     const ketValue = document.getElementById(`ket-${id}`).value;
@@ -274,14 +273,13 @@ async function saveRowData(id, buttonElement) {
     buttonElement.disabled = true;
 
     try {
-        // Deteksi & konversi otomatis tipe ID (Teks / Angka) sesuai database Anda
         const targetId = isNaN(id) ? id : parseInt(id, 10);
 
         const { error } = await supabase
             .from('ar_unit')
             .update({ 
                 plan_bayar: planValue, 
-                keterangan_leasing: ketValue 
+                ket_leasing: ketValue // <-- FIXED: Sesuai nama kolom di DB
             })
             .eq('id', targetId);
 
@@ -328,7 +326,7 @@ function downloadExcel() {
         "Salesman": d.salesman_name || "OFFICE",
         "Supervisor": d.supervisor_name || "OFFICE",
         "Plan Bayar": d.plan_bayar || "",
-        "Keterangan": d.keterangan_leasing || ""
+        "Keterangan": d.ket_leasing || ""
     }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
@@ -336,7 +334,6 @@ function downloadExcel() {
     XLSX.writeFile(workbook, `AR_UNIT_REPORT_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
-// DOM CONTENT LOADED - Inisialisasi Event Listener Utama
 document.addEventListener('DOMContentLoaded', () => {
     fetchData();
     
@@ -345,7 +342,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnDownload.addEventListener('click', downloadExcel);
     }
 
-    // EVENT DELEGATION: Menangkap event klik tombol save dengan aman dari DOM scope ES6 Module
     const tableBody = document.getElementById('tab-database-body');
     if (tableBody) {
         tableBody.addEventListener('click', (event) => {
