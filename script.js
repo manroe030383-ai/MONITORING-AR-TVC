@@ -246,7 +246,12 @@ function renderTabDatabaseFull(data) {
     const tbody = document.getElementById('tab-database-body');
     if (!tbody) return;
 
-    tbody.innerHTML = data.map((d, i) => `
+    tbody.innerHTML = data.map((d, i) => {
+        // Ambil data lama dengan aman baik dari key huruf kecil maupun besar
+        const currentPlan = d.plan_bayar_leasing || d.Plan_bayar_leasing || '';
+        const currentKet = d.ket_leasing || d.Keterangan_leasing || '';
+
+        return `
         <tr class="hover:bg-slate-50 transition-colors">
             <td class="p-4 text-slate-400 font-bold">${i+1}</td>
             <td class="p-4">
@@ -255,15 +260,16 @@ function renderTabDatabaseFull(data) {
             </td>
             <td class="p-4 uppercase font-bold text-slate-600">${d.leasing_name || 'CASH'}</td>
             <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
-            <td class="p-4"><input type="text" id="plan-${d.id}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${d.Plan_bayar_leasing || ''}"></td>
-            <td class="p-4"><input type="text" id="ket-${d.id}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${d.ket_leasing || ''}"></td>
+            <td class="p-4"><input type="text" id="plan-${d.id}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${currentPlan}"></td>
+            <td class="p-4"><input type="text" id="ket-${d.id}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${currentKet}"></td>
             <td class="p-4 text-center">
                 <button data-id="${d.id}" class="btn-save-row bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button>
             </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
 }
 
-// FUNGSI UTAMA SAVE: Menggunakan nama kolom Supabase yang benar (Case-Sensitive)
+// FUNGSI UTAMA SAVE: Menggunakan standar snake_case (huruf kecil semua) yang biasa dipakai Supabase
 async function saveRowData(id, buttonElement) {
     const planValue = document.getElementById(`plan-${id}`).value;
     const ketValue = document.getElementById(`ket-${id}`).value;
@@ -278,8 +284,8 @@ async function saveRowData(id, buttonElement) {
         const { error } = await supabase
             .from('ar_unit')
             .update({ 
-                Plan_bayar_leasing: planValue, // FIXED: Kolom 'Plan_bayar_leasing'
-                ket_leasing: ketValue          // FIXED: Kolom 'ket_leasing'
+                plan_bayar_leasing: planValue, // Diubah ke huruf kecil semua (standard database)
+                ket_leasing: ketValue          // Tetap menggunakan ket_leasing
             })
             .eq('id', targetId);
 
@@ -325,8 +331,8 @@ function downloadExcel() {
         "Lebih 60 Hari": d.lebih_60_hari || 0,
         "Salesman": d.salesman_name || "OFFICE",
         "Supervisor": d.supervisor_name || "OFFICE",
-        "Plan Bayar": d.Plan_bayar_leasing || "", // FIXED: Agar sinkron saat export
-        "Keterangan": d.ket_leasing || ""         // FIXED: Agar sinkron saat export
+        "Plan Bayar": d.plan_bayar_leasing || d.Plan_bayar_leasing || "", 
+        "Keterangan": d.ket_leasing || d.Keterangan_leasing || ""         
     }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
