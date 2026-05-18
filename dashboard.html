@@ -15,7 +15,6 @@
         .transition-all { transition: all 0.3s ease; }
         .tab-content { display: block; }
         .tab-content.hidden { display: none; }
-        /* Styling khusus untuk input agar terlihat clean */
         .input-custom {
             border: 1px solid #E2E8F0;
             border-radius: 6px;
@@ -43,11 +42,9 @@
         </div>
         <nav class="space-y-1">
             <p class="text-[9px] font-bold text-slate-600 uppercase mb-4 px-2 tracking-widest">AR Kendaraan (Unit)</p>
-            
             <button id="side-btn-ringkasan" onclick="filterTab(this, 'ringkasan')" class="w-full flex items-center gap-3 p-3 bg-red-600 text-white rounded-xl text-xs font-bold shadow-lg transition-all text-left">
                 📊 Dashboard Unit
             </button>
-            
             <button id="side-btn-database" onclick="filterTab(this, 'database')" class="w-full flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl text-xs font-medium transition-all text-left">
                 📄 Data AR Unit
             </button>
@@ -213,13 +210,11 @@
 
     <script>
         function filterTab(btn, tabName) {
-            // 1. Reset & Atur Gaya untuk Navigasi Tab Kecil (Atas)
             document.querySelectorAll('.nav-btn').forEach(b => {
                 b.classList.remove('nav-active');
                 b.classList.add('bg-white', 'text-slate-500');
             });
 
-            // 2. Reset & Atur Gaya untuk Sidebar Kiri
             const sideDashboard = document.getElementById('side-btn-ringkasan');
             const sideDatabase = document.getElementById('side-btn-database');
             
@@ -238,14 +233,12 @@
                 }
             }
 
-            // 3. Sinkronisasi Tombol Atas ke Tab Aktif
             const targetTopBtn = document.querySelector(`button[onclick*="'${tabName}'"]`);
             if (targetTopBtn && targetTopBtn.classList.contains('nav-btn')) {
                 targetTopBtn.classList.add('nav-active');
                 targetTopBtn.classList.remove('bg-white', 'text-slate-500');
             }
 
-            // 4. Sembunyikan & Tampilkan Konten Halaman Utama
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.add('hidden');
             });
@@ -255,7 +248,6 @@
                 targetContent.classList.remove('hidden');
             }
 
-            // 5. Fix ApexCharts yang gepeng saat kembali ke tab ringkasan
             if (tabName === 'ringkasan') {
                 window.dispatchEvent(new Event('resize'));
             }

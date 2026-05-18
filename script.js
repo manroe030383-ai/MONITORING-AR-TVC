@@ -7,7 +7,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
-let cachedData = []; // Menyimpan data global untuk fitur download
+let cachedData = []; 
 
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
@@ -17,16 +17,14 @@ async function fetchData() {
         const { data, error } = await supabase.from('ar_unit').select('*').order('os_balance', { ascending: false });
         if (error) throw error;
         if (data) {
-            cachedData = data; // Simpan ke cache untuk download
+            cachedData = data; 
             updateDashboard(data);
             
-            // 1. UPDATE STATUS DATA DI HEADER
             if (document.getElementById('status-update')) {
                 document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
                 document.getElementById('status-update').classList.replace('text-red-600', 'text-emerald-600');
             }
 
-            // 2. PERBAIKAN: UPDATE TANGGAL ARSIP DB AGAR TIDAK "MEMUAT..." LAGI
             if (document.getElementById('tgl-arsip')) {
                 const opsiTanggal = { year: 'numeric', month: 'short', day: 'numeric' };
                 document.getElementById('tgl-arsip').innerText = new Date().toLocaleDateString('id-ID', opsiTanggal).toUpperCase();
@@ -55,13 +53,11 @@ function updateDashboard(data) {
         if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
         if (Number(d.penalty_amount) > 0) s.cPen++;
 
-        // Aging Logic
         aging['LANCAR'] += Number(d.lancar || 0) / 1000000;
         aging['1-30 H'] += Number(d.hari_1_30 || 0) / 1000000;
         aging['31-60 H'] += Number(d.hari_31_60 || 0) / 1000000;
         aging['>60 H'] += Number(d.lebih_60_hari || 0) / 1000000;
 
-        // Cash vs Leasing
         if (["CASH", "CASH TERIMA", ""].includes(l)) { 
             s.cash += os; s.cCash++; 
         } else { 
@@ -83,7 +79,6 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // PENGISIAN KARTU STATISTIK RINGKASAN
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -102,7 +97,6 @@ function updateDashboard(data) {
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
-    // Render Grafik & List Ringkasan
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
@@ -110,7 +104,6 @@ function updateDashboard(data) {
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
     
-    // MENYUPLAI DATA LANGSUNG KE TAB DETAIL MASING-MASING
     renderTabLeasingFull(data);
     renderTabOverdueFull(data);
     renderTabDatabaseFull(data);
@@ -181,12 +174,10 @@ function renderOverdueTop(data) {
 function renderTabLeasingFull(data) {
     const el = document.getElementById('tab-leasing-full-list');
     if (!el) return;
-
     const leasingData = data.filter(d => {
         const l = (d.leasing_name || 'CASH').toUpperCase().trim();
         return !["CASH", "CASH TERIMA", ""].includes(l);
     });
-
     el.innerHTML = `
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-[10px]">
@@ -210,8 +201,7 @@ function renderTabLeasingFull(data) {
                                 <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${d.leasing_name}</span>
                             </td>
                             <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-black">${fmtIDR(d.os_balance)}</td>
-                        </tr>
-                    `).join('')}
+                        </tr>`).join('')}
                 </tbody>
             </table>
         </div>`;
@@ -220,9 +210,7 @@ function renderTabLeasingFull(data) {
 function renderTabOverdueFull(data) {
     const el = document.getElementById('tab-overdue-full-list');
     if (!el) return;
-
     const overdueData = data.filter(d => Number(d.total_overdue || 0) > 0);
-
     el.innerHTML = `
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-[10px]">
@@ -248,13 +236,13 @@ function renderTabOverdueFull(data) {
                             </td>
                             <td class="p-3 text-right font-black text-red-600 bg-red-50/20">${fmtIDR(d.total_overdue)}</td>
                             <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-bold">${fmtIDR(d.os_balance)}</td>
-                        </tr>
-                    `).join('')}
+                        </tr>`).join('')}
                 </tbody>
             </table>
         </div>`;
 }
 
+// FIX: Tombol save menggunakan data-id untuk pemicu Event Delegation (Jauh Lebih Stabil)
 function renderTabDatabaseFull(data) {
     const tbody = document.getElementById('tab-database-body');
     if (!tbody) return;
@@ -268,20 +256,65 @@ function renderTabDatabaseFull(data) {
             </td>
             <td class="p-4 uppercase font-bold text-slate-600">${d.leasing_name || 'CASH'}</td>
             <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
-            <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
-            <td class="p-4"><input type="text" class="input-custom text-[10px]" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
-            <td class="p-4 text-center"><button class="bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button></td>
+            <td class="p-4"><input type="text" id="plan-${d.id}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${d.plan_bayar || ''}"></td>
+            <td class="p-4"><input type="text" id="ket-${d.id}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${d.keterangan_leasing || ''}"></td>
+            <td class="p-4 text-center">
+                <button data-id="${d.id}" class="btn-save-row bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button>
+            </td>
         </tr>`).join('');
 }
 
-// 3. TAMBAHAN BARU: FUNGSI DOWNLOAD EXCEL SINKRON DENGAN LIBRARY XLSX ESM
+// FUNGSI UTAMA SAVE: Menggunakan validasi tipe data ID yang aman untuk Supabase
+async function saveRowData(id, buttonElement) {
+    const planValue = document.getElementById(`plan-${id}`).value;
+    const ketValue = document.getElementById(`ket-${id}`).value;
+
+    const originalIcon = buttonElement.innerText;
+    buttonElement.innerText = "⏳";
+    buttonElement.disabled = true;
+
+    try {
+        // Deteksi & konversi otomatis tipe ID (Teks / Angka) sesuai database Anda
+        const targetId = isNaN(id) ? id : parseInt(id, 10);
+
+        const { error } = await supabase
+            .from('ar_unit')
+            .update({ 
+                plan_bayar: planValue, 
+                keterangan_leasing: ketValue 
+            })
+            .eq('id', targetId);
+
+        if (error) throw error;
+
+        buttonElement.innerText = "✅";
+        buttonElement.classList.replace('bg-slate-100', 'bg-emerald-500');
+        buttonElement.classList.add('text-white');
+
+        setTimeout(() => {
+            buttonElement.innerText = originalIcon;
+            buttonElement.classList.replace('bg-emerald-500', 'bg-slate-100');
+            buttonElement.classList.remove('text-white');
+            buttonElement.disabled = false;
+        }, 1500);
+
+    } catch (e) {
+        console.error("Gagal menyimpan data:", e);
+        alert(`Gagal menyimpan perubahan: ${e.message || e}`);
+        
+        buttonElement.innerText = "❌";
+        setTimeout(() => {
+            buttonElement.innerText = originalIcon;
+            buttonElement.disabled = false;
+        }, 1500);
+    }
+}
+
 function downloadExcel() {
     if (cachedData.length === 0) {
         alert("Data belum dimuat sepenuhnya. Mohon tunggu.");
         return;
     }
-
-    // Melakukan mapping data mentah agar nama kolom di excel lebih bersih dan rapi
     const dataToExport = cachedData.map((d, idx) => ({
         "No": idx + 1,
         "Nama Customer": d.customer_name ? d.customer_name.toUpperCase() : "",
@@ -297,21 +330,30 @@ function downloadExcel() {
         "Plan Bayar": d.plan_bayar || "",
         "Keterangan": d.keterangan_leasing || ""
     }));
-
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "AR Unit Overview");
-    
-    // Menghasilkan file excel dan mengunduhnya ke komputer
     XLSX.writeFile(workbook, `AR_UNIT_REPORT_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
-// Menghubungkan fungsi download ke tombol HTML setelah DOM siap
+// DOM CONTENT LOADED - Inisialisasi Event Listener Utama
 document.addEventListener('DOMContentLoaded', () => {
     fetchData();
     
     const btnDownload = document.getElementById('btn-download-excel');
     if (btnDownload) {
         btnDownload.addEventListener('click', downloadExcel);
+    }
+
+    // EVENT DELEGATION: Menangkap event klik tombol save dengan aman dari DOM scope ES6 Module
+    const tableBody = document.getElementById('tab-database-body');
+    if (tableBody) {
+        tableBody.addEventListener('click', (event) => {
+            const button = event.target.closest('.btn-save-row');
+            if (button) {
+                const rowId = button.getAttribute('data-id');
+                saveRowData(rowId, button);
+            }
+        });
     }
 });
