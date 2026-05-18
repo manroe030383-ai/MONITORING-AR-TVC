@@ -14,6 +14,7 @@ const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
 
 async function fetchData() {
     try {
+        // Fetch data berdasarkan kolom balancing 'os_balance'
         const { data, error } = await supabase.from('ar_unit').select('*').order('os_balance', { ascending: false });
         if (error) throw error;
         if (data) {
@@ -22,7 +23,7 @@ async function fetchData() {
             
             if (document.getElementById('status-update')) {
                 document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
-                document.getElementById('status-update').classList.replace('text-red-600', 'text-emerald-600');
+                document.getElementById('status-update').className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic";
             }
 
             if (document.getElementById('tgl-arsip')) {
@@ -31,9 +32,10 @@ async function fetchData() {
             }
         }
     } catch (e) {
-        console.error(e);
+        console.error("Gagal menarik data dari Supabase:", e);
         if (document.getElementById('status-update')) {
-            document.getElementById('status-update').innerText = "KONEKSI GAGAL!";
+            document.getElementById('status-update').innerText = "KONEKSI ATAU SKEMA GAGAL!";
+            document.getElementById('status-update').className = "text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic";
         }
     }
 }
@@ -41,6 +43,8 @@ async function fetchData() {
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
     let tvc = { total: 0, gi: 0, deliv: 0 };
+    
+    // Inisialisasi object aging chart nominal dalam Juta
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
 
@@ -49,11 +53,17 @@ function updateDashboard(data) {
         const ov = Number(d.total_overdue || 0);
         const l = (d.leasing_name || 'CASH').toUpperCase().trim();
         
-        s.os += os; s.ov += ov; s.pen += Number(d.penalty_amount || 0); s.lan += Number(d.lancar || 0);
+        s.os += os; 
+        s.ov += ov; 
+        s.pen += Number(d.penalty_amount || 0); 
+        s.lan += Number(d.car || 0); // Menghitung kolom 'car' atau penanda kelancaran o/s
+        
         if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
-        if (Number(d.penalty_amount) > 0) s.cPen++;
+        if (Number(d.penalty_amount || 0) > 0) s.cPen++;
 
-        aging['LANCAR'] += Number(d.lancar || 0) / 1000000;
+        // Kalkulasi pembagian nominal ke Juta untuk grafik batang ApexCharts
+        // JIKA data di database Anda berupa nominal asli (ex: 50000000), biarkan pembagian /1000000 ini berjalan.
+        aging['LANCAR'] += Number(d.car || 0) / 1000000;
         aging['1-30 H'] += Number(d.hari_1_30 || 0) / 1000000;
         aging['31-60 H'] += Number(d.hari_31_60 || 0) / 1000000;
         aging['>60 H'] += Number(d.lebih_60_hari || 0) / 1000000;
@@ -79,6 +89,7 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
+    // Sinkronisasi data numerik ke DOM metrik card utama dashboard
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -86,8 +97,8 @@ function updateDashboard(data) {
     if(document.getElementById('badge-overdue')) document.getElementById('badge-overdue').innerText = `${s.countOv} SPK LEWAT TOP`;
     if(document.getElementById('spk-penalty')) document.getElementById('spk-penalty').innerText = `${s.cPen} SPK`;
     
-    if(document.getElementById('bar-cash')) document.getElementById('bar-cash').style.width = `${(s.cash/s.os)*100}%`;
-    if(document.getElementById('bar-leasing')) document.getElementById('bar-leasing').style.width = `${(s.leas/s.os)*100}%`;
+    if(document.getElementById('bar-cash') && s.os > 0) document.getElementById('bar-cash').style.width = `${(s.cash/s.os)*100}%`;
+    if(document.getElementById('bar-leasing') && s.os > 0) document.getElementById('bar-leasing').style.width = `${(s.leas/s.os)*100}%`;
     if(document.getElementById('val-total-cash')) document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
     if(document.getElementById('unit-total-cash')) document.getElementById('unit-total-cash').innerText = `${s.cCash} Unit`;
     if(document.getElementById('val-total-leas')) document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
@@ -97,6 +108,7 @@ function updateDashboard(data) {
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
+    // Render ulang seluruh grafik komparatif & list komponen tabular
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
@@ -116,13 +128,12 @@ function renderAgingChart(agingData) {
     if (!el) return;
     const options = {
         series: [{ name: 'Juta', data: Object.values(agingData).map(v => Math.round(v)) }],
-        chart: { type: 'bar', height: 250, toolbar: { show: false } },
-        colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
-        plotOptions: { bar: { borderRadius: 4, distributed: true, dataLabels: { position: 'top' } } },
-        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWeight: 800 }, offsetY: -20 },
-        xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontWeight: 700 } } },
-        yaxis: { show: false },
-        grid: { show: false }
+        chart: { type: 'bar', height: 180, toolbar: { show: false } },
+        colors: ['#3B82F6'],
+        plotOptions: { bar: { borderRadius: 4, horizontal: false, columnWidth: '40%' } },
+        dataLabels: { enabled: false },
+        xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontWeight: 600 } } },
+        yaxis: { labels: { formatter: function(v) { return 'Rp ' + v + 'M'; } } }
     };
     if (charts.bar) charts.bar.updateOptions(options);
     else { charts.bar = new ApexCharts(el, options); charts.bar.render(); }
@@ -134,10 +145,10 @@ function renderDonutLeasing(mLeas) {
     const options = {
         series: Object.values(mLeas),
         labels: Object.keys(mLeas),
-        chart: { type: 'donut', height: 180 },
+        chart: { type: 'donut', height: 170 },
         legend: { show: false },
         dataLabels: { enabled: false },
-        colors: ['#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#F43F5E']
+        colors: ['#34D399', '#2563EB', '#8B5CF6', '#EC4899']
     };
     if (charts.donut) charts.donut.updateOptions(options);
     else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
@@ -146,6 +157,7 @@ function renderDonutLeasing(mLeas) {
 function renderLeasingList(map, total) {
     const el = document.getElementById('leasing-list');
     if (!el) return;
+    if (total === 0) return;
     el.innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([n, v]) => `
         <div class="mb-3">
             <div class="flex justify-between text-[9px] font-bold mb-1 uppercase"><span>${n}</span><span>${((v/total)*100).toFixed(1)}%</span></div>
@@ -168,7 +180,7 @@ function renderOverdueTop(data) {
     if (!el) return;
     el.innerHTML = data.slice(0,5).map((d,i) => `
         <div class="flex justify-between py-2 border-b border-slate-50 uppercase font-bold">
-            <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${d.customer_name}</span>
+            <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${d.nama_customer || '-'}</span>
             <span class="text-[10px] text-red-500">${fmtJuta(d.total_overdue)}</span>
         </div>`).join('');
 }
@@ -180,6 +192,12 @@ function renderTabLeasingFull(data) {
         const l = (d.leasing_name || 'CASH').toUpperCase().trim();
         return !["CASH", "CASH TERIMA", ""].includes(l);
     });
+    
+    if(leasingData.length === 0) {
+        el.innerHTML = `<p class="p-4 text-center text-slate-400 italic">Tidak ada data leasing.</p>`;
+        return;
+    }
+
     el.innerHTML = `
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-[10px]">
@@ -196,7 +214,7 @@ function renderTabLeasingFull(data) {
                         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase">
                             <td class="p-3 text-center text-slate-400">${i+1}</td>
                             <td class="p-3">
-                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
+                                <p class="text-slate-800 text-[11px] font-black">${d.nama_customer || '-'}</p>
                                 <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
                             </td>
                             <td class="p-3">
@@ -210,9 +228,16 @@ function renderTabLeasingFull(data) {
 }
 
 function renderTabOverdueFull(data) {
-    const el = document.getElementById('tab-overdue-full-list');
+    // Perbaikan target ID: disesuaikan dengan ID bawaan template HTML 'tab-overdue-list'
+    const el = document.getElementById('tab-overdue-list');
     if (!el) return;
     const overdueData = data.filter(d => Number(d.total_overdue || 0) > 0);
+
+    if(overdueData.length === 0) {
+        el.innerHTML = `<p class="p-4 text-center text-slate-400 italic">Tidak ada rekaman data Overdue Unit.</p>`;
+        return;
+    }
+
     el.innerHTML = `
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-[10px]">
@@ -230,7 +255,7 @@ function renderTabOverdueFull(data) {
                         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase">
                             <td class="p-3 text-center text-slate-400">${i+1}</td>
                             <td class="p-3">
-                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name}</p>
+                                <p class="text-slate-800 text-[11px] font-black">${d.nama_customer || '-'}</p>
                                 <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
                             </td>
                             <td class="p-3">
@@ -245,61 +270,37 @@ function renderTabOverdueFull(data) {
 }
 
 function renderTabDatabaseFull(data) {
-    const targetElement = document.getElementById('tab-database-full-list'); 
+    // Sinkronisasi penamaan ID tabel database lengkap ke 'table-database-body'
+    const targetElement = document.getElementById('table-database-body'); 
     if (!targetElement) return;
 
-    targetElement.innerHTML = `
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-[10px]">
-                <thead>
-                    <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50 uppercase whitespace-nowrap">
-                        <th class="p-3 text-center w-12">No</th>
-                        <th class="p-3">Nama Customer</th>
-                        <th class="p-3">Leasing Name</th>
-                        <th class="p-3 text-center">Func Lock</th>
-                        <th class="p-3 text-center">Posting Date</th>
-                        <th class="p-3 text-center">Due Date</th>
-                        <th class="p-3 text-center">Age</th>
-                        <th class="p-3 text-right">O/S Balance</th>
-                        <th class="p-3 text-right">Hari 1-30</th>
-                        <th class="p-3 text-right">Hari 31-60</th>
-                        <th class="p-3 text-right">Lebih 60 Hari</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-50">
-                    ${data.map((d, i) => `
-                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
-                            <td class="p-3 text-center text-slate-400">${i+1}</td>
-                            <td class="p-3">
-                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
-                                <p class="text-[8px] text-slate-400 mt-0.5">SPK: ${d.no_spk || '-'}</p>
-                            </td>
-                            <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${d.leasing_name || 'CASH'}</span></td>
-                            <td class="p-3 text-center text-slate-700">${d.func_lock || '-'}</td>
-                            <td class="p-3 text-center text-slate-500">${d.posting_date ? new Date(d.posting_date).toLocaleDateString('id-ID') : '-'}</td>
-                            <td class="p-3 text-center text-slate-500">${d.due_date ? new Date(d.due_date).toLocaleDateString('id-ID') : '-'}</td>
-                            <td class="p-3 text-center text-amber-600 font-black">${d.age || 0} HARI</td>
-                            <td class="p-3 text-right text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
-                            <td class="p-3 text-right text-amber-500">${fmtIDR(d.lancar)}</td>
-                            <td class="p-3 text-right text-orange-500">${fmtIDR(d.hari_1_30)}</td>
-                            <td class="p-3 text-right text-red-600">${fmtIDR(d.lebih_60_hari)}</td>
-                        </tr>`).join('')}
-                </tbody>
-            </table>
-        </div>`;
+    if(data.length === 0) {
+        targetElement.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400 italic">Database kosong.</td></tr>`;
+        return;
+    }
+
+    targetElement.innerHTML = data.map((d, i) => `
+        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
+            <td class="p-3 text-center text-slate-400">${i+1}</td>
+            <td class="p-3">
+                <p class="text-slate-800 text-[11px] font-black">${d.nama_customer || '-'}</p>
+                <p class="text-[8px] text-slate-400 mt-0.5">SPK: ${d.no_spk || '-'}</p>
+            </td>
+            <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${d.leasing_name || 'CASH'}</span></td>
+            <td class="p-3 text-right text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
+            <td class="p-3 text-right text-amber-500">${fmtIDR(d.hari_1_30 || 0)}</td>
+            <td class="p-3 text-right text-orange-500">${fmtIDR(d.hari_31_60 || 0)}</td>
+            <td class="p-3 text-right text-red-600">${fmtIDR(d.lebih_60_hari || 0)}</td>
+            <td class="p-3 font-bold text-red-500 text-right">${fmtIDR(d.total_overdue || 0)}</td>
+        </tr>`).join('');
 }
 
-// =========================================================================
-// PERBAIKAN UTAMA: APALAGI UNTUK DATA AR UNIT MENU (SINKRON DENGAN HTML BARU)
-// =========================================================================
 function renderDataArUnitFull(data) {
-    const targetElement = document.getElementById('tab-ar-unit-content'); 
+    // Sinkronisasi target ID manipulasi tabel input AR Unit ke 'table-arunit-body'
+    const targetElement = document.getElementById('table-arunit-body'); 
     if (!targetElement) return;
 
-    // Bersihkan penumpukan data lama
-    targetElement.innerHTML = '';
-
-    // Filter Khusus Leasing ACC dan TAFS
+    // Filter khusus monitoring leasing eksternal ACC dan TAFS
     const filteredData = data.filter(d => {
         const lease = (d.leasing_name || '').toUpperCase().trim();
         return lease.includes('ACC') || lease.includes('TAFS');
@@ -315,37 +316,36 @@ function renderDataArUnitFull(data) {
         return;
     }
 
-    // Suntikkan baris data murni langsung ke elemen <tbody> yang sudah siap di HTML
     targetElement.innerHTML = filteredData.map((d, i) => {
         const currentPlan = d.plan_bayar_leasing || '';
-        const currentKet = d.keterangan_leasing || ''; // Menggunakan kolom keterangan_leasing asli Supabase
+        const currentKet = d.ket_leasing || d.keterangan_leasing || ''; 
         const currentCabang = d.ket_cabang || '-';
         const currentOS = d.os_balance || 0;
-        const uniqueKey = d.no_spk || d.id; // Gunakan primary key unik cadangan
+        const idRow = d.id; 
 
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
-            <td class="p-4 text-center text-slate-400">${i + 1}</td>
-            <td class="p-4">
-                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
+            <td class="p-3 text-center text-slate-400">${i + 1}</td>
+            <td class="p-3">
+                <p class="text-slate-800 text-[11px] font-black">${d.nama_customer || '-'}</p>
                 <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
             </td>
-            <td class="p-4"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-black tracking-wide">${d.leasing_name}</span></td>
-            <td class="p-4 text-right font-bold text-blue-600 bg-blue-50/30">${fmtIDR(currentOS)}</td>
-            <td class="p-4 text-slate-600 max-w-xs truncate">${currentCabang}</td>
-            <td class="p-4"><input type="text" id="ket-${uniqueKey}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${currentKet}"></td>
-            <td class="p-4"><input type="text" id="plan-${uniqueKey}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${currentPlan}"></td>
-            <td class="p-4 text-center">
-                <button data-id="${uniqueKey}" class="btn-save-row bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all" title="Simpan Perubahan">💾</button>
+            <td class="p-3"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">${d.leasing_name}</span></td>
+            <td class="p-3 font-bold text-blue-600">${fmtIDR(currentOS)}</td>
+            <td class="p-3"><input type="number" id="input-plan-${idRow}" class="input-custom" value="${currentPlan}" placeholder="Isi plan..."></td>
+            <td class="p-3"><input type="number" id="input-ket-${idRow}" class="input-custom" value="${currentKet}" placeholder="Isi keterangan..."></td>
+            <td class="p-3"><input type="number" id="input-cabang-${idRow}" class="input-custom" value="${currentCabang}" placeholder="Ket cabang..."></td>
+            <td class="p-3 text-center">
+                <button data-id="${idRow}" class="btn-save-row bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white p-1.5 rounded transition-all shadow-sm" title="Simpan Perubahan">💾</button>
             </td>
         </tr>`;
     }).join('');
 }
 
-// PERBAIKAN AKSI: UPDATE TARGET DATABASE SUPABASE SESUAI SKEMA SEBENARNYA
-async function saveRowData(uniqueKey, buttonElement) {
-    const planValue = document.getElementById(`plan-${uniqueKey}`).value;
-    const ketValue = document.getElementById(`ket-${uniqueKey}`).value;
+async function saveRowData(idRow, buttonElement) {
+    const planValue = document.getElementById(`input-plan-${idRow}`).value;
+    const ketValue = document.getElementById(`input-ket-${idRow}`).value;
+    const cabangValue = document.getElementById(`input-cabang-${idRow}`).value;
 
     const originalIcon = buttonElement.innerText;
     buttonElement.innerText = "⏳";
@@ -355,33 +355,29 @@ async function saveRowData(uniqueKey, buttonElement) {
         const { error } = await supabase
             .from('ar_unit')
             .update({ 
-                plan_bayar_leasing: planValue, 
-                keterangan_leasing: ketValue // Menembak kolom keterangan_leasing (huruf kecil & pas)
+                plan_bayar_leasing: planValue ? parseInt(planValue) : null, 
+                ket_leasing: ketValue ? parseInt(ketValue) : null,
+                ket_cabang: cabangValue ? parseInt(cabangValue) : null
             })
-            .eq('no_spk', uniqueKey);
+            .eq('id', idRow);
 
         if (error) throw error;
 
         buttonElement.innerText = "✅";
-        buttonElement.classList.replace('bg-slate-100', 'bg-emerald-500');
-        buttonElement.classList.add('text-white');
-
         setTimeout(() => {
             buttonElement.innerText = originalIcon;
-            buttonElement.classList.replace('bg-emerald-500', 'bg-slate-100');
-            buttonElement.classList.remove('text-white');
             buttonElement.disabled = false;
-        }, 1500);
+            fetchData(); // Muat ulang data terbaru pasca penyimpanan berhasil
+        }, 1200);
 
     } catch (e) {
-        console.error("Gagal menyimpan data:", e);
+        console.error("Gagal melakukan update baris data:", e);
         alert(`Gagal menyimpan perubahan: ${e.message || e}`);
-        
         buttonElement.innerText = "❌";
         setTimeout(() => {
             buttonElement.innerText = originalIcon;
             buttonElement.disabled = false;
-        }, 1500);
+        }, 1200);
     }
 }
 
@@ -393,19 +389,14 @@ function downloadExcel() {
     const dataToExport = cachedData.map((d, idx) => ({
         "No": idx + 1,
         "No SPK": d.no_spk || "",
-        "Nama Customer": d.customer_name ? d.customer_name.toUpperCase() : "",
+        "Nama Customer": d.nama_customer ? d.nama_customer.toUpperCase() : "",
         "Leasing": d.leasing_name ? d.leasing_name.toUpperCase() : "CASH",
-        "Func Lock": d.func_lock || "",
-        "Posting Date": d.posting_date || "",
-        "Due Date": d.due_date || "",
-        "Age": d.age || 0,
         "O/S Balance": d.os_balance || 0,
-        "Lancar": d.lancar || 0,
-        "1 - 30 Hari": d.hari_1_30 || 0,
-        "31 - 60 Hari": d.hari_31_60 || 0,
+        "Hari 1 - 30": d.hari_1_30 || 0,
+        "Hari 31 - 60": d.hari_31_60 || 0,
         "Lebih 60 Hari": d.lebih_60_hari || 0,
+        "Total Overdue": d.total_overdue || 0,
         "Ket Cabang": d.ket_cabang || "",
-        "Ket Leasing": d.keterangan_leasing || "",
         "Plan Bayar": d.plan_bayar_leasing || ""
     }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -422,7 +413,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnDownload.addEventListener('click', downloadExcel);
     }
 
-    // Listener delegasi dinamis untuk menangkap klik tombol simpan di tabel Data AR Unit
     document.addEventListener('click', (event) => {
         const button = event.target.closest('.btn-save-row');
         if (button) {
