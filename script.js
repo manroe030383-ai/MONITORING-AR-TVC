@@ -106,7 +106,10 @@ function updateDashboard(data) {
     
     renderTabLeasingFull(data);
     renderTabOverdueFull(data);
-    renderTabDatabaseFull(data);
+    
+    // RENDER KEDUA TABEL UTAMA BERDASARKAN KATEGORI BARU
+    renderTabDatabaseFull(data); 
+    renderDataArUnitFull(data);  
 }
 
 function renderAgingChart(agingData) {
@@ -117,7 +120,7 @@ function renderAgingChart(agingData) {
         chart: { type: 'bar', height: 250, toolbar: { show: false } },
         colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
         plotOptions: { bar: { borderRadius: 4, distributed: true, dataLabels: { position: 'top' } } },
-        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWeight: 800 }, offsetY: -20 },
+        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontTriangle: 800 }, offsetY: -20 },
         xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontWeight: 700 } } },
         yaxis: { show: false },
         grid: { show: false }
@@ -242,28 +245,59 @@ function renderTabOverdueFull(data) {
         </div>`;
 }
 
+// 1. DATA DATABASE LENGKAP (Berfokus pada Data Piutang & Umur Aging)
 function renderTabDatabaseFull(data) {
     const tbody = document.getElementById('tab-database-body');
     if (!tbody) return;
 
-    tbody.innerHTML = data.map((d, i) => {
-        const currentPlan = d.plan_bayar_leasing || d.Plan_bayar_leasing || '';
-        const currentKet = d.ket_leasing || d.Keterangan_leasing || '';
-        
-        // Menggunakan no_spk (atau alternatif d.id jika no_spk kosong) sebagai ID elemen DOM
+    tbody.innerHTML = data.map((d, i) => `
+        <tr class="hover:bg-slate-50 transition-colors uppercase font-bold text-[10px]">
+            <td class="p-3 text-slate-400 text-center">${i+1}</td>
+            <td class="p-3">
+                <p class="text-slate-900 font-black">${d.customer_name || '-'}</p>
+                <p class="text-[8px] text-slate-400 mt-0.5">SPK: ${d.no_spk || '-'}</p>
+            </td>
+            <td class="p-3"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded">${d.leasing_name || 'CASH'}</span></td>
+            <td class="p-3 text-center">${d.func_lock || '-'}</td>
+            <td class="p-3 text-center text-slate-500">${d.posting_date ? new Date(d.posting_date).toLocaleDateString('id-ID') : '-'}</td>
+            <td class="p-3 text-center text-slate-500">${d.due_date ? new Date(d.due_date).toLocaleDateString('id-ID') : '-'}</td>
+            <td class="p-3 text-center text-amber-600 font-black">${d.age || 0} HARI</td>
+            <td class="p-3 text-right text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
+            <td class="p-3 text-right text-emerald-600">${fmtIDR(d.lancar)}</td>
+            <td class="p-3 text-right text-amber-500">${fmtIDR(d.hari_1_30)}</td>
+            <td class="p-3 text-right text-orange-500">${fmtIDR(d.hari_31_60)}</td>
+            <td class="p-3 text-right text-red-600">${fmtIDR(d.lebih_60_hari)}</td>
+        </tr>`).join('');
+}
+
+// 2. DATA MENU UTAMA: DATA AR UNIT (Khusus Leasing ACC & TAFS + Kolom Catatan Kontrol)
+function renderDataArUnitFull(data) {
+    const tbody = document.getElementById('ar-unit-body');
+    if (!tbody) return;
+
+    // Filter khusus leasing ACC dan TAFS
+    const filteredData = data.filter(d => {
+        const lease = (d.leasing_name || '').toUpperCase().trim();
+        return lease.includes('ACC') || lease.includes('TAFS');
+    });
+
+    tbody.innerHTML = filteredData.map((d, i) => {
+        const currentPlan = d.plan_bayar_leasing || '';
+        const currentKet = d.ket_leasing || '';
+        const currentCabang = d.ket_cabang || '-';
         const uniqueKey = d.no_spk || d.id;
 
         return `
-        <tr class="hover:bg-slate-50 transition-colors">
-            <td class="p-4 text-slate-400 font-bold">${i+1}</td>
+        <tr class="hover:bg-slate-50 transition-colors uppercase font-bold text-[10px]">
+            <td class="p-4 text-slate-400 text-center">${i+1}</td>
             <td class="p-4">
-                <p class="font-bold uppercase">${d.customer_name}</p>
-                <p class="text-[8px] text-slate-400">SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+                <p class="font-black text-slate-900">${d.customer_name || '-'}</p>
+                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
             </td>
-            <td class="p-4 uppercase font-bold text-slate-600">${d.leasing_name || 'CASH'}</td>
-            <td class="p-4 text-right font-black text-blue-600">${fmtIDR(d.os_balance)}</td>
-            <td class="p-4"><input type="text" id="plan-${uniqueKey}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${currentPlan}"></td>
+            <td class="p-4"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-black">${d.leasing_name}</span></td>
+            <td class="p-4 text-slate-600">${currentCabang}</td>
             <td class="p-4"><input type="text" id="ket-${uniqueKey}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${currentKet}"></td>
+            <td class="p-4"><input type="text" id="plan-${uniqueKey}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${currentPlan}"></td>
             <td class="p-4 text-center">
                 <button data-id="${uniqueKey}" class="btn-save-row bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button>
             </td>
@@ -271,7 +305,7 @@ function renderTabDatabaseFull(data) {
     }).join('');
 }
 
-// FUNGSI UTAMA SAVE: Menggunakan pencocokan 'no_spk' untuk mengganti kolom 'id' yang hilang
+// FUNGSI UTAMA SAVE DATA OPERASIONAL (DATA AR UNIT)
 async function saveRowData(uniqueKey, buttonElement) {
     const planValue = document.getElementById(`plan-${uniqueKey}`).value;
     const ketValue = document.getElementById(`ket-${uniqueKey}`).value;
@@ -287,7 +321,7 @@ async function saveRowData(uniqueKey, buttonElement) {
                 plan_bayar_leasing: planValue, 
                 ket_leasing: ketValue          
             })
-            .eq('no_spk', uniqueKey); // Mengganti .eq('id', id) menjadi pelacakan berbasis nomor SPK cabang
+            .eq('no_spk', uniqueKey);
 
         if (error) throw error;
 
@@ -324,16 +358,18 @@ function downloadExcel() {
         "No SPK": d.no_spk || "",
         "Nama Customer": d.customer_name ? d.customer_name.toUpperCase() : "",
         "Leasing": d.leasing_name ? d.leasing_name.toUpperCase() : "CASH",
+        "Func Lock": d.func_lock || "",
+        "Posting Date": d.posting_date || "",
+        "Due Date": d.due_date || "",
+        "Age": d.age || 0,
         "O/S Balance": d.os_balance || 0,
-        "Total Overdue": d.total_overdue || 0,
         "Lancar": d.lancar || 0,
         "1 - 30 Hari": d.hari_1_30 || 0,
         "31 - 60 Hari": d.hari_31_60 || 0,
         "Lebih 60 Hari": d.lebih_60_hari || 0,
-        "Salesman": d.salesman_name || "OFFICE",
-        "Supervisor": d.supervisor_name || "OFFICE",
-        "Plan Bayar": d.plan_bayar_leasing || d.Plan_bayar_leasing || "", 
-        "Keterangan": d.ket_leasing || d.Keterangan_leasing || ""         
+        "Ket Cabang": d.ket_cabang || "",
+        "Ket Leasing": d.ket_leasing || "",
+        "Plan Bayar": d.plan_bayar_leasing || ""
     }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
@@ -349,9 +385,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btnDownload.addEventListener('click', downloadExcel);
     }
 
-    const tableBody = document.getElementById('tab-database-body');
-    if (tableBody) {
-        tableBody.addEventListener('click', (event) => {
+    // Event listener dinamis untuk menangkap klik tombol simpan di tabel Data AR Unit
+    const arUnitTableBody = document.getElementById('ar-unit-body');
+    if (arUnitTableBody) {
+        arUnitTableBody.addEventListener('click', (event) => {
             const button = event.target.closest('.btn-save-row');
             if (button) {
                 const rowId = button.getAttribute('data-id');
