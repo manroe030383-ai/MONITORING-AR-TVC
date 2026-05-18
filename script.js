@@ -107,7 +107,7 @@ function updateDashboard(data) {
     renderTabLeasingFull(data);
     renderTabOverdueFull(data);
     
-    // RENDER KEDUA TABEL UTAMA BERDASARKAN KATEGORI BARU
+    // RENDER UTAMA KEDUA TABEL BARU
     renderTabDatabaseFull(data); 
     renderDataArUnitFull(data);  
 }
@@ -120,7 +120,7 @@ function renderAgingChart(agingData) {
         chart: { type: 'bar', height: 250, toolbar: { show: false } },
         colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
         plotOptions: { bar: { borderRadius: 4, distributed: true, dataLabels: { position: 'top' } } },
-        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontTriangle: 800 }, offsetY: -20 },
+        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWeight: 800 }, offsetY: -20 },
         xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontWeight: 700 } } },
         yaxis: { show: false },
         grid: { show: false }
@@ -245,67 +245,106 @@ function renderTabOverdueFull(data) {
         </div>`;
 }
 
-// 1. DATA DATABASE LENGKAP (Berfokus pada Data Piutang & Umur Aging)
+// 1. DATA DATABASE LENGKAP: Berfokus Pada Rincian Piutang & Umur Aging (Semua Metode Pembayaran)
 function renderTabDatabaseFull(data) {
-    const tbody = document.getElementById('tab-database-body');
-    if (!tbody) return;
+    const targetElement = document.getElementById('tab-database-full-list'); // Mengarah ke Container Tab Utama
+    if (!targetElement) return;
 
-    tbody.innerHTML = data.map((d, i) => `
-        <tr class="hover:bg-slate-50 transition-colors uppercase font-bold text-[10px]">
-            <td class="p-3 text-slate-400 text-center">${i+1}</td>
-            <td class="p-3">
-                <p class="text-slate-900 font-black">${d.customer_name || '-'}</p>
-                <p class="text-[8px] text-slate-400 mt-0.5">SPK: ${d.no_spk || '-'}</p>
-            </td>
-            <td class="p-3"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded">${d.leasing_name || 'CASH'}</span></td>
-            <td class="p-3 text-center">${d.func_lock || '-'}</td>
-            <td class="p-3 text-center text-slate-500">${d.posting_date ? new Date(d.posting_date).toLocaleDateString('id-ID') : '-'}</td>
-            <td class="p-3 text-center text-slate-500">${d.due_date ? new Date(d.due_date).toLocaleDateString('id-ID') : '-'}</td>
-            <td class="p-3 text-center text-amber-600 font-black">${d.age || 0} HARI</td>
-            <td class="p-3 text-right text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
-            <td class="p-3 text-right text-emerald-600">${fmtIDR(d.lancar)}</td>
-            <td class="p-3 text-right text-amber-500">${fmtIDR(d.hari_1_30)}</td>
-            <td class="p-3 text-right text-orange-500">${fmtIDR(d.hari_31_60)}</td>
-            <td class="p-3 text-right text-red-600">${fmtIDR(d.lebih_60_hari)}</td>
-        </tr>`).join('');
+    targetElement.innerHTML = `
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-[10px]">
+                <thead>
+                    <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50 uppercase whitespace-nowrap">
+                        <th class="p-3 text-center w-12">No</th>
+                        <th class="p-3">Nama Customer</th>
+                        <th class="p-3">Leasing Name</th>
+                        <th class="p-3 text-center">Func Lock</th>
+                        <th class="p-3 text-center">Posting Date</th>
+                        <th class="p-3 text-center">Due Date</th>
+                        <th class="p-3 text-center">Age</th>
+                        <th class="p-3 text-right">O/S Balance</th>
+                        <th class="p-3 text-right">Hari 1-30</th>
+                        <th class="p-3 text-right">Hari 31-60</th>
+                        <th class="p-3 text-right">Lebih 60 Hari</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    ${data.map((d, i) => `
+                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
+                            <td class="p-3 text-center text-slate-400">${i+1}</td>
+                            <td class="p-3">
+                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
+                                <p class="text-[8px] text-slate-400 mt-0.5">SPK: ${d.no_spk || '-'}</p>
+                            </td>
+                            <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${d.leasing_name || 'CASH'}</span></td>
+                            <td class="p-3 text-center text-slate-700">${d.func_lock || '-'}</td>
+                            <td class="p-3 text-center text-slate-500">${d.posting_date ? new Date(d.posting_date).toLocaleDateString('id-ID') : '-'}</td>
+                            <td class="p-3 text-center text-slate-500">${d.due_date ? new Date(d.due_date).toLocaleDateString('id-ID') : '-'}</td>
+                            <td class="p-3 text-center text-amber-600 font-black">${d.age || 0} HARI</td>
+                            <td class="p-3 text-right text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
+                            <td class="p-3 text-right text-amber-500">${fmtIDR(d.hari_1_30)}</td>
+                            <td class="p-3 text-right text-orange-500">${fmtIDR(d.hari_31_60)}</td>
+                            <td class="p-3 text-right text-red-600">${fmtIDR(d.lebih_60_hari)}</td>
+                        </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
 }
 
-// 2. DATA MENU UTAMA: DATA AR UNIT (Khusus Leasing ACC & TAFS + Kolom Catatan Kontrol)
+// 2. DATA MENU UTAMA: DATA AR UNIT (Khusus Pembayaran ACC & TAFS + Kolom Catatan Kontrol Operasional)
 function renderDataArUnitFull(data) {
-    const tbody = document.getElementById('ar-unit-body');
-    if (!tbody) return;
+    const targetElement = document.getElementById('tab-ar-unit-content'); // Sesuaikan dengan ID Container Halaman Utama Menu AR Unit Anda
+    if (!targetElement) return;
 
-    // Filter khusus leasing ACC dan TAFS
+    // Filter Khusus Leasing internal ACC dan TAFS
     const filteredData = data.filter(d => {
         const lease = (d.leasing_name || '').toUpperCase().trim();
         return lease.includes('ACC') || lease.includes('TAFS');
     });
 
-    tbody.innerHTML = filteredData.map((d, i) => {
-        const currentPlan = d.plan_bayar_leasing || '';
-        const currentKet = d.ket_leasing || '';
-        const currentCabang = d.ket_cabang || '-';
-        const uniqueKey = d.no_spk || d.id;
+    targetElement.innerHTML = `
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-[10px]">
+                <thead>
+                    <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50 uppercase whitespace-nowrap">
+                        <th class="p-4 text-center w-12">No</th>
+                        <th class="p-4">Nama Customer</th>
+                        <th class="p-4">Leasing</th>
+                        <th class="p-4">Ket Cabang</th>
+                        <th class="p-4 w-48">Keterangan Leasing</th>
+                        <th class="p-4 w-40">Plan Bayar Leasing</th>
+                        <th class="p-4 text-center w-20">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="ar-unit-body" class="divide-y divide-slate-50">
+                    ${filteredData.map((d, i) => {
+                        const currentPlan = d.plan_bayar_leasing || '';
+                        const currentKet = d.ket_leasing || '';
+                        const currentCabang = d.ket_cabang || '-';
+                        const uniqueKey = d.no_spk || d.id;
 
-        return `
-        <tr class="hover:bg-slate-50 transition-colors uppercase font-bold text-[10px]">
-            <td class="p-4 text-slate-400 text-center">${i+1}</td>
-            <td class="p-4">
-                <p class="font-black text-slate-900">${d.customer_name || '-'}</p>
-                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-            </td>
-            <td class="p-4"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-black">${d.leasing_name}</span></td>
-            <td class="p-4 text-slate-600">${currentCabang}</td>
-            <td class="p-4"><input type="text" id="ket-${uniqueKey}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${currentKet}"></td>
-            <td class="p-4"><input type="text" id="plan-${uniqueKey}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${currentPlan}"></td>
-            <td class="p-4 text-center">
-                <button data-id="${uniqueKey}" class="btn-save-row bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button>
-            </td>
-        </tr>`;
-    }).join('');
+                        return `
+                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
+                            <td class="p-4 text-center text-slate-400">${i+1}</td>
+                            <td class="p-4">
+                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
+                                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
+                            </td>
+                            <td class="p-4"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-black tracking-wide">${d.leasing_name}</span></td>
+                            <td class="p-4 text-slate-600 max-w-xs truncate">${currentCabang}</td>
+                            <td class="p-4"><input type="text" id="ket-${uniqueKey}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${currentKet}"></td>
+                            <td class="p-4"><input type="text" id="plan-${uniqueKey}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${currentPlan}"></td>
+                            <td class="p-4 text-center">
+                                <button data-id="${uniqueKey}" class="btn-save-row bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button>
+                            </td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>`;
 }
 
-// FUNGSI UTAMA SAVE DATA OPERASIONAL (DATA AR UNIT)
+// FUNGSI SIMPAN BARIS BERBASIS UNIK NO_SPK CABANG
 async function saveRowData(uniqueKey, buttonElement) {
     const planValue = document.getElementById(`plan-${uniqueKey}`).value;
     const ketValue = document.getElementById(`ket-${uniqueKey}`).value;
@@ -385,15 +424,12 @@ document.addEventListener('DOMContentLoaded', () => {
         btnDownload.addEventListener('click', downloadExcel);
     }
 
-    // Event listener dinamis untuk menangkap klik tombol simpan di tabel Data AR Unit
-    const arUnitTableBody = document.getElementById('ar-unit-body');
-    if (arUnitTableBody) {
-        arUnitTableBody.addEventListener('click', (event) => {
-            const button = event.target.closest('.btn-save-row');
-            if (button) {
-                const rowId = button.getAttribute('data-id');
-                saveRowData(rowId, button);
-            }
-        });
-    }
+    // Listener delegasi dinamis untuk menangkap klik tombol simpan di tabel Data AR Unit
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('.btn-save-row');
+        if (button) {
+            const rowId = button.getAttribute('data-id');
+            saveRowData(rowId, button);
+        }
+    });
 });
