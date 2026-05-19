@@ -61,7 +61,6 @@
                     <button onclick="filterTab(this, 'ringkasan')" class="nav-btn nav-active px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Ringkasan</button>
                     <button onclick="filterTab(this, 'leasing')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Leasing</button>
                     <button onclick="filterTab(this, 'overdue')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Overdue</button>
-                    <button onclick="filterTab(this, 'ar_unit')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Data AR Unit</button>
                     <button onclick="filterTab(this, 'database')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Database Lengkap</button>
                 </div>
             </div>
@@ -234,6 +233,7 @@
 
     <script>
         function filterTab(btn, tabName) {
+            // Reset status aktif tombol navigasi atas (jika ada)
             document.querySelectorAll('.nav-btn').forEach(b => {
                 b.classList.remove('nav-active');
                 b.classList.add('bg-white', 'text-slate-500');
@@ -242,13 +242,14 @@
             const sideDashboard = document.getElementById('side-btn-ringkasan');
             const sideDatabase = document.getElementById('side-btn-ar-unit');
             
+            // Atur status aktif pada Sidebar Menu kiri secara akurat
             if (sideDashboard && sideDatabase) {
                 [sideDashboard, sideDatabase].forEach(sb => {
                     sb.classList.remove('bg-red-600', 'text-white', 'font-bold', 'shadow-lg');
                     sb.classList.add('text-slate-400', 'font-medium');
                 });
 
-                if (['ringkasan', 'leasing', 'overdue'].includes(tabName)) {
+                if (['ringkasan', 'leasing', 'overdue', 'database'].includes(tabName)) {
                     sideDashboard.classList.add('bg-red-600', 'text-white', 'font-bold', 'shadow-lg');
                     sideDashboard.classList.remove('text-slate-400', 'font-medium');
                 } else if (tabName === 'ar_unit') {
@@ -257,21 +258,25 @@
                 }
             }
 
+            // Atur status aktif tombol navigasi atas jika yang diklik adalah tab atas
             const targetTopBtn = document.querySelector(`button[onclick*="'${tabName}'"]`);
             if (targetTopBtn && targetTopBtn.classList.contains('nav-btn')) {
                 targetTopBtn.classList.add('nav-active');
                 targetTopBtn.classList.remove('bg-white', 'text-slate-500');
             }
 
+            // Sembunyikan semua konten tab terlebih dahulu
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.add('hidden');
             });
             
+            // Tampilkan tab yang dipilih
             const targetContent = document.getElementById(`content-${tabName}`);
             if (targetContent) {
                 targetContent.classList.remove('hidden');
             }
 
+            // Trigger resize untuk mematangkan visual render ApexCharts
             if (tabName === 'ringkasan') {
                 window.dispatchEvent(new Event('resize'));
             }
