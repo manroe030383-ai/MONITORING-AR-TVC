@@ -128,7 +128,6 @@ function renderAgingChart(agingData) {
     else { charts.bar = new ApexCharts(el, options); charts.bar.render(); }
 }
 
-// FORMAT GRAFIK DONUT LEASING
 function renderDonutLeasing(mLeas) {
     const el = document.querySelector("#chart-donut-leasing");
     if (!el) return;
@@ -245,7 +244,7 @@ function renderTabOverdueFull(data) {
         </div>`;
 }
 
-// 🟢 PERBAIKAN: Menggunakan d.no untuk ID input text & tombol simpan catatan
+// RENDER TAB DATA AR UNIT (MENGGUNAKAN KOLOM MAPPING .no)
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
     if (!el) return;
@@ -270,7 +269,7 @@ function renderDataArUnitFull(data) {
                 <input type="text" id="plan-${d.no}" value="${d.plan_bayar_leasing || ''}" placeholder="Isi plan..." class="input-custom bg-white">
             </td>
             <td class="p-4 w-48">
-                <input type="text" id="ket-${d.no}" value="${d.keterangan_leasing || ''}" placeholder="Isi keterangan..." class="input-custom bg-white">
+                <input type="text" id="ket-${d.no}" value="${d.ket_leasing || ''}" placeholder="Isi keterangan..." class="input-custom bg-white">
             </td>
             <td class="p-4 text-center w-16">
                 <button onclick="simpanCatatan('${d.no}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan">💾</button>
@@ -299,7 +298,7 @@ function renderTabDatabaseFull(data) {
     `).join('');
 }
 
-// 🟢 PERBAIKAN: Merubah parameter filter pencarian dari 'no_init' menjadi 'no'
+// FUNGSI SIMPAN - FIX KOLOM: 'no' & 'ket_leasing'
 window.simpanCatatan = async function(noId) {
     try {
         const valCabang = document.getElementById(`cabang-${noId}`).value;
@@ -311,9 +310,9 @@ window.simpanCatatan = async function(noId) {
             .update({
                 ket_cabang: valCabang,
                 plan_bayar_leasing: valPlan,
-                keterangan_leasing: valKet
+                ket_leasing: valKet // 🟢 Diubah menjadi ket_leasing sesuai dengan kolom asli database Supabase Anda
             })
-            .eq('no', noId);
+            .eq('no', noId); // 🟢 Menggunakan kolom 'no' sebagai identifier
 
         if (error) throw error;
         alert("Catatan penagihan unit berhasil disimpan! 👍");
