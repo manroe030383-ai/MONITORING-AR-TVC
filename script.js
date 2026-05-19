@@ -244,7 +244,7 @@ function renderTabOverdueFull(data) {
         </div>`;
 }
 
-// RENDER TAB DATA AR UNIT (MENGGUNAKAN KOLOM MAPPING .no)
+// 🟢 FIX: Menggunakan properti d.No (Huruf 'N' Kapital sesuai database)
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
     if (!el) return;
@@ -260,19 +260,20 @@ function renderDataArUnitFull(data) {
             <td class="p-4 text-slate-800 font-black">${d.customer_name || '-'}</td>
             <td class="p-4">
                 <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${d.leasing_name}</span>
+                <p class="text-[7px] text-slate-300 mt-1">SPK: ${d.no_spk || '-'}</p>
             </td>
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
             <td class="p-4 w-48">
-                <input type="text" id="cabang-${d.no}" value="${d.ket_cabang || ''}" placeholder="Ket cabang..." class="input-custom bg-white">
+                <input type="text" id="cabang-${d.No}" value="${d.ket_cabang || ''}" placeholder="Ket cabang..." class="input-custom bg-white">
             </td>
             <td class="p-4 w-48">
-                <input type="text" id="plan-${d.no}" value="${d.plan_bayar_leasing || ''}" placeholder="Isi plan..." class="input-custom bg-white">
+                <input type="text" id="plan-${d.No}" value="${d.plan_bayar_leasing || ''}" placeholder="Isi plan..." class="input-custom bg-white">
             </td>
             <td class="p-4 w-48">
-                <input type="text" id="ket-${d.no}" value="${d.ket_leasing || ''}" placeholder="Isi keterangan..." class="input-custom bg-white">
+                <input type="text" id="ket-${d.No}" value="${d.ket_leasing || ''}" placeholder="Isi keterangan..." class="input-custom bg-white">
             </td>
             <td class="p-4 text-center w-16">
-                <button onclick="simpanCatatan('${d.no}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan">💾</button>
+                <button onclick="simpanCatatan('${d.No}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan">💾</button>
             </td>
         </tr>
     `).join('');
@@ -298,7 +299,7 @@ function renderTabDatabaseFull(data) {
     `).join('');
 }
 
-// FUNGSI SIMPAN - FIX KOLOM: 'no' & 'ket_leasing'
+// 🟢 FIX QUERY: Mencari target baris berdasarkan kolom 'No' (Huruf 'N' Kapital)
 window.simpanCatatan = async function(noId) {
     try {
         const valCabang = document.getElementById(`cabang-${noId}`).value;
@@ -310,9 +311,9 @@ window.simpanCatatan = async function(noId) {
             .update({
                 ket_cabang: valCabang,
                 plan_bayar_leasing: valPlan,
-                ket_leasing: valKet // 🟢 Diubah menjadi ket_leasing sesuai dengan kolom asli database Supabase Anda
+                ket_leasing: valKet
             })
-            .eq('no', noId); // 🟢 Menggunakan kolom 'no' sebagai identifier
+            .eq('No', noId); // 👈 Menggunakan 'No' kapital sesuai schema di Supabase
 
         if (error) throw error;
         alert("Catatan penagihan unit berhasil disimpan! 👍");
