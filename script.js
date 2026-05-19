@@ -128,6 +128,7 @@ function renderAgingChart(agingData) {
     else { charts.bar = new ApexCharts(el, options); charts.bar.render(); }
 }
 
+// FORMAT GRAFIK DONUT LEASING
 function renderDonutLeasing(mLeas) {
     const el = document.querySelector("#chart-donut-leasing");
     if (!el) return;
@@ -244,6 +245,7 @@ function renderTabOverdueFull(data) {
         </div>`;
 }
 
+// 🟢 PERBAIKAN: Menggunakan d.no untuk ID input text & tombol simpan catatan
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
     if (!el) return;
@@ -262,22 +264,21 @@ function renderDataArUnitFull(data) {
             </td>
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
             <td class="p-4 w-48">
-                <input type="text" id="cabang-${d.no_init}" value="${d.ket_cabang || ''}" placeholder="Ket cabang..." class="input-custom bg-white">
+                <input type="text" id="cabang-${d.no}" value="${d.ket_cabang || ''}" placeholder="Ket cabang..." class="input-custom bg-white">
             </td>
             <td class="p-4 w-48">
-                <input type="text" id="plan-${d.no_init}" value="${d.plan_bayar_leasing || ''}" placeholder="Isi plan..." class="input-custom bg-white">
+                <input type="text" id="plan-${d.no}" value="${d.plan_bayar_leasing || ''}" placeholder="Isi plan..." class="input-custom bg-white">
             </td>
             <td class="p-4 w-48">
-                <input type="text" id="ket-${d.no_init}" value="${d.keterangan_leasing || ''}" placeholder="Isi keterangan..." class="input-custom bg-white">
+                <input type="text" id="ket-${d.no}" value="${d.keterangan_leasing || ''}" placeholder="Isi keterangan..." class="input-custom bg-white">
             </td>
             <td class="p-4 text-center w-16">
-                <button onclick="simpanCatatan('${d.no_init}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan">💾</button>
+                <button onclick="simpanCatatan('${d.no}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan">💾</button>
             </td>
         </tr>
     `).join('');
 }
 
-// UPDATE KOLOM DATABASE LENGKAP AGAR SESUAI DENGAN FIELD AGING DB
 function renderTabDatabaseFull(data) {
     const el = document.getElementById('tab-database-body');
     if (!el) return;
@@ -298,20 +299,21 @@ function renderTabDatabaseFull(data) {
     `).join('');
 }
 
-window.simpanCatatan = async function(noInit) {
+// 🟢 PERBAIKAN: Merubah parameter filter pencarian dari 'no_init' menjadi 'no'
+window.simpanCatatan = async function(noId) {
     try {
-        const valCabang = document.getElementById(`cabang-${noInit}`).value;
-        const valPlan = document.getElementById(`plan-${noInit}`).value;
-        const valKet = document.getElementById(`ket-${noInit}`).value;
+        const valCabang = document.getElementById(`cabang-${noId}`).value;
+        const valPlan = document.getElementById(`plan-${noId}`).value;
+        const valKet = document.getElementById(`ket-${noId}`).value;
 
         const { error } = await supabase
             .from('ar_unit')
             .update({
                 ket_cabang: valCabang,
                 plan_bayar_leasing: valPlan,
-                ket_leasing: valKet
+                keterangan_leasing: valKet
             })
-            .eq('no_init', noInit);
+            .eq('no', noId);
 
         if (error) throw error;
         alert("Catatan penagihan unit berhasil disimpan! 👍");
