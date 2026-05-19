@@ -45,7 +45,7 @@
             <button id="side-btn-ringkasan" onclick="filterTab(this, 'ringkasan')" class="w-full flex items-center gap-3 p-3 bg-red-600 text-white rounded-xl text-xs font-bold shadow-lg transition-all text-left">
                 📊 Dashboard Unit
             </button>
-            <button id="side-btn-database" onclick="filterTab(this, 'database')" class="w-full flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl text-xs font-medium transition-all text-left">
+            <button id="side-btn-ar-unit" onclick="filterTab(this, 'ar_unit')" class="w-full flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl text-xs font-medium transition-all text-left">
                 📄 Data AR Unit
             </button>
         </nav>
@@ -61,6 +61,7 @@
                     <button onclick="filterTab(this, 'ringkasan')" class="nav-btn nav-active px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Ringkasan</button>
                     <button onclick="filterTab(this, 'leasing')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Leasing</button>
                     <button onclick="filterTab(this, 'overdue')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Overdue</button>
+                    <button onclick="filterTab(this, 'ar_unit')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Data AR Unit</button>
                     <button onclick="filterTab(this, 'database')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Database Lengkap</button>
                 </div>
             </div>
@@ -183,19 +184,42 @@
             </div>
         </div>
 
+        <div id="content-ar_unit" class="tab-content hidden">
+            <div class="bg-white rounded-2xl border border-slate-100 card-shadow overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-[10px]">
+                        <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100 whitespace-nowrap">
+                            <tr>
+                                <th class="p-4 text-center">No</th>
+                                <th class="p-4">Customer Name</th>
+                                <th class="p-4">Leasing</th>
+                                <th class="p-4 text-right">O/S Balance</th>
+                                <th class="p-4">Ket Cabang</th>
+                                <th class="p-4">Plan Bayar Leasing</th>
+                                <th class="p-4">Keterangan Leasing</th>
+                                <th class="p-4 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab-ar-unit-body" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div id="content-database" class="tab-content hidden">
             <div class="bg-white rounded-2xl border border-slate-100 card-shadow overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-[10px]">
-                        <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100">
+                        <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100 whitespace-nowrap">
                             <tr>
-                                <th class="p-4">No</th>
+                                <th class="p-4 text-center">No</th>
                                 <th class="p-4">Customer Name</th>
-                                <th class="p-4">Leasing</th>
+                                <th class="p-4">Leasing Name</th>
                                 <th class="p-4 text-right">O/S Balance</th>
-                                <th class="p-4">Plan Bayar (Cabang)</th>
-                                <th class="p-4">Keterangan Leasing</th>
-                                <th class="p-4 text-center">Aksi</th>
+                                <th class="p-4 text-right">Hari 1-30</th>
+                                <th class="p-4 text-right">Hari 31-60</th>
+                                <th class="p-4 text-right">Lebih 60 Hari</th>
+                                <th class="p-4 text-right">Total Overdue</th>
                             </tr>
                         </thead>
                         <tbody id="tab-database-body" class="divide-y divide-slate-50"></tbody>
@@ -216,7 +240,7 @@
             });
 
             const sideDashboard = document.getElementById('side-btn-ringkasan');
-            const sideDatabase = document.getElementById('side-btn-database');
+            const sideDatabase = document.getElementById('side-btn-ar-unit');
             
             if (sideDashboard && sideDatabase) {
                 [sideDashboard, sideDatabase].forEach(sb => {
@@ -227,7 +251,7 @@
                 if (['ringkasan', 'leasing', 'overdue'].includes(tabName)) {
                     sideDashboard.classList.add('bg-red-600', 'text-white', 'font-bold', 'shadow-lg');
                     sideDashboard.classList.remove('text-slate-400', 'font-medium');
-                } else if (tabName === 'database') {
+                } else if (tabName === 'ar_unit') {
                     sideDatabase.classList.add('bg-red-600', 'text-white', 'font-bold', 'shadow-lg');
                     sideDatabase.classList.remove('text-slate-400', 'font-medium');
                 }

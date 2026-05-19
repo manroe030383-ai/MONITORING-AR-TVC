@@ -107,9 +107,8 @@ function updateDashboard(data) {
     renderTabLeasingFull(data);
     renderTabOverdueFull(data);
     
-    // RENDER UTAMA KEDUA TABEL BARU
+    renderDataArUnitFull(data); 
     renderTabDatabaseFull(data); 
-    renderDataArUnitFull(data);  
 }
 
 function renderAgingChart(agingData) {
@@ -120,7 +119,7 @@ function renderAgingChart(agingData) {
         chart: { type: 'bar', height: 250, toolbar: { show: false } },
         colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
         plotOptions: { bar: { borderRadius: 4, distributed: true, dataLabels: { position: 'top' } } },
-        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWeight: 800 }, offsetY: -20 },
+        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWave: 800 }, offsetY: -20 },
         xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontWeight: 700 } } },
         yaxis: { show: false },
         grid: { show: false }
@@ -245,191 +244,84 @@ function renderTabOverdueFull(data) {
         </div>`;
 }
 
-// 1. DATA DATABASE LENGKAP: Berfokus Pada Rincian Piutang & Umur Aging (Semua Metode Pembayaran)
-function renderTabDatabaseFull(data) {
-    const targetElement = document.getElementById('tab-database-full-list'); // Mengarah ke Container Tab Utama
-    if (!targetElement) return;
-
-    targetElement.innerHTML = `
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-[10px]">
-                <thead>
-                    <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50 uppercase whitespace-nowrap">
-                        <th class="p-3 text-center w-12">No</th>
-                        <th class="p-3">Nama Customer</th>
-                        <th class="p-3">Leasing Name</th>
-                        <th class="p-3 text-center">Func Lock</th>
-                        <th class="p-3 text-center">Posting Date</th>
-                        <th class="p-3 text-center">Due Date</th>
-                        <th class="p-3 text-center">Age</th>
-                        <th class="p-3 text-right">O/S Balance</th>
-                        <th class="p-3 text-right">Hari 1-30</th>
-                        <th class="p-3 text-right">Hari 31-60</th>
-                        <th class="p-3 text-right">Lebih 60 Hari</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-50">
-                    ${data.map((d, i) => `
-                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
-                            <td class="p-3 text-center text-slate-400">${i+1}</td>
-                            <td class="p-3">
-                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
-                                <p class="text-[8px] text-slate-400 mt-0.5">SPK: ${d.no_spk || '-'}</p>
-                            </td>
-                            <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${d.leasing_name || 'CASH'}</span></td>
-                            <td class="p-3 text-center text-slate-700">${d.func_lock || '-'}</td>
-                            <td class="p-3 text-center text-slate-500">${d.posting_date ? new Date(d.posting_date).toLocaleDateString('id-ID') : '-'}</td>
-                            <td class="p-3 text-center text-slate-500">${d.due_date ? new Date(d.due_date).toLocaleDateString('id-ID') : '-'}</td>
-                            <td class="p-3 text-center text-amber-600 font-black">${d.age || 0} HARI</td>
-                            <td class="p-3 text-right text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
-                            <td class="p-3 text-right text-amber-500">${fmtIDR(d.hari_1_30)}</td>
-                            <td class="p-3 text-right text-orange-500">${fmtIDR(d.hari_31_60)}</td>
-                            <td class="p-3 text-right text-red-600">${fmtIDR(d.lebih_60_hari)}</td>
-                        </tr>`).join('')}
-                </tbody>
-            </table>
-        </div>`;
-}
-
-// 2. DATA MENU UTAMA: DATA AR UNIT (Khusus Pembayaran ACC & TAFS + Kolom Catatan Kontrol Operasional)
 function renderDataArUnitFull(data) {
-    const targetElement = document.getElementById('tab-ar-unit-content'); // Sesuaikan dengan ID Container Halaman Utama Menu AR Unit Anda
-    if (!targetElement) return;
+    const el = document.getElementById('tab-ar-unit-body');
+    if (!el) return;
 
-    // Filter Khusus Leasing internal ACC dan TAFS
-    const filteredData = data.filter(d => {
-        const lease = (d.leasing_name || '').toUpperCase().trim();
-        return lease.includes('ACC') || lease.includes('TAFS');
+    const filterAR = data.filter(d => {
+        const l = (d.leasing_name || '').toUpperCase().trim();
+        return l.includes('TAFS') || l.includes('ACC');
     });
 
-    targetElement.innerHTML = `
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-[10px]">
-                <thead>
-                    <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50 uppercase whitespace-nowrap">
-                        <th class="p-4 text-center w-12">No</th>
-                        <th class="p-4">Nama Customer</th>
-                        <th class="p-4">Leasing</th>
-                        <th class="p-4">Ket Cabang</th>
-                        <th class="p-4 w-48">Keterangan Leasing</th>
-                        <th class="p-4 w-40">Plan Bayar Leasing</th>
-                        <th class="p-4 text-center w-20">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="ar-unit-body" class="divide-y divide-slate-50">
-                    ${filteredData.map((d, i) => {
-                        const currentPlan = d.plan_bayar_leasing || '';
-                        const currentKet = d.ket_leasing || '';
-                        const currentCabang = d.ket_cabang || '-';
-                        const uniqueKey = d.no_spk || d.id;
-
-                        return `
-                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
-                            <td class="p-4 text-center text-slate-400">${i+1}</td>
-                            <td class="p-4">
-                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
-                                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
-                            </td>
-                            <td class="p-4"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-black tracking-wide">${d.leasing_name}</span></td>
-                            <td class="p-4 text-slate-600 max-w-xs truncate">${currentCabang}</td>
-                            <td class="p-4"><input type="text" id="ket-${uniqueKey}" class="input-custom text-[10px]" placeholder="Keterangan..." value="${currentKet}"></td>
-                            <td class="p-4"><input type="text" id="plan-${uniqueKey}" class="input-custom text-[10px]" placeholder="Tgl Rencana..." value="${currentPlan}"></td>
-                            <td class="p-4 text-center">
-                                <button data-id="${uniqueKey}" class="btn-save-row bg-slate-100 hover:bg-emerald-500 hover:text-white p-2 rounded-lg transition-all">💾</button>
-                            </td>
-                        </tr>`;
-                    }).join('')}
-                </tbody>
-            </table>
-        </div>`;
+    el.innerHTML = filterAR.map((d, i) => `
+        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
+            <td class="p-4 text-center text-slate-400">${i + 1}</td>
+            <td class="p-4 text-slate-800 font-black">${d.customer_name || '-'}</td>
+            <td class="p-4">
+                <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${d.leasing_name}</span>
+            </td>
+            <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
+            <td class="p-4 w-48">
+                <input type="text" id="cabang-${d.no_init}" value="${d.ket_cabang || ''}" placeholder="Ket cabang..." class="input-custom bg-white">
+            </td>
+            <td class="p-4 w-48">
+                <input type="text" id="plan-${d.no_init}" value="${d.plan_bayar_leasing || ''}" placeholder="Isi plan..." class="input-custom bg-white">
+            </td>
+            <td class="p-4 w-48">
+                <input type="text" id="ket-${d.no_init}" value="${d.keterangan_leasing || ''}" placeholder="Isi keterangan..." class="input-custom bg-white">
+            </td>
+            <td class="p-4 text-center w-16">
+                <button onclick="simpanCatatan('${d.no_init}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan">💾</button>
+            </td>
+        </tr>
+    `).join('');
 }
 
-// FUNGSI SIMPAN BARIS BERBASIS UNIK NO_SPK CABANG
-async function saveRowData(uniqueKey, buttonElement) {
-    const planValue = document.getElementById(`plan-${uniqueKey}`).value;
-    const ketValue = document.getElementById(`ket-${uniqueKey}`).value;
+// UPDATE KOLOM DATABASE LENGKAP AGAR SESUAI DENGAN FIELD AGING DB
+function renderTabDatabaseFull(data) {
+    const el = document.getElementById('tab-database-body');
+    if (!el) return;
 
-    const originalIcon = buttonElement.innerText;
-    buttonElement.innerText = "⏳";
-    buttonElement.disabled = true;
+    el.innerHTML = data.map((d, i) => `
+        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
+            <td class="p-4 text-center text-slate-400">${i + 1}</td>
+            <td class="p-4 text-slate-800 font-black">${d.customer_name || '-'}</td>
+            <td class="p-4">
+                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${d.leasing_name || 'CASH'}</span>
+            </td>
+            <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
+            <td class="p-4 text-right text-emerald-600">${fmtIDR(d.hari_1_30 || d.lancar)}</td>
+            <td class="p-4 text-right text-amber-500">${fmtIDR(d.hari_31_60)}</td>
+            <td class="p-4 text-right text-orange-500">${fmtIDR(d.lebih_60_hari)}</td>
+            <td class="p-4 text-right text-red-600 font-black bg-red-50/30">${fmtIDR(d.total_overdue)}</td>
+        </tr>
+    `).join('');
+}
 
+window.simpanCatatan = async function(noInit) {
     try {
+        const valCabang = document.getElementById(`cabang-${noInit}`).value;
+        const valPlan = document.getElementById(`plan-${noInit}`).value;
+        const valKet = document.getElementById(`ket-${noInit}`).value;
+
         const { error } = await supabase
             .from('ar_unit')
-            .update({ 
-                plan_bayar_leasing: planValue, 
-                ket_leasing: ketValue          
+            .update({
+                ket_cabang: valCabang,
+                plan_bayar_leasing: valPlan,
+                keterangan_leasing: valKet
             })
-            .eq('no_spk', uniqueKey);
+            .eq('no_init', noInit);
 
         if (error) throw error;
-
-        buttonElement.innerText = "✅";
-        buttonElement.classList.replace('bg-slate-100', 'bg-emerald-500');
-        buttonElement.classList.add('text-white');
-
-        setTimeout(() => {
-            buttonElement.innerText = originalIcon;
-            buttonElement.classList.replace('bg-emerald-500', 'bg-slate-100');
-            buttonElement.classList.remove('text-white');
-            buttonElement.disabled = false;
-        }, 1500);
-
-    } catch (e) {
-        console.error("Gagal menyimpan data:", e);
-        alert(`Gagal menyimpan perubahan: ${e.message || e}`);
-        
-        buttonElement.innerText = "❌";
-        setTimeout(() => {
-            buttonElement.innerText = originalIcon;
-            buttonElement.disabled = false;
-        }, 1500);
+        alert("Catatan penagihan unit berhasil disimpan! 👍");
+        fetchData(); 
+    } catch (err) {
+        console.error(err);
+        alert("Gagal menyimpan data: " + err.message);
     }
-}
-
-function downloadExcel() {
-    if (cachedData.length === 0) {
-        alert("Data belum dimuat sepenuhnya. Mohon tunggu.");
-        return;
-    }
-    const dataToExport = cachedData.map((d, idx) => ({
-        "No": idx + 1,
-        "No SPK": d.no_spk || "",
-        "Nama Customer": d.customer_name ? d.customer_name.toUpperCase() : "",
-        "Leasing": d.leasing_name ? d.leasing_name.toUpperCase() : "CASH",
-        "Func Lock": d.func_lock || "",
-        "Posting Date": d.posting_date || "",
-        "Due Date": d.due_date || "",
-        "Age": d.age || 0,
-        "O/S Balance": d.os_balance || 0,
-        "Lancar": d.lancar || 0,
-        "1 - 30 Hari": d.hari_1_30 || 0,
-        "31 - 60 Hari": d.hari_31_60 || 0,
-        "Lebih 60 Hari": d.lebih_60_hari || 0,
-        "Ket Cabang": d.ket_cabang || "",
-        "Ket Leasing": d.ket_leasing || "",
-        "Plan Bayar": d.plan_bayar_leasing || ""
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "AR Unit Overview");
-    XLSX.writeFile(workbook, `AR_UNIT_REPORT_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     fetchData();
-    
-    const btnDownload = document.getElementById('btn-download-excel');
-    if (btnDownload) {
-        btnDownload.addEventListener('click', downloadExcel);
-    }
-
-    // Listener delegasi dinamis untuk menangkap klik tombol simpan di tabel Data AR Unit
-    document.addEventListener('click', (event) => {
-        const button = event.target.closest('.btn-save-row');
-        if (button) {
-            const rowId = button.getAttribute('data-id');
-            saveRowData(rowId, button);
-        }
-    });
 });
