@@ -12,6 +12,7 @@ let cachedData = [];
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
 
+// FUNGSI TARIK DATA (MENGHINDARI CACHE BROWSER LAMA)
 async function fetchData() {
     try {
         const { data, error } = await supabase.from('ar_unit').select('*').order('os_balance', { ascending: false });
@@ -59,7 +60,7 @@ function updateDashboard(data) {
         if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
         if (Number(d.penalty_amount || 0) > 0) s.cPen++;
 
-        // SINKRONISASI KOLOM AGING (Menggunakan huruf kecil sesuai header database)
+        // AGING HARI SESUAI STRUKTUR SUPABASE (huruf kecil)
         aging['LANCAR'] += Number(d.lancar || 0) / 1000000;
         aging['1-30 H'] += Number(d.hari_1_30 || 0) / 1000000;
         aging['31-60 H'] += Number(d.hari_31_60 || 0) / 1000000;
@@ -172,11 +173,14 @@ function renderTopList(map, id, colorClass) {
 function renderOverdueTop(data) {
     const el = document.getElementById('list-overdue');
     if (!el) return;
-    el.innerHTML = data.slice(0,5).map((d,i) => `
+    el.innerHTML = data.slice(0,5).map((d,i) => {
+        const name = d.customer_name || d['Customer name'] || d.nama_customer || '-';
+        return `
         <div class="flex justify-between py-2 border-b border-slate-50 uppercase font-bold">
-            <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${d.customer_name || '-'}</span>
+            <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${name}</span>
             <span class="text-[10px] text-red-500">${fmtJuta(d.total_overdue)}</span>
-        </div>`).join('');
+        </div>`;
+    }).join('');
 }
 
 function renderTabLeasingFull(data) {
@@ -204,23 +208,27 @@ function renderTabLeasingFull(data) {
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-50">
-                    ${leasingData.map((d, i) => `
+                    ${leasingData.map((d, i) => {
+                        const name = d.customer_name || d['Customer name'] || d.nama_customer || '-';
+                        return `
                         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase">
                             <td class="p-3 text-center text-slate-400">${i+1}</td>
                             <td class="p-3">
-                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
+                                <p class="text-slate-800 text-[11px] font-black">${name}</p>
                                 <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
                             </td>
                             <td class="p-3">
                                 <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${d.leasing_name}</span>
                             </td>
                             <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-black">${fmtIDR(d.os_balance)}</td>
-                        </tr>`).join('')}
+                        </tr>`;
+                    }).join('')}
                 </tbody>
             </table>
         </div>`;
 }
 
+// PERBAIKAN GAMBAR 2: SINKRONISASI TOTAL OVERDUE & CUSTOMER NAME
 function renderTabOverdueFull(data) {
     const el = document.getElementById('tab-overdue-list');
     if (!el) return;
@@ -233,20 +241,23 @@ function renderTabOverdueFull(data) {
 
     el.innerHTML = `
         <div class="space-y-3 p-1">
-            ${overdueData.map((d) => `
+            ${overdueData.map((d) => {
+                const name = d.customer_name || d['Customer name'] || d.nama_customer || '-';
+                return `
                 <div class="bg-white border border-slate-100 rounded-xl p-4 flex justify-between items-center shadow-sm hover:shadow-md transition-all font-bold uppercase">
                     <div>
-                        <p class="text-slate-800 text-[12px] font-black tracking-wide">${d.customer_name || '-'}</p>
+                        <p class="text-slate-800 text-[12px] font-black tracking-wide">${name}</p>
                         <p class="text-[9px] text-slate-400 mt-1">Leasing: <span class="text-slate-600 font-extrabold">${d.leasing_name || 'CASH'}</span></p>
                     </div>
                     <div class="text-right">
                         <p class="text-red-600 text-[13px] font-black">${fmtIDR(d.total_overdue)}</p>
                     </div>
-                </div>
-            `).join('')}
+                </div>`;
+            }).join('')}
         </div>`;
 }
 
+// PERBAIKAN GAMBAR 3: MEMANGGIL HARI_1_30, HARI_31_60, LEBIH_60_HARI, TOTAL_OVERDUE (HURUF KECIL)
 function renderTabDatabaseFull(data) {
     const targetElement = document.getElementById('table-database-body'); 
     if (!targetElement) return;
@@ -256,11 +267,13 @@ function renderTabDatabaseFull(data) {
         return;
     }
 
-    targetElement.innerHTML = data.map((d, i) => `
+    targetElement.innerHTML = data.map((d, i) => {
+        const name = d.customer_name || d['Customer name'] || d.nama_customer || '-';
+        return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-3 text-center text-slate-400">${i+1}</td>
             <td class="p-3">
-                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
+                <p class="text-slate-800 text-[11px] font-black">${name}</p>
                 <p class="text-[8px] text-slate-400 mt-0.5">SPK: ${d.no_spk || '-'}</p>
             </td>
             <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${d.leasing_name || 'CASH'}</span></td>
@@ -269,9 +282,11 @@ function renderTabDatabaseFull(data) {
             <td class="p-3 text-right text-orange-500">${fmtIDR(d.hari_31_60 || 0)}</td>
             <td class="p-3 text-right text-red-600">${fmtIDR(d.lebih_60_hari || 0)}</td>
             <td class="p-3 font-bold text-red-500 text-right">${fmtIDR(d.total_overdue || 0)}</td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
 }
 
+// PERBAIKAN GAMBAR 1: DATA AR UNIT (NAMA CUSTOMER KIRI)
 function renderDataArUnitFull(data) {
     const targetElement = document.getElementById('table-arunit-body'); 
     if (!targetElement) return;
@@ -298,11 +313,14 @@ function renderDataArUnitFull(data) {
         const currentOS = d.os_balance || 0;
         const idRow = d.id; 
 
+        // Fallback pencarian nama kolom jika ada perbedaan cache
+        const name = d.customer_name || d['Customer name'] || d.nama_customer || '-';
+
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-3 text-center text-slate-400">${i + 1}</td>
             <td class="p-3">
-                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
+                <p class="text-slate-800 text-[11px] font-black">${name}</p>
                 <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
             </td>
             <td class="p-3"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">${d.leasing_name}</span></td>
@@ -361,19 +379,22 @@ function downloadExcel() {
         alert("Data belum dimuat sepenuhnya. Mohon tunggu.");
         return;
     }
-    const dataToExport = cachedData.map((d, idx) => ({
-        "No": idx + 1,
-        "No SPK": d.no_spk || "",
-        "Nama Customer": d.customer_name ? d.customer_name.toUpperCase() : "",
-        "Leasing": d.leasing_name ? d.leasing_name.toUpperCase() : "CASH",
-        "O/S Balance": d.os_balance || 0,
-        "Hari 1 - 30": d.hari_1_30 || 0,
-        "Hari 31 - 60": d.hari_31_60 || 0,
-        "Lebih 60 Hari": d.lebih_60_hari || 0,
-        "Total Overdue": d.total_overdue || 0,
-        "Ket Cabang": d.ket_cabang || "",
-        "Plan Bayar": d.plan_bayar_leasing || ""
-    }));
+    const dataToExport = cachedData.map((d, idx) => {
+        const name = d.customer_name || d['Customer name'] || d.nama_customer || '-';
+        return {
+            "No": idx + 1,
+            "No SPK": d.no_spk || "",
+            "Nama Customer": name ? name.toUpperCase() : "",
+            "Leasing": d.leasing_name ? d.leasing_name.toUpperCase() : "CASH",
+            "O/S Balance": d.os_balance || 0,
+            "Hari 1 - 30": d.hari_1_30 || 0,
+            "Hari 31 - 60": d.hari_31_60 || 0,
+            "Lebih 60 Hari": d.lebih_60_hari || 0,
+            "Total Overdue": d.total_overdue || 0,
+            "Ket Cabang": d.ket_cabang || "",
+            "Plan Bayar": d.plan_bayar_leasing || ""
+        };
+    });
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "AR Unit Overview");
