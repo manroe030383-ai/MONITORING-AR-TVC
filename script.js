@@ -54,15 +54,15 @@ function updateDashboard(data) {
         s.os += os; 
         s.ov += ov; 
         s.pen += Number(d.penalty_amount || 0); 
-        s.lan += Number(d.car || 0); 
+        s.lan += Number(d.lancar || 0); 
         
         if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
         if (Number(d.penalty_amount || 0) > 0) s.cPen++;
 
-        // SINKRONISASI KOLOM AGING SUPABASE (Menggunakan Huruf Besar/Kapital di Awal Kata)
-        aging['LANCAR'] += Number(d.car || 0) / 1000000;
-        aging['1-30 H'] += Number(d.Hari_1_30 || 0) / 1000000;
-        aging['31-60 H'] += Number(d.Hari_31_60 || 0) / 1000000;
+        // SINKRONISASI KOLOM AGING (Menggunakan huruf kecil sesuai header database)
+        aging['LANCAR'] += Number(d.lancar || 0) / 1000000;
+        aging['1-30 H'] += Number(d.hari_1_30 || 0) / 1000000;
+        aging['31-60 H'] += Number(d.hari_31_60 || 0) / 1000000;
         aging['>60 H'] += Number(d.lebih_60_hari || 0) / 1000000;
 
         if (["CASH", "CASH TERIMA", ""].includes(l)) { 
@@ -172,10 +172,9 @@ function renderTopList(map, id, colorClass) {
 function renderOverdueTop(data) {
     const el = document.getElementById('list-overdue');
     if (!el) return;
-    // PEMBETULAN: Mengambil properti d['Customer name']
     el.innerHTML = data.slice(0,5).map((d,i) => `
         <div class="flex justify-between py-2 border-b border-slate-50 uppercase font-bold">
-            <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${d['Customer name'] || '-'}</span>
+            <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${d.customer_name || '-'}</span>
             <span class="text-[10px] text-red-500">${fmtJuta(d.total_overdue)}</span>
         </div>`).join('');
 }
@@ -193,7 +192,6 @@ function renderTabLeasingFull(data) {
         return;
     }
 
-    // PEMBETULAN: Mengambil properti d['Customer name']
     el.innerHTML = `
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-[10px]">
@@ -210,7 +208,7 @@ function renderTabLeasingFull(data) {
                         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase">
                             <td class="p-3 text-center text-slate-400">${i+1}</td>
                             <td class="p-3">
-                                <p class="text-slate-800 text-[11px] font-black">${d['Customer name'] || '-'}</p>
+                                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
                                 <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
                             </td>
                             <td class="p-3">
@@ -233,13 +231,12 @@ function renderTabOverdueFull(data) {
         return;
     }
 
-    // PEMBETULAN GAMBAR 2: Menggunakan elemen card list dinamis seperti pada visual tampilan Anda
     el.innerHTML = `
         <div class="space-y-3 p-1">
             ${overdueData.map((d) => `
                 <div class="bg-white border border-slate-100 rounded-xl p-4 flex justify-between items-center shadow-sm hover:shadow-md transition-all font-bold uppercase">
                     <div>
-                        <p class="text-slate-800 text-[12px] font-black tracking-wide">${d['Customer name'] || '-'}</p>
+                        <p class="text-slate-800 text-[12px] font-black tracking-wide">${d.customer_name || '-'}</p>
                         <p class="text-[9px] text-slate-400 mt-1">Leasing: <span class="text-slate-600 font-extrabold">${d.leasing_name || 'CASH'}</span></p>
                     </div>
                     <div class="text-right">
@@ -259,18 +256,17 @@ function renderTabDatabaseFull(data) {
         return;
     }
 
-    // PEMBETULAN GAMBAR 3: d['Customer name'], d.Hari_1_30, d.Hari_31_60
     targetElement.innerHTML = data.map((d, i) => `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-3 text-center text-slate-400">${i+1}</td>
             <td class="p-3">
-                <p class="text-slate-800 text-[11px] font-black">${d['Customer name'] || '-'}</p>
+                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
                 <p class="text-[8px] text-slate-400 mt-0.5">SPK: ${d.no_spk || '-'}</p>
             </td>
             <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${d.leasing_name || 'CASH'}</span></td>
             <td class="p-3 text-right text-blue-600 font-black">${fmtIDR(d.os_balance)}</td>
-            <td class="p-3 text-right text-amber-500">${fmtIDR(d.Hari_1_30 || 0)}</td>
-            <td class="p-3 text-right text-orange-500">${fmtIDR(d.Hari_31_60 || 0)}</td>
+            <td class="p-3 text-right text-amber-500">${fmtIDR(d.hari_1_30 || 0)}</td>
+            <td class="p-3 text-right text-orange-500">${fmtIDR(d.hari_31_60 || 0)}</td>
             <td class="p-3 text-right text-red-600">${fmtIDR(d.lebih_60_hari || 0)}</td>
             <td class="p-3 font-bold text-red-500 text-right">${fmtIDR(d.total_overdue || 0)}</td>
         </tr>`).join('');
@@ -295,7 +291,6 @@ function renderDataArUnitFull(data) {
         return;
     }
 
-    // PEMBETULAN GAMBAR 1: Mengubah d.nama_customer menjadi d['Customer name']
     targetElement.innerHTML = filteredData.map((d, i) => {
         const currentPlan = d.plan_bayar_leasing || '';
         const currentKet = d.ket_leasing || d.keterangan_leasing || ''; 
@@ -307,7 +302,7 @@ function renderDataArUnitFull(data) {
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-3 text-center text-slate-400">${i + 1}</td>
             <td class="p-3">
-                <p class="text-slate-800 text-[11px] font-black">${d['Customer name'] || '-'}</p>
+                <p class="text-slate-800 text-[11px] font-black">${d.customer_name || '-'}</p>
                 <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${d.salesman_name || d.supervisor_name || 'OFFICE'}</p>
             </td>
             <td class="p-3"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">${d.leasing_name}</span></td>
@@ -369,11 +364,11 @@ function downloadExcel() {
     const dataToExport = cachedData.map((d, idx) => ({
         "No": idx + 1,
         "No SPK": d.no_spk || "",
-        "Nama Customer": d['Customer name'] ? d['Customer name'].toUpperCase() : "",
+        "Nama Customer": d.customer_name ? d.customer_name.toUpperCase() : "",
         "Leasing": d.leasing_name ? d.leasing_name.toUpperCase() : "CASH",
         "O/S Balance": d.os_balance || 0,
-        "Hari 1 - 30": d.Hari_1_30 || 0,
-        "Hari 31 - 60": d.Hari_31_60 || 0,
+        "Hari 1 - 30": d.hari_1_30 || 0,
+        "Hari 31 - 60": d.hari_31_60 || 0,
         "Lebih 60 Hari": d.lebih_60_hari || 0,
         "Total Overdue": d.total_overdue || 0,
         "Ket Cabang": d.ket_cabang || "",
