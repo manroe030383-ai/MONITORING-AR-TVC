@@ -2,9 +2,9 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm'
 
 // ==========================================
-// KONFIGURASI SUPABASE
+// KONFIGURASI SUPABASE (SUDAH DIPERBAIKI URL-NYA)
 // ==========================================
-const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
+const SUPABASE_URL = 'https://ahaoznkudubajtzfbnqj.supabase.co'; // 👈 Perbaikan: kudubajtz (menggunakan b, bukan s)
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emFibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -30,27 +30,27 @@ function getProp(obj, key) {
 }
 
 // ==========================================
-// 1. FUNGSI AMBIL DATA DARI SUPABASE (DENGAN DETEKSI ERROR LENGKAP)
+// 1. FUNGSI AMBIL DATA DARI SUPABASE
 // ==========================================
 async function fetchData() {
     const statusEl = document.getElementById('status-update');
     try {
         if (!supabase) {
-            throw new Error("Supabase Client gagal dibuat. Cek koneksi / import library.");
+            throw new Error("Supabase Client gagal dibuat. Cek koneksi.");
         }
 
         // Eksekusi query ke tabel ar_unit
         let { data, error } = await supabase.from('ar_unit').select('*');
         
-        if (error) throw error; // Jika error dari sisi database, lempar ke block catch
+        if (error) throw error; 
         
         if (data) {
             console.log("DATA DARI SUPABASE:", data);
             
-            // Antisipasi jika tabel terhubung tapi isinya 0 baris (atau terkunci RLS)
+            // Jika sukses konek tapi tabel kosong / RLS aktif
             if (data.length === 0) {
                 if (statusEl) {
-                    statusEl.innerText = "KONEKSI SUKSES, TAPI TABEL DI SUPABASE KOSONG ATAU RLS AKTIF (0 DATA)!";
+                    statusEl.innerText = "KONEKSI SUKSES, TAPI TABEL 'ar_unit' KOSONG / TERKUNCI RLS (0 DATA)!";
                     statusEl.className = "text-[9px] font-bold text-amber-500 uppercase tracking-widest mb-1 italic";
                 }
                 return;
@@ -59,7 +59,7 @@ async function fetchData() {
             cachedData = data; 
             updateDashboard(data);
             
-            // Perbarui status sukses tanggal sinkronisasi data
+            // Perbarui teks status di pojok dashboard
             if (statusEl) {
                 statusEl.innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
                 statusEl.className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic";
@@ -72,9 +72,8 @@ async function fetchData() {
         }
     } catch (e) {
         console.error("Error Fetching:", e);
-        // Tampilkan pesan error asli di layar agar mudah mendeteksi letak kesalahan
         if (statusEl) {
-            statusEl.innerText = `GAGAL MEMUAT DATA: ${e.message || 'Periksa koneksi internet / RLS'}`;
+            statusEl.innerText = `GAGAL MEMUAT DATA: ${e.message || 'Periksa koneksi / RLS'}`;
             statusEl.className = "text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic";
         }
     }
@@ -130,7 +129,7 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // Render Ringkasan Angka Utama
+    // Render Angka Utama
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -153,7 +152,7 @@ function updateDashboard(data) {
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
-    // Try-Catch dibungkus terpisah agar jika grafik error, tabel teks di bawahnya tetap termuat sempurna
+    // Render Diagram Grafis
     try { renderAgingChart(aging); } catch (e) { console.error("Gagal load Aging Chart:", e); }
     try { renderDonutLeasing(s.cash, s.leas); } catch (e) { console.error("Gagal load Donut Chart:", e); }
     
@@ -169,7 +168,7 @@ function updateDashboard(data) {
 }
 
 // ==========================================
-// 3. FUNGSI RENDER GRAFIK & LIST DATA
+// 3. FUNGSI RENDER DIAGRAM (APEXCHARTS) & LIST
 // ==========================================
 function renderAgingChart(agingData) {
     const el = document.querySelector("#chart-aging");
@@ -202,7 +201,7 @@ function renderDonutLeasing(totalCash, totalLeasing) {
         chart: { type: 'donut', height: 180 },
         legend: { show: false },
         dataLabels: { enabled: false },
-        colors: ['#10B981', '#3B82F6'] // Hijau untuk Cash, Biru untuk Leasing
+        colors: ['#10B981', '#3B82F6']
     };
     if (charts.donut && typeof charts.donut.updateOptions === 'function') charts.donut.updateOptions(options);
     else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
