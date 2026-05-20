@@ -166,7 +166,6 @@ function renderAgingChart(agingData) {
         xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontWeight: 700 } } },
         yaxis: { show: false },
         grid: { show: false },
-        // MENGHAPUS KOTAK WARNA DUPLIKAT DI BAWAH GRAFIK AGING
         legend: { show: false }
     };
     if (charts.bar) charts.bar.updateOptions(options);
@@ -180,7 +179,6 @@ function renderDonutLeasing(mLeas) {
     let totalCash = 0;
     let totalLeasing = 0;
 
-    // Menghitung porsi total cash vs total leasing dari cachedData secara akurat
     cachedData.forEach(d => {
         const os = Number(getProp(d, 'os_balance') || 0);
         const l = String(getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
@@ -200,15 +198,15 @@ function renderDonutLeasing(mLeas) {
         chart: { type: 'donut', height: 180 },
         legend: { show: false },
         dataLabels: { enabled: false },
-        // MENAMPILKAN HANYA 2 WARNA: Hijau (Cash) dan Biru (Leasing) sesuai dengan card indikator
         colors: ['#10B981', '#3B82F6'],
         plotOptions: {
             pie: {
                 donut: {
                     labels: {
-                        show: true,
+                        // DIUBAH MENJADI FALSE AGAR TULISAN DAN ANGKA DI TENGAH LINGKARAN HILANG TOTAL
+                        show: false, 
                         total: {
-                            show: true,
+                            show: false,
                             label: 'TOTAL AR',
                             fontSize: '10px',
                             fontWeight: 'bold',
@@ -450,7 +448,6 @@ function downloadExcel() {
 
         const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel);
         const workbook = XLSX.utils.book_new();
-        // SUDAH DIPERBAIKI: Menggunakan nama objek XLSX asli milik bapak
         XLSX.utils.book_append_sheet(workbook, worksheet, "Data AR Unit");
 
         const tglHariIni = new Date().toISOString().slice(0, 10);
