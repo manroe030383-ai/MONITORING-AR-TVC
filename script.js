@@ -2,9 +2,9 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm'
 
 // ==========================================
-// KONFIGURASI SUPABASE (SUDAH DIPERBAIKI URL-NYA)
+// KONFIGURASI SUPABASE (AKURASI URL RE-CHECKED)
 // ==========================================
-const SUPABASE_URL = 'https://ahaoznkudubajtzfbnqj.supabase.co'; // 👈 Perbaikan: kudubajtz (menggunakan b, bukan s)
+const SUPABASE_URL = 'https://ahaoznkudubajtzfbnqj.supabase.co'; 
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emFibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -36,21 +36,19 @@ async function fetchData() {
     const statusEl = document.getElementById('status-update');
     try {
         if (!supabase) {
-            throw new Error("Supabase Client gagal dibuat. Cek koneksi.");
+            throw new Error("Supabase Client gagal dibuat.");
         }
 
-        // Eksekusi query ke tabel ar_unit
         let { data, error } = await supabase.from('ar_unit').select('*');
         
         if (error) throw error; 
         
         if (data) {
-            console.log("DATA DARI SUPABASE:", data);
+            console.log("DATA SUKSES:", data);
             
-            // Jika sukses konek tapi tabel kosong / RLS aktif
             if (data.length === 0) {
                 if (statusEl) {
-                    statusEl.innerText = "KONEKSI SUKSES, TAPI TABEL 'ar_unit' KOSONG / TERKUNCI RLS (0 DATA)!";
+                    statusEl.innerText = "KONEKSI SUKSES, TAPI TABEL 'ar_unit' KOSONG / RLS AKTIF!";
                     statusEl.className = "text-[9px] font-bold text-amber-500 uppercase tracking-widest mb-1 italic";
                 }
                 return;
@@ -59,7 +57,6 @@ async function fetchData() {
             cachedData = data; 
             updateDashboard(data);
             
-            // Perbarui teks status di pojok dashboard
             if (statusEl) {
                 statusEl.innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
                 statusEl.className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic";
@@ -73,7 +70,7 @@ async function fetchData() {
     } catch (e) {
         console.error("Error Fetching:", e);
         if (statusEl) {
-            statusEl.innerText = `GAGAL MEMUAT DATA: ${e.message || 'Periksa koneksi / RLS'}`;
+            statusEl.innerText = `GAGAL MEMUAT DATA: ${e.message || 'Failed to fetch (Cek Koneksi / Blokir Browser)'}`;
             statusEl.className = "text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic";
         }
     }
@@ -113,10 +110,16 @@ function updateDashboard(data) {
         } else { 
             s.leas += os; s.cLeas++; 
             mLeas[l] = (mLeas[l] || 0) + os; 
+            
+            // Filter untuk segmen TVC (TAFS & ACC)
             if (l.includes('TAFS') || l.includes('ACC')) {
                 tvc.total++;
-                if (String(getProp(d, 'status_tagih')).toUpperCase() === 'SUDAH GI') tvc.gi++;
-                else tvc.deliv++;
+                const statusTagih = String(getProp(d, 'status_tagih') || '').toUpperCase().trim();
+                if (statusTagih === 'SUDAH GI' || statusTagih === 'SUDAH TAGIH') {
+                    tvc.gi++;
+                } else {
+                    tvc.deliv++;
+                }
             }
         }
 
@@ -129,7 +132,7 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // Render Angka Utama
+    // Pasang Nilai ke Komponen HTML Anda
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -137,7 +140,7 @@ function updateDashboard(data) {
     if(document.getElementById('badge-overdue')) document.getElementById('badge-overdue').innerText = `${s.countOv} SPK LEWAT TOP`;
     if(document.getElementById('spk-penalty')) document.getElementById('spk-penalty').innerText = `${s.cPen} SPK`;
     
-    // Progress Bar Cash vs Leasing
+    // Sinkronisasi Lebar Bar Ringkasan
     if(s.os > 0) {
         if(document.getElementById('bar-cash')) document.getElementById('bar-cash').style.width = `${(s.cash/s.os)*100}%`;
         if(document.getElementById('bar-leasing')) document.getElementById('bar-leasing').style.width = `${(s.leas/s.os)*100}%`;
@@ -148,13 +151,14 @@ function updateDashboard(data) {
     if(document.getElementById('val-total-leas')) document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
     if(document.getElementById('unit-total-leas')) document.getElementById('unit-total-leas').innerText = `${s.cLeas} Unit`;
 
+    // Pengisian Kotak Breakdown TVC
     if(document.getElementById('total-unit-tvc')) document.getElementById('total-unit-tvc').innerText = `${tvc.total} Unit`;
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
-    // Render Diagram Grafis
-    try { renderAgingChart(aging); } catch (e) { console.error("Gagal load Aging Chart:", e); }
-    try { renderDonutLeasing(s.cash, s.leas); } catch (e) { console.error("Gagal load Donut Chart:", e); }
+    // Render Komponen Grafik & List Tabel Konten
+    try { renderAgingChart(aging); } catch (e) { console.error(e); }
+    try { renderDonutLeasing(s.cash, s.leas); } catch (e) { console.error(e); }
     
     renderLeasingList(mLeas, s.os);
     renderTopList(mSales, 'list-sales', 'text-blue-600');
@@ -168,22 +172,19 @@ function updateDashboard(data) {
 }
 
 // ==========================================
-// 3. FUNGSI RENDER DIAGRAM (APEXCHARTS) & LIST
+// 3. CORE RENDERING ENGINE
 // ==========================================
 function renderAgingChart(agingData) {
     const el = document.querySelector("#chart-aging");
     if (!el) return;
     const options = {
-        series: [{ name: 'Juta', data: Object.values(agingData).map(v => Math.round(v)) }],
-        chart: { type: 'bar', height: 250, toolbar: { show: false } },
+        series: [{ name: 'Nominal', data: Object.values(agingData).map(v => Math.round(v)) }],
+        chart: { type: 'bar', height: 200, toolbar: { show: false } },
         colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
         plotOptions: { bar: { borderRadius: 4, distributed: true, dataLabels: { position: 'top' } } },
         dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWeight: 800 }, offsetY: -20 },
         legend: { show: false },
-        xaxis: { 
-            categories: Object.keys(agingData), 
-            labels: { show: true, style: { fontSize: '9px', fontWeight: 700 } }
-        },
+        xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontWeight: 700 } } },
         yaxis: { show: false },
         grid: { show: false }
     };
@@ -194,11 +195,10 @@ function renderAgingChart(agingData) {
 function renderDonutLeasing(totalCash, totalLeasing) {
     const el = document.querySelector("#chart-donut-leasing");
     if (!el) return;
-    
     const options = {
         series: [totalCash, totalLeasing],
-        labels: ['TOTAL CASH', 'TOTAL LEASING'],
-        chart: { type: 'donut', height: 180 },
+        labels: ['CASH', 'LEASING'],
+        chart: { type: 'donut', height: 160 },
         legend: { show: false },
         dataLabels: { enabled: false },
         colors: ['#10B981', '#3B82F6']
@@ -210,10 +210,9 @@ function renderDonutLeasing(totalCash, totalLeasing) {
 function renderLeasingList(map, total) {
     const el = document.getElementById('leasing-list');
     if (!el) return;
-    if (Object.keys(map).length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400">Tidak ada data leasing</p>'; return; }
     el.innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([n, v]) => `
-        <div class="mb-3">
-            <div class="flex justify-between text-[9px] font-bold mb-1 uppercase"><span>${n}</span><span>${total > 0 ? ((v/total)*100).toFixed(1) : 0}%</span></div>
+        <div class="mb-2">
+            <div class="flex justify-between text-[8px] font-bold mb-1 uppercase text-slate-500"><span>${n}</span><span>${total > 0 ? ((v/total)*100).toFixed(1) : 0}%</span></div>
             <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden"><div class="bg-blue-600 h-full" style="width: ${total > 0 ? (v/total)*100 : 0}%"></div></div>
         </div>`).join('');
 }
@@ -221,58 +220,33 @@ function renderLeasingList(map, total) {
 function renderTopList(map, id, colorClass) {
     const el = document.getElementById(id);
     if (!el) return;
-    if (Object.keys(map).length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">Tidak ada data</p>'; return; }
     el.innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5).map((x,i) => `
-        <div class="flex justify-between items-center py-3 border-b border-slate-50 uppercase font-bold">
-            <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${x[0]}</span>
-            <span class="text-[10px] ${colorClass}">${fmtJuta(x[1])}</span>
+        <div class="flex justify-between items-center py-2 border-b border-slate-50 uppercase font-bold text-[10px]">
+            <span class="text-slate-600 truncate w-28">${i+1}. ${x[0]}</span>
+            <span class="${colorClass}">${fmtJuta(x[1])}</span>
         </div>`).join('');
 }
 
 function renderOverdueTop(data) {
     const el = document.getElementById('list-overdue');
     if (!el) return;
-    if (data.length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">Tidak ada data overdue</p>'; return; }
-    el.innerHTML = data.slice(0,5).map((d,i) => `
-        <div class="flex justify-between py-2 border-b border-slate-50 uppercase font-bold">
-            <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${getProp(d, 'customer_name') || '-'}</span>
-            <span class="text-[10px] text-red-500">${fmtJuta(getProp(d, 'total_overdue'))}</span>
+    el.innerHTML = data.sort((a,b) => Number(getProp(b, 'total_overdue')) - Number(getProp(a, 'total_overdue'))).slice(0,5).map((d,i) => `
+        <div class="flex justify-between py-2 border-b border-slate-50 uppercase font-bold text-[10px]">
+            <span class="text-slate-600 truncate w-28">${i+1}. ${getProp(d, 'customer_name') || '-'}</span>
+            <span class="text-red-500">${fmtJuta(getProp(d, 'total_overdue'))}</span>
         </div>`).join('');
 }
 
 function renderTabLeasingFull(data) {
     const el = document.getElementById('tab-leasing-full-list');
     if (!el) return;
-    const leasingData = data.filter(d => {
-        const l = String(getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
-        return !["CASH", "CASH TERIMA", ""].includes(l);
-    });
-    if(leasingData.length === 0) { el.innerHTML = '<p class="text-xs text-center py-4 text-slate-400">Tidak ada data kontribusi leasing</p>'; return; }
+    const leasingData = data.filter(d => !["CASH", "CASH TERIMA", ""].includes(String(getProp(d, 'leasing_name') || '').toUpperCase().trim()));
     el.innerHTML = `
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-[10px]">
-                <thead>
-                    <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50 uppercase">
-                        <th class="p-3 w-12 text-center">No</th>
-                        <th class="p-3">Nama Customer / Sales</th>
-                        <th class="p-3">Nama Leasing</th>
-                        <th class="p-3 text-right pr-6">O/S Balance</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-50">
-                    ${leasingData.map((d, i) => `
-                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase">
-                            <td class="p-3 text-center text-slate-400">${i+1}</td>
-                            <td class="p-3">
-                                <p class="text-slate-800 text-[11px] font-black">${getProp(d, 'customer_name') || '-'}</p>
-                                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${getProp(d, 'salesman_name') || getProp(d, 'supervisor_name') || 'OFFICE'}</p>
-                            </td>
-                            <td class="p-3">
-                                <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'leasing_name') || '-'}</span>
-                            </td>
-                            <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-black">${fmtIDR(getProp(d, 'os_balance'))}</td>
-                        </tr>`).join('')}
-                </tbody>
+            <table class="w-full text-left text-[10px]">
+                <thead class="bg-slate-50 text-slate-400 font-bold uppercase"><th class="p-3 w-12 text-center">No</th><th class="p-3">Customer / Sales</th><th class="p-3">Leasing</th><th class="p-3 text-right pr-6">O/S Balance</th></thead>
+                <tbody class="divide-y divide-slate-50">${leasingData.map((d, i) => `
+                    <tr class="font-bold uppercase"><td class="p-3 text-center text-slate-400">${i+1}</td><td class="p-3"><p class="text-slate-800 font-black">${getProp(d, 'customer_name') || '-'}</p><p class="text-[8px] text-slate-400">👤 SALES: ${getProp(d, 'salesman_name') || 'OFFICE'}</p></td><td class="p-3"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-extrabold">${getProp(d, 'leasing_name') || '-'}</span></td><td class="p-3 text-right pr-6 text-blue-600 font-black">${fmtIDR(getProp(d, 'os_balance'))}</td></tr>`).join('')}</tbody>
             </table>
         </div>`;
 }
@@ -281,34 +255,12 @@ function renderTabOverdueFull(data) {
     const el = document.getElementById('tab-overdue-full-list');
     if (!el) return;
     const overdueData = data.filter(d => Number(getProp(d, 'total_overdue') || 0) > 0);
-    if(overdueData.length === 0) { el.innerHTML = '<p class="text-xs text-center py-4 text-slate-400">Semua tagihan lunas / tidak ada overdue</p>'; return; }
     el.innerHTML = `
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-[10px]">
-                <thead>
-                    <tr class="border-b border-slate-100 text-slate-400 font-bold bg-slate-50 uppercase">
-                        <th class="p-3 w-12 text-center">No</th>
-                        <th class="p-3">Nama Customer</th>
-                        <th class="p-3">Leasing</th>
-                        <th class="p-3 text-right text-red-500 bg-red-50/50">Total Overdue</th>
-                        <th class="p-3 text-right pr-6">O/S Balance</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-50">
-                    ${overdueData.map((d, i) => `
-                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase">
-                            <td class="p-3 text-center text-slate-400">${i+1}</td>
-                            <td class="p-3">
-                                <p class="text-slate-800 text-[11px] font-black">${getProp(d, 'customer_name') || '-'}</p>
-                                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${getProp(d, 'salesman_name') || getProp(d, 'supervisor_name') || 'OFFICE'}</p>
-                            </td>
-                            <td class="p-3">
-                                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'leasing_name') || 'CASH'}</span>
-                            </td>
-                            <td class="p-3 text-right font-black text-red-600 bg-red-50/20">${fmtIDR(getProp(d, 'total_overdue'))}</td>
-                            <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-bold">${fmtIDR(getProp(d, 'os_balance'))}</td>
-                        </tr>`).join('')}
-                </tbody>
+            <table class="w-full text-left text-[10px]">
+                <thead class="bg-slate-50 text-slate-400 font-bold uppercase"><th class="p-3 w-12 text-center">No</th><th class="p-3">Customer</th><th class="p-3">Leasing</th><th class="p-3 text-right text-red-500 bg-red-50/50">Total Overdue</th><th class="p-3 text-right pr-6">O/S Balance</th></thead>
+                <tbody class="divide-y divide-slate-50">${overdueData.map((d, i) => `
+                    <tr class="font-bold uppercase"><td class="p-3 text-center text-slate-400">${i+1}</td><td class="p-3"><p class="text-slate-800 font-black">${getProp(d, 'customer_name') || '-'}</p><p class="text-[8px] text-slate-400">👤 SALES: ${getProp(d, 'salesman_name') || 'OFFICE'}</p></td><td class="p-3"><span>${getProp(d, 'leasing_name') || 'CASH'}</span></td><td class="p-3 text-right font-black text-red-600 bg-red-50/20">${fmtIDR(getProp(d, 'total_overdue'))}</td><td class="p-3 text-right pr-6 text-blue-600 font-bold">${fmtIDR(getProp(d, 'os_balance'))}</td></tr>`).join('')}</tbody>
             </table>
         </div>`;
 }
@@ -316,37 +268,23 @@ function renderTabOverdueFull(data) {
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
     if (!el) return;
-
     const filterAR = data.filter(d => {
-        const l = String(getProp(d, 'leasing_name') || '').toUpperCase().trim();
+        const l = String(getProp(d, 'leasing_name') || '').toUpperCase();
         return l.includes('TAFS') || l.includes('ACC');
     });
-
-    if(filterAR.length === 0) { el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing TAFS / ACC</td></tr>'; return; }
-
+    if(filterAR.length === 0) { el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit TAFS / ACC</td></tr>'; return; }
     el.innerHTML = filterAR.map((d, i) => {
         const idUtama = getProp(d, 'No') || getProp(d, 'id') || i;
         return `
-        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
+        <tr class="font-bold uppercase whitespace-nowrap">
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
             <td class="p-4 text-slate-800 font-black">${getProp(d, 'customer_name') || '-'}</td>
-            <td class="p-4">
-                <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'leasing_name') || '-'}</span>
-                <p class="text-[7px] text-slate-300 mt-1">SPK: ${getProp(d, 'no_spk') || '-'}</p>
-            </td>
+            <td class="p-4"><span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded">${getProp(d, 'leasing_name') || '-'}</span></td>
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'os_balance'))}</td>
-            <td class="p-4 w-48">
-                <input type="text" id="cabang-${idUtama}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." class="input-custom bg-white">
-            </td>
-            <td class="p-4 w-48">
-                <input type="text" id="plan-${idUtama}" value="${getProp(d, 'plan_bayar_leasing') || ''}" placeholder="Isi plan..." class="input-custom bg-white">
-            </td>
-            <td class="p-4 w-48">
-                <input type="text" id="ket-${idUtama}" value="${getProp(d, 'ket_leasing') || ''}" placeholder="Isi keterangan..." class="input-custom bg-white">
-            </td>
-            <td class="p-4 text-center w-16">
-                <button onclick="simpanCatatan('${idUtama}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan">💾</button>
-            </td>
+            <td class="p-4 w-48"><input type="text" id="cabang-${idUtama}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." class="input-custom"></td>
+            <td class="p-4 w-48"><input type="text" id="plan-${idUtama}" value="${getProp(d, 'plan_bayar_leasing') || ''}" placeholder="Isi plan..." class="input-custom"></td>
+            <td class="p-4 w-48"><input type="text" id="ket-${idUtama}" value="${getProp(d, 'ket_leasing') || ''}" placeholder="Keterangan..." class="input-custom"></td>
+            <td class="p-4 text-center w-16"><button onclick="simpanCatatan('${idUtama}')" class="bg-blue-50 text-blue-600 p-1.5 rounded hover:bg-blue-600 hover:text-white transition-all">💾</button></td>
         </tr>`;
     }).join('');
 }
@@ -354,106 +292,62 @@ function renderDataArUnitFull(data) {
 function renderTabDatabaseFull(data) {
     const el = document.getElementById('tab-database-body');
     if (!el) return;
-
     el.innerHTML = data.map((d, i) => `
-        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
+        <tr class="font-bold uppercase whitespace-nowrap">
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
             <td class="p-4 text-slate-800 font-black">${getProp(d, 'customer_name') || '-'}</td>
-            <td class="p-4">
-                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'leasing_name') || 'CASH'}</span>
-            </td>
+            <td class="p-4"><span class="text-slate-500">${getProp(d, 'leasing_name') || 'CASH'}</span></td>
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'os_balance'))}</td>
             <td class="p-4 text-right text-emerald-600">${fmtIDR(getProp(d, 'hari_1_30') || getProp(d, 'lancar'))}</td>
             <td class="p-4 text-right text-amber-500">${fmtIDR(getProp(d, 'hari_31_60'))}</td>
             <td class="p-4 text-right text-orange-500">${fmtIDR(getProp(d, 'lebih_60_hari'))}</td>
-            <td class="p-4 text-right text-red-600 font-black bg-red-50/30">${fmtIDR(getProp(d, 'total_overdue'))}</td>
-        </tr>
-    `).join('');
+            <td class="p-4 text-right text-red-600 font-black bg-red-50/20">${fmtIDR(getProp(d, 'total_overdue'))}</td>
+        </tr>`);
 }
 
 // ==========================================
-// 4. FUNGSI SIMPAN CATATAN KE SUPABASE
+// 4. ACTION FUNCTIONS (WRITE & DOWNLOAD)
 // ==========================================
 window.simpanCatatan = async function(noId) {
     try {
         const valCabang = document.getElementById(`cabang-${noId}`).value;
         const valPlan = document.getElementById(`plan-${noId}`).value;
         const valKet = document.getElementById(`ket-${noId}`).value;
+        let targetKey = cachedData.length > 0 && cachedData[0]['id'] !== undefined ? 'id' : 'No';
 
-        let targetKey = 'No';
-        if (cachedData.length > 0 && cachedData[0]['id'] !== undefined) {
-            targetKey = 'id';
-        }
-
-        const { error } = await supabase
-            .from('ar_unit')
-            .update({
-                ket_cabang: valCabang,
-                plan_bayar_leasing: valPlan,
-                ket_leasing: valKet
-            })
-            .eq(targetKey, noId);
+        const { error } = await supabase.from('ar_unit').update({
+            ket_cabang: valCabang,
+            plan_bayar_leasing: valPlan,
+            ket_leasing: valKet
+        }).eq(targetKey, noId);
 
         if (error) throw error;
-        alert("Catatan penagihan unit berhasil disimpan! 👍");
+        alert("Catatan berhasil disimpan! 👍");
         fetchData(); 
     } catch (err) {
-        console.error(err);
-        alert("Gagal menyimpan data: " + err.message);
+        alert("Gagal: " + err.message);
     }
 }
 
-// ==========================================
-// 5. FUNGSI DOWNLOAD EXCEL
-// ==========================================
 function downloadExcel() {
-    if (!cachedData || cachedData.length === 0) {
-        alert("Data belum siap atau masih memuat. Silakan tunggu sebentar.");
-        return;
-    }
-
-    try {
-        const dataUntukExcel = cachedData.map((d, index) => ({
-            "No": index + 1,
-            "Nama Customer": getProp(d, 'customer_name') || "-",
-            "No SPK": getProp(d, 'no_spk') || "-",
-            "Leasing": getProp(d, 'leasing_name') || "CASH",
-            "O/S Balance": getProp(d, 'os_balance') || 0,
-            "Hari 1-30 (Lancar)": getProp(d, 'hari_1_30') || getProp(d, 'lancar') || 0,
-            "Hari 31-60": getProp(d, 'hari_31_60') || 0,
-            "Lebih 60 Hari": getProp(d, 'lebih_60_hari') || 0,
-            "Total Overdue": getProp(d, 'total_overdue') || 0,
-            "Potensi Penalti": getProp(d, 'penalty_amount') || 0,
-            "Salesman": getProp(d, 'salesman_name') || "-",
-            "Supervisor": getProp(d, 'supervisor_name') || "-",
-            "Keterangan Cabang": getProp(d, 'ket_cabang') || "",
-            "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || "",
-            "Keterangan Leasing": getProp(d, 'ket_leasing') || ""
-        }));
-
-        const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Data AR Unit");
-
-        const tglHariIni = new Date().toISOString().slice(0, 10);
-        const namaFile = `Report_AR_Unit_Auto2000_${tglHariIni}.xlsx`;
-
-        XLSX.writeFile(workbook, namaFile);
-
-    } catch (error) {
-        console.error("Gagal mendownload Excel:", error);
-        alert("Terjadi masalah saat memproses Excel: " + error.message);
-    }
+    if (cachedData.length === 0) return alert("Data kosong.");
+    const dataExcel = cachedData.map((d, index) => ({
+        "No": index + 1,
+        "Customer": getProp(d, 'customer_name') || "-",
+        "Leasing": getProp(d, 'leasing_name') || "CASH",
+        "O/S Balance": getProp(d, 'os_balance') || 0,
+        "Total Overdue": getProp(d, 'total_overdue') || 0,
+        "Salesman": getProp(d, 'salesman_name') || "-",
+        "Keterangan Cabang": getProp(d, 'ket_cabang') || ""
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(dataExcel);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "AR_Unit_Report");
+    XLSX.writeFile(workbook, `Report_AR_Auto2000_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
-// ==========================================
-// 6. INITIALIZATION (DOM READY)
-// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     fetchData();
-
     const btnDownload = document.getElementById('btn-download-excel');
-    if (btnDownload) {
-        btnDownload.addEventListener('click', downloadExcel);
-    }
+    if (btnDownload) btnDownload.addEventListener('click', downloadExcel);
 });
