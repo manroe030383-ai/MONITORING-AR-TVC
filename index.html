@@ -89,17 +89,16 @@ function handleLogin(e) {
 
     errorBox.style.display = "none";
 
-    // Validasi kredensial
-    if (
-        (user === "admin" && pass === "admin123") || 
-        (user === "tafs" && pass === "tafs123") || 
-        (user === "acc" && pass === "acc123")
-    ) {
-        // Simpan info login
-        localStorage.setItem("currentUser", user.toUpperCase());
-        
-        // --- REDIRECT KE DASHBOARD GRAFIK (dashboard.html) ---
+    // Validasi kredensial dan simpan key 'role' agar sinkron dengan file dashboard masing-masing
+    if (user === "admin" && pass === "admin123") {
+        localStorage.setItem("role", "admin");
         window.location.href = "dashboard.html"; 
+    } else if (user === "tafs" && pass === "tafs123") {
+        localStorage.setItem("role", "tafs");
+        window.location.href = "tafs.html"; 
+    } else if (user === "acc" && pass === "acc123") {
+        localStorage.setItem("role", "acc");
+        window.location.href = "acc.html"; 
     } else {
         errorBox.style.display = "flex";
     }

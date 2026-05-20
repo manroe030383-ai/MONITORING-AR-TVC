@@ -3,77 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>ACC Dashboard</title>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
-
-body{
-    margin:0;
-    font-family:Segoe UI;
-    background:#eef1f5;
-}
-
-.header{
-    background:linear-gradient(90deg,#4b2d33,#a64043);
-    color:white;
-    padding:20px;
-    display:flex;
-    justify-content:space-between;
-}
-
-.logout{
-    background:white;
-    color:#a64043;
-    border:none;
-    padding:8px 15px;
-    border-radius:8px;
-    cursor:pointer;
-}
-
-.container{
-    padding:30px;
-}
-
-.cards{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:20px;
-    margin-bottom:30px;
-}
-
-.card{
-    background:white;
-    padding:20px;
-    border-radius:15px;
-    box-shadow:0 5px 15px rgba(0,0,0,0.1);
-}
-
-.chart-box, .table-box{
-    background:white;
-    padding:20px;
-    border-radius:15px;
-    margin-bottom:30px;
-}
-
-table{
-    width:100%;
-    border-collapse:collapse;
-}
-
-th{
-    background:#a64043;
-    color:white;
-    padding:10px;
-}
-
-td{
-    padding:10px;
-    border-bottom:1px solid #ddd;
-}
-
+    body{ margin:0; font-family:Segoe UI; background:#eef1f5; }
+    .header{ background:linear-gradient(90deg,#4b2d33,#a64043); color:white; padding:20px; display:flex; justify-content:space-between; }
+    .logout{ background:white; color:#a64043; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; }
+    .container{ padding:30px; }
+    .cards{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-bottom:30px; }
+    .card{ background:white; padding:20px; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.1); }
+    .chart-box, .table-box{ background:white; padding:20px; border-radius:15px; margin-bottom:30px; }
+    table{ width:100%; border-collapse:collapse; }
+    th{ background:#a64043; color:white; padding:10px; }
+    td{ padding:10px; border-bottom:1px solid #ddd; }
 </style>
 </head>
 
@@ -85,88 +27,65 @@ td{
 </div>
 
 <div class="container">
+    <div class="cards">
+        <div class="card">
+            <h3>Total Customer</h3>
+            <h1 id="totalCustomer">0</h1>
+        </div>
+        <div class="card">
+            <h3>Total Sales</h3>
+            <h1 id="totalSales">0</h1>
+        </div>
+        <div class="card">
+            <h3>Outstanding</h3>
+            <h1 id="totalBalance">0</h1>
+        </div>
+    </div>
 
-<div class="cards">
+    <div class="chart-box">
+        <canvas id="chart"></canvas>
+    </div>
 
-<div class="card">
-<h3>Total Customer</h3>
-<h1 id="totalCustomer">0</h1>
-</div>
-
-<div class="card">
-<h3>Total Sales</h3>
-<h1 id="totalSales">0</h1>
-</div>
-
-<div class="card">
-<h3>Outstanding</h3>
-<h1 id="totalBalance">0</h1>
-</div>
-
-</div>
-
-<div class="chart-box">
-<canvas id="chart"></canvas>
-</div>
-
-<div class="table-box">
-
-<table>
-
-<thead>
-<tr>
-<th>Customer</th>
-<th>Sales</th>
-<th>Balance</th>
-<th>Unit</th>
-</tr>
-</thead>
-
-<tbody id="tableData"></tbody>
-
-</table>
-
-</div>
-
+    <div class="table-box">
+        <table>
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Sales</th>
+                    <th>Balance</th>
+                    <th>Unit</th>
+                </tr>
+            </thead>
+            <tbody id="tableData"></tbody>
+        </table>
+    </div>
 </div>
 
 <script src="data.js"></script>
-
 <script>
-
 function checkAuth(){
-
     const role = localStorage.getItem("role");
-
     if(role !== "acc"){
         window.location.href = "index.html";
     }
-
 }
 
 function logout(){
-
     localStorage.removeItem("role");
     window.location.href = "index.html";
-
 }
 
 async function loadDashboard(){
-
     checkAuth();
-
     const data = await getData();
-
     const accData = data.filter(d => d.unit === "ACC");
 
     let totalCustomer = accData.length;
     let totalSales = 0;
     let totalBalance = 0;
-
     let table = "";
 
     accData.forEach(d => {
-
         totalSales += d.sales;
         totalBalance += d.balance;
 
@@ -178,32 +97,25 @@ async function loadDashboard(){
             <td>${d.unit}</td>
         </tr>
         `;
-
     });
 
     document.getElementById("totalCustomer").innerText = totalCustomer;
     document.getElementById("totalSales").innerText = "Rp " + totalSales.toLocaleString();
     document.getElementById("totalBalance").innerText = "Rp " + totalBalance.toLocaleString();
-
     document.getElementById("tableData").innerHTML = table;
 
     new Chart(document.getElementById("chart"), {
-
         type: "bar",
-
         data: {
             labels: ["ACC Sales"],
             datasets: [{
                 label: "Sales",
-                data: [totalSales]
+                data: [totalSales],
+                backgroundColor: "#a64043"
             }]
         }
-
     });
-
 }
-
 </script>
-
 </body>
 </html>
