@@ -3,7 +3,7 @@ import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm'
 
 // KONFIGURASI SUPABASE
 const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emFibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
@@ -12,6 +12,7 @@ let cachedData = [];
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
 
+// 1. FUNGSI AMBIL DATA DARI SUPABASE
 async function fetchData() {
     try {
         const { data, error } = await supabase.from('ar_unit').select('*').order('os_balance', { ascending: false });
@@ -38,6 +39,7 @@ async function fetchData() {
     }
 }
 
+// 2. FUNGSI UPDATE UI DASHBOARD
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
     let tvc = { total: 0, gi: 0, deliv: 0 };
@@ -111,6 +113,7 @@ function updateDashboard(data) {
     renderTabDatabaseFull(data); 
 }
 
+// 3. FUNGSI RENDER GRAFIK & LIST
 function renderAgingChart(agingData) {
     const el = document.querySelector("#chart-aging");
     if (!el) return;
@@ -244,7 +247,6 @@ function renderTabOverdueFull(data) {
         </div>`;
 }
 
-// 🟢 FIX: Menggunakan properti d.No (Huruf 'N' Kapital sesuai database)
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
     if (!el) return;
@@ -299,7 +301,7 @@ function renderTabDatabaseFull(data) {
     `).join('');
 }
 
-// 🟢 FIX QUERY: Mencari target baris berdasarkan kolom 'No' (Huruf 'N' Kapital)
+// 4. FUNGSI SIMPAN CATATAN KE SUPABASE
 window.simpanCatatan = async function(noId) {
     try {
         const valCabang = document.getElementById(`cabang-${noId}`).value;
@@ -313,7 +315,7 @@ window.simpanCatatan = async function(noId) {
                 plan_bayar_leasing: valPlan,
                 ket_leasing: valKet
             })
-            .eq('No', noId); // 👈 Menggunakan 'No' kapital sesuai schema di Supabase
+            .eq('No', noId);
 
         if (error) throw error;
         alert("Catatan penagihan unit berhasil disimpan! 👍");
@@ -324,6 +326,59 @@ window.simpanCatatan = async function(noId) {
     }
 }
 
+// 5. 🟢 TAMBAHAN FUNGSI UNTUK EXPORT KE EXCEL
+function downloadExcel() {
+    if (!cachedData || cachedData.length === 0) {
+        alert("Data belum siap atau masih memuat. Silakan tunggu sebentar.");
+        return;
+    }
+
+    try {
+        // Melakukan mapping data agar tampilan header kolom di excel rapi & profesional
+        const dataUntukExcel = cachedData.map((d, index) => ({
+            "No": index + 1,
+            "Nama Customer": d.customer_name || "-",
+            "No SPK": d.no_spk || "-",
+            "Leasing": d.leasing_name || "CASH",
+            "O/S Balance": d.os_balance || 0,
+            "Hari 1-30 (Lancar)": d.hari_1_30 || d.lancar || 0,
+            "Hari 31-60": d.hari_31_60 || 0,
+            "Lebih 60 Hari": d.lebih_60_hari || 0,
+            "Total Overdue": d.total_overdue || 0,
+            "Potensi Penalti": d.penalty_amount || 0,
+            "Salesman": d.salesman_name || "-",
+            "Supervisor": d.supervisor_name || "-",
+            "Keterangan Cabang": d.ket_cabang || "",
+            "Plan Bayar Leasing": d.plan_bayar_leasing || "",
+            "Keterangan Leasing": d.ket_leasing || ""
+        }));
+
+        // Mengolah array objek menjadi sheet excel menggunakan XLSX yang diimport
+        const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Data AR Unit");
+
+        // Format penamaan file otomatis mengikuti tanggal saat ini
+        const tglHariIni = new Date().toISOString().slice(0, 10);
+        const namaFile = `Report_AR_Unit_Auto2000_${tglHariIni}.xlsx`;
+
+        // Eksekusi download file ke browser pengguna
+        XLSX.writeFile(workbook, namaFile);
+
+    } catch (error) {
+        console.error("Gagal mendownload Excel:", error);
+        alert("Terjadi masalah saat memproses Excel: " + error.message);
+    }
+}
+
+// 6. INISIALISASI SAAT HALAMAN SELESAI DIMUAT (DOM READY)
 document.addEventListener('DOMContentLoaded', () => {
+    // Jalankan fetch data otomatis
     fetchData();
+
+    // Berikan Event Listener "Click" ke tombol download di HTML
+    const btnDownload = document.getElementById('btn-download-excel');
+    if (btnDownload) {
+        btnDownload.addEventListener('click', downloadExcel);
+    }
 });
