@@ -3,7 +3,7 @@ import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm'
 
 // KONFIGURASI SUPABASE
 const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emFibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = {};
@@ -15,14 +15,10 @@ const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
 // FUNGSI UNTUK MENGANTISIPASI HURUF BESAR/KECIL PADA KOLOM DATABASE
 function getProp(obj, key) {
     if (!obj) return undefined;
-    // Cek huruf kecil standar
     if (obj[key.toLowerCase()] !== undefined) return obj[key.toLowerCase()];
-    // Cek huruf besar standar
     if (obj[key.toUpperCase()] !== undefined) return obj[key.toUpperCase()];
-    // Cek variasi key aslinya
     if (obj[key] !== undefined) return obj[key];
     
-    // Cari manual jika ada kombinasi kapital seperti 'No' atau 'Ket_Cabang'
     const lowerKey = key.toLowerCase();
     for (let k in obj) {
         if (k.toLowerCase() === lowerKey) return obj[k];
@@ -33,15 +29,13 @@ function getProp(obj, key) {
 // 1. FUNGSI AMBIL DATA DARI SUPABASE
 async function fetchData() {
     try {
-        // Mengambil data, jika os_balance gagal di-order karena masalah huruf kapital, system akan otomatis mengabaikan order dan mengambil data mentah
         let query = supabase.from('ar_unit').select('*');
-        
         const { data, error } = await query;
         
         if (error) throw error;
         
         if (data) {
-            console.log("DATA DARI SUPABASE:", data); // Tetap dipasang untuk pengecekan mandiri
+            console.log("DATA DARI SUPABASE:", data);
             
             if (data.length === 0) {
                 if (document.getElementById('status-update')) {
@@ -73,15 +67,14 @@ async function fetchData() {
     }
 }
 
-// 2. FUNGSI UPDATE UI DASHBOARD (SUDAH DILINDUNGI DETEKSI HURUF KAPITAL)
+// 2. FUNGSI UPDATE UI DASHBOARD
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
     let tvc = { total: 0, gi: 0, deliv: 0 };
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
-    let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
+    let mLeasList = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
 
     data.forEach(d => {
-        // Menggunakan fungsi getProp agar aman dari error typo huruf besar/kecil di database Supabase
         const os = Number(getProp(d, 'os_balance') || 0);
         const ov = Number(getProp(d, 'total_overdue') || 0);
         const l = String(getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
@@ -105,7 +98,7 @@ function updateDashboard(data) {
             s.cash += os; s.cCash++; 
         } else { 
             s.leas += os; s.cLeas++; 
-            mLeas[l] = (mLeas[l] || 0) + os; 
+            mLeasList[l] = (mLeasList[l] || 0) + os; 
             if (l.includes('TAFS') || l.includes('ACC')) {
                 tvc.total++;
                 if (String(getProp(d, 'status_tagih')).toUpperCase() === 'SUDAH GI') tvc.gi++;
@@ -122,7 +115,6 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // Mengisi komponen text angka di HTML
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -144,9 +136,11 @@ function updateDashboard(data) {
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
+    // Kirim nominal Cash dan Leasing langsung ke Donut Chart
+    renderDonutCashLeasing(s.cash, s.leas);
+    
     renderAgingChart(aging);
-    renderDonutLeasing(mLeas);
-    renderLeasingList(mLeas, s.os);
+    renderLeasingList(mLeasList, s.os);
     renderTopList(mSales, 'list-sales', 'text-blue-600');
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
@@ -166,8 +160,12 @@ function renderAgingChart(agingData) {
         chart: { type: 'bar', height: 250, toolbar: { show: false } },
         colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
         plotOptions: { bar: { borderRadius: 4, distributed: true, dataLabels: { position: 'top' } } },
-        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWave: 800 }, offsetY: -20 },
-        xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontWeight: 700 } } },
+        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWeight: 800 }, offsetY: -20 },
+        legend: { show: false }, // 👈 MODIFIKASI: Menghapus kotak legenda warna di sebelahnya
+        xaxis: { 
+            categories: Object.keys(agingData), 
+            labels: { show: true, style: { fontSize: '9px', fontWeight: 700 } } // 👈 Menjaga teks tetap berada di bawah diagram batang
+        },
         yaxis: { show: false },
         grid: { show: false }
     };
@@ -175,18 +173,18 @@ function renderAgingChart(agingData) {
     else { charts.bar = new ApexCharts(el, options); charts.bar.render(); }
 }
 
-function renderDonutLeasing(mLeas) {
+// 👈 MODIFIKASI TOTAL: Hanya memproses 2 Variabel Warna (Total Cash vs Total Leasing)
+function renderDonutCashLeasing(totalCash, totalLeasing) {
     const el = document.querySelector("#chart-donut-leasing");
     if (!el) return;
-    const values = Object.values(mLeas);
-    const labels = Object.keys(mLeas);
+    
     const options = {
-        series: values.length > 0 ? values : [1],
-        labels: labels.length > 0 ? labels : ['KOSONG'],
+        series: [totalCash, totalLeasing],
+        labels: ['TOTAL CASH', 'TOTAL LEASING'],
         chart: { type: 'donut', height: 180 },
         legend: { show: false },
         dataLabels: { enabled: false },
-        colors: ['#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#F43F5E']
+        colors: ['#10B981', '#3B82F6'] // Hijau untuk Cash, Biru untuk Leasing (2 Warna saja)
     };
     if (charts.donut) charts.donut.updateOptions(options);
     else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
@@ -262,6 +260,7 @@ function renderTabLeasingFull(data) {
         </div>`;
 }
 
+// (Fungsi render tabel-tabel lainnya tetap utuh dan aman)
 function renderTabOverdueFull(data) {
     const el = document.getElementById('tab-overdue-full-list');
     if (!el) return;
@@ -356,14 +355,13 @@ function renderTabDatabaseFull(data) {
     `).join('');
 }
 
-// 4. FUNGSI SIMPAN CATATAN KE SUPABASE (MENDUKUNG MULTI FORMAT PRIMARY KEY 'No' atau 'id')
+// 4. FUNGSI SIMPAN CATATAN KE SUPABASE
 window.simpanCatatan = async function(noId) {
     try {
         const valCabang = document.getElementById(`cabang-${noId}`).value;
         const valPlan = document.getElementById(`plan-${noId}`).value;
         const valKet = document.getElementById(`ket-${noId}`).value;
 
-        // Mendeteksi apakah menggunakan field 'No' kapital atau 'id' huruf kecil
         let targetKey = 'No';
         if (cachedData.length > 0 && cachedData[0]['id'] !== undefined) {
             targetKey = 'id';
