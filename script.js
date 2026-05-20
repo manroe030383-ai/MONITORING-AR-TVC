@@ -12,13 +12,12 @@ let cachedData = [];
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
 
-// FUNGSI UNTUK MENGANTISIPASI HURUF BESAR/KECIL PADA KOLOM DATABASE
+// FUNGSI SECURITY AMAN HURUF BESAR KECIL DATABASE
 function getProp(obj, key) {
     if (!obj) return undefined;
     if (obj[key.toLowerCase()] !== undefined) return obj[key.toLowerCase()];
     if (obj[key.toUpperCase()] !== undefined) return obj[key.toUpperCase()];
     if (obj[key] !== undefined) return obj[key];
-    
     const lowerKey = key.toLowerCase();
     for (let k in obj) {
         if (k.toLowerCase() === lowerKey) return obj[k];
@@ -29,40 +28,42 @@ function getProp(obj, key) {
 // 1. FUNGSI AMBIL DATA DARI SUPABASE
 async function fetchData() {
     try {
+        console.log("Memulai penarikan data dari Supabase...");
         let query = supabase.from('ar_unit').select('*');
         const { data, error } = await query;
         
         if (error) throw error;
         
         if (data) {
-            console.log("DATA DARI SUPABASE:", data);
+            console.log("Data berhasil ditarik! Jumlah baris:", data.length);
             
             if (data.length === 0) {
                 if (document.getElementById('status-update')) {
-                    document.getElementById('status-update').innerText = "KONEKSI SUKSES, TAPI TABEL DI SUPABASE KOSONG (0 DATA)!";
-                    document.getElementById('status-update').className = "text-[9px] font-bold text-amber-500 uppercase tracking-widest mb-1 italic";
+                    document.getElementById('status-update').innerText = "KONEKSI SUKSES, TAPI TABEL KOSONG!";
                 }
                 return;
             }
 
             cachedData = data; 
-            updateDashboard(data);
+            
+            // Dibungkus try-catch agar jika UI gagal, data di memori tidak rusak
+            try {
+                updateDashboard(data);
+            } catch (uiError) {
+                console.error("Gagal memperbarui UI Dashboard, tapi data aman:", uiError);
+            }
             
             if (document.getElementById('status-update')) {
                 document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
-                document.getElementById('status-update').className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic";
             }
-
             if (document.getElementById('tgl-arsip')) {
-                const opsiTanggal = { year: 'numeric', month: 'short', day: 'numeric' };
-                document.getElementById('tgl-arsip').innerText = new Date().toLocaleDateString('id-ID', opsiTanggal).toUpperCase();
+                document.getElementById('tgl-arsip').innerText = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' }).toUpperCase();
             }
         }
     } catch (e) {
-        console.error("Error Fetching:", e);
+        console.error("Koneksi Supabase Gagal Total:", e);
         if (document.getElementById('status-update')) {
-            document.getElementById('status-update').innerText = `KONEKSI GAGAL ATAU NAMA TABEL SALAH: ${e.message}`;
-            document.getElementById('status-update').className = "text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic";
+            document.getElementById('status-update').innerText = `GAGAL AMBIL DATA: ${e.message}`;
         }
     }
 }
@@ -115,6 +116,7 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
+    // MASUKKAN ANGKA KE TEXT HTML (Aman & Terisolasi)
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -136,22 +138,26 @@ function updateDashboard(data) {
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
-    // Kirim nominal Cash dan Leasing langsung ke Donut Chart
-    renderDonutCashLeasing(s.cash, s.leas);
+    // PROSES GRAFIK DENGAN PROTEKSI AMAN (Biar tidak saling menggagalkan)
+    try { renderDonutCashLeasing(s.cash, s.leas); } catch(e) { console.error("Gagal load Donut:", e); }
+    try { renderAgingChart(aging); } catch(e) { console.error("Gagal load Aging Chart:", e); }
     
-    renderAgingChart(aging);
-    renderLeasingList(mLeasList, s.os);
-    renderTopList(mSales, 'list-sales', 'text-blue-600');
-    renderTopList(mSpv, 'list-spv', 'text-purple-600');
-    renderOverdueTop(mOverdueTop);
-    
-    renderTabLeasingFull(data);
-    renderTabOverdueFull(data);
-    renderDataArUnitFull(data); 
-    renderTabDatabaseFull(data); 
+    // PROSES DATA LIST & TABEL
+    try {
+        renderLeasingList(mLeasList, s.os);
+        renderTopList(mSales, 'list-sales', 'text-blue-600');
+        renderTopList(mSpv, 'list-spv', 'text-purple-600');
+        renderOverdueTop(mOverdueTop);
+        renderTabLeasingFull(data);
+        renderTabOverdueFull(data);
+        renderDataArUnitFull(data); 
+        renderTabDatabaseFull(data);
+    } catch(tableError) {
+        console.error("Ada error di pengisian list/tabel:", tableError);
+    }
 }
 
-// 3. FUNGSI RENDER GRAFIK & LIST DATA
+// 3. FUNGSI RENDER DIAGRAM BATANG (AGING) - BEBAS KOTAK WARNA LEGENDA
 function renderAgingChart(agingData) {
     const el = document.querySelector("#chart-aging");
     if (!el) return;
@@ -161,38 +167,47 @@ function renderAgingChart(agingData) {
         colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
         plotOptions: { bar: { borderRadius: 4, distributed: true, dataLabels: { position: 'top' } } },
         dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWeight: 800 }, offsetY: -20 },
-        legend: { show: false }, // 👈 MODIFIKASI: Menghapus kotak legenda warna di sebelahnya
+        legend: { show: false }, // Menghapus kotak warna legenda di samping
         xaxis: { 
             categories: Object.keys(agingData), 
-            labels: { show: true, style: { fontSize: '9px', fontWeight: 700 } } // 👈 Menjaga teks tetap berada di bawah diagram batang
+            labels: { show: true, style: { fontSize: '9px', fontWeight: 700 } } // Teks persis di bawah batang
         },
         yaxis: { show: false },
         grid: { show: false }
     };
-    if (charts.bar) charts.bar.updateOptions(options);
-    else { charts.bar = new ApexCharts(el, options); charts.bar.render(); }
+    if (charts.bar && typeof charts.bar.updateOptions === 'function') {
+        charts.bar.updateOptions(options);
+    } else {
+        charts.bar = new ApexCharts(el, options); charts.bar.render();
+    }
 }
 
-// 👈 MODIFIKASI TOTAL: Hanya memproses 2 Variabel Warna (Total Cash vs Total Leasing)
+// 4. FUNGSI RENDER DIAGRAM DONUT (CASH VS LEASING - 2 WARNA)
 function renderDonutCashLeasing(totalCash, totalLeasing) {
     const el = document.querySelector("#chart-donut-leasing");
     if (!el) return;
     
+    // Fallback jika datanya benar-benar masih kosong di awal agar chart tidak error
+    const seriesData = (totalCash === 0 && totalLeasing === 0) ? [1, 1] : [totalCash, totalLeasing];
+
     const options = {
-        series: [totalCash, totalLeasing],
+        series: seriesData,
         labels: ['TOTAL CASH', 'TOTAL LEASING'],
         chart: { type: 'donut', height: 180 },
         legend: { show: false },
         dataLabels: { enabled: false },
-        colors: ['#10B981', '#3B82F6'] // Hijau untuk Cash, Biru untuk Leasing (2 Warna saja)
+        colors: ['#10B981', '#3B82F6'] 
     };
-    if (charts.donut) charts.donut.updateOptions(options);
-    else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
+    if (charts.donut && typeof charts.donut.updateOptions === 'function') {
+        charts.donut.updateOptions(options);
+    } else {
+        charts.donut = new ApexCharts(el, options); charts.donut.render();
+    }
 }
 
+// --- SISA FUNGSI RENDER LIST DAN TABEL TETAP AMAN ---
 function renderLeasingList(map, total) {
-    const el = document.getElementById('leasing-list');
-    if (!el) return;
+    const el = document.getElementById('leasing-list'); if (!el) return;
     if (Object.keys(map).length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400">Tidak ada data leasing</p>'; return; }
     el.innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([n, v]) => `
         <div class="mb-3">
@@ -202,8 +217,7 @@ function renderLeasingList(map, total) {
 }
 
 function renderTopList(map, id, colorClass) {
-    const el = document.getElementById(id);
-    if (!el) return;
+    const el = document.getElementById(id); if (!el) return;
     if (Object.keys(map).length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">Tidak ada data</p>'; return; }
     el.innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5).map((x,i) => `
         <div class="flex justify-between items-center py-3 border-b border-slate-50 uppercase font-bold">
@@ -213,8 +227,7 @@ function renderTopList(map, id, colorClass) {
 }
 
 function renderOverdueTop(data) {
-    const el = document.getElementById('list-overdue');
-    if (!el) return;
+    const el = document.getElementById('list-overdue'); if (!el) return;
     if (data.length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">Tidak ada data overdue</p>'; return; }
     el.innerHTML = data.slice(0,5).map((d,i) => `
         <div class="flex justify-between py-2 border-b border-slate-50 uppercase font-bold">
@@ -224,8 +237,7 @@ function renderOverdueTop(data) {
 }
 
 function renderTabLeasingFull(data) {
-    const el = document.getElementById('tab-leasing-full-list');
-    if (!el) return;
+    const el = document.getElementById('tab-leasing-full-list'); if (!el) return;
     const leasingData = data.filter(d => {
         const l = String(getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
         return !["CASH", "CASH TERIMA", ""].includes(l);
@@ -260,10 +272,8 @@ function renderTabLeasingFull(data) {
         </div>`;
 }
 
-// (Fungsi render tabel-tabel lainnya tetap utuh dan aman)
 function renderTabOverdueFull(data) {
-    const el = document.getElementById('tab-overdue-full-list');
-    if (!el) return;
+    const el = document.getElementById('tab-overdue-full-list'); if (!el) return;
     const overdueData = data.filter(d => Number(getProp(d, 'total_overdue') || 0) > 0);
     if(overdueData.length === 0) { el.innerHTML = '<p class="text-xs text-center py-4 text-slate-400">Semua tagihan lunas / tidak ada overdue</p>'; return; }
     el.innerHTML = `
@@ -298,14 +308,11 @@ function renderTabOverdueFull(data) {
 }
 
 function renderDataArUnitFull(data) {
-    const el = document.getElementById('tab-ar-unit-body');
-    if (!el) return;
-
+    const el = document.getElementById('tab-ar-unit-body'); if (!el) return;
     const filterAR = data.filter(d => {
         const l = String(getProp(d, 'leasing_name') || '').toUpperCase().trim();
         return l.includes('TAFS') || l.includes('ACC');
     });
-
     if(filterAR.length === 0) { el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing TAFS / ACC</td></tr>'; return; }
 
     el.innerHTML = filterAR.map((d, i) => {
@@ -319,79 +326,54 @@ function renderDataArUnitFull(data) {
                 <p class="text-[7px] text-slate-300 mt-1">SPK: ${getProp(d, 'no_spk') || '-'}</p>
             </td>
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'os_balance'))}</td>
-            <td class="p-4 w-48">
-                <input type="text" id="cabang-${idUtama}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." class="input-custom bg-white">
-            </td>
-            <td class="p-4 w-48">
-                <input type="text" id="plan-${idUtama}" value="${getProp(d, 'plan_bayar_leasing') || ''}" placeholder="Isi plan..." class="input-custom bg-white">
-            </td>
-            <td class="p-4 w-48">
-                <input type="text" id="ket-${idUtama}" value="${getProp(d, 'ket_leasing') || ''}" placeholder="Isi keterangan..." class="input-custom bg-white">
-            </td>
-            <td class="p-4 text-center w-16">
-                <button onclick="simpanCatatan('${idUtama}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan">💾</button>
-            </td>
+            <td class="p-4 w-48"><input type="text" id="cabang-${idUtama}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." class="input-custom bg-white"></td>
+            <td class="p-4 w-48"><input type="text" id="plan-${idUtama}" value="${getProp(d, 'plan_bayar_leasing') || ''}" placeholder="Isi plan..." class="input-custom bg-white"></td>
+            <td class="p-4 w-48"><input type="text" id="ket-${idUtama}" value="${getProp(d, 'ket_leasing') || ''}" placeholder="Isi keterangan..." class="input-custom bg-white"></td>
+            <td class="p-4 text-center w-16"><button onclick="simpanCatatan('${idUtama}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all">💾</button></td>
         </tr>`;
     }).join('');
 }
 
 function renderTabDatabaseFull(data) {
-    const el = document.getElementById('tab-database-body');
-    if (!el) return;
-
+    const el = document.getElementById('tab-database-body'); if (!el) return;
     el.innerHTML = data.map((d, i) => `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
             <td class="p-4 text-slate-800 font-black">${getProp(d, 'customer_name') || '-'}</td>
-            <td class="p-4">
-                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'leasing_name') || 'CASH'}</span>
-            </td>
+            <td class="p-4"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'leasing_name') || 'CASH'}</span></td>
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'os_balance'))}</td>
             <td class="p-4 text-right text-emerald-600">${fmtIDR(getProp(d, 'hari_1_30') || getProp(d, 'lancar'))}</td>
             <td class="p-4 text-right text-amber-500">${fmtIDR(getProp(d, 'hari_31_60'))}</td>
             <td class="p-4 text-right text-orange-500">${fmtIDR(getProp(d, 'lebih_60_hari'))}</td>
             <td class="p-4 text-right text-red-600 font-black bg-red-50/30">${fmtIDR(getProp(d, 'total_overdue'))}</td>
-        </tr>
-    `).join('');
+        </tr>`).join('');
 }
 
-// 4. FUNGSI SIMPAN CATATAN KE SUPABASE
+// 5. FUNGSI SIMPAN CATATAN KE SUPABASE
 window.simpanCatatan = async function(noId) {
     try {
         const valCabang = document.getElementById(`cabang-${noId}`).value;
         const valPlan = document.getElementById(`plan-${noId}`).value;
         const valKet = document.getElementById(`ket-${noId}`).value;
+        let targetKey = cachedData.length > 0 && cachedData[0]['id'] !== undefined ? 'id' : 'No';
 
-        let targetKey = 'No';
-        if (cachedData.length > 0 && cachedData[0]['id'] !== undefined) {
-            targetKey = 'id';
-        }
-
-        const { error } = await supabase
-            .from('ar_unit')
-            .update({
-                ket_cabang: valCabang,
-                plan_bayar_leasing: valPlan,
-                ket_leasing: valKet
-            })
-            .eq(targetKey, noId);
+        const { error } = await supabase.from('ar_unit').update({
+            ket_cabang: valCabang, plan_bayar_leasing: valPlan, ket_leasing: valKet
+        }).eq(targetKey, noId);
 
         if (error) throw error;
         alert("Catatan penagihan unit berhasil disimpan! 👍");
         fetchData(); 
     } catch (err) {
-        console.error(err);
         alert("Gagal menyimpan data: " + err.message);
     }
 }
 
-// 5. FUNGSI DOWNLOAD EXCEL
+// 6. FUNGSI DOWNLOAD EXCEL
 function downloadExcel() {
     if (!cachedData || cachedData.length === 0) {
-        alert("Data belum siap atau masih memuat. Silakan tunggu sebentar.");
-        return;
+        alert("Data belum siap. Silakan tunggu sebentar."); return;
     }
-
     try {
         const dataUntukExcel = cachedData.map((d, index) => ({
             "No": index + 1,
@@ -403,35 +385,21 @@ function downloadExcel() {
             "Hari 31-60": getProp(d, 'hari_31_60') || 0,
             "Lebih 60 Hari": getProp(d, 'lebih_60_hari') || 0,
             "Total Overdue": getProp(d, 'total_overdue') || 0,
-            "Potensi Penalti": getProp(d, 'penalty_amount') || 0,
             "Salesman": getProp(d, 'salesman_name') || "-",
-            "Supervisor": getProp(d, 'supervisor_name') || "-",
-            "Keterangan Cabang": getProp(d, 'ket_cabang') || "",
-            "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || "",
-            "Keterangan Leasing": getProp(d, 'ket_leasing') || ""
+            "Supervisor": getProp(d, 'supervisor_name') || "-"
         }));
-
         const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Data AR Unit");
-
-        const tglHariIni = new Date().toISOString().slice(0, 10);
-        const namaFile = `Report_AR_Unit_Auto2000_${tglHariIni}.xlsx`;
-
-        XLSX.writeFile(workbook, namaFile);
-
+        XLSX.writeFile(workbook, `Report_AR_Unit_${new Date().toISOString().slice(0, 10)}.xlsx`);
     } catch (error) {
-        console.error("Gagal mendownload Excel:", error);
         alert("Terjadi masalah saat memproses Excel: " + error.message);
     }
 }
 
-// 6. INITIALIZATION (DOM READY)
+// 7. INITIALIZATION
 document.addEventListener('DOMContentLoaded', () => {
     fetchData();
-
     const btnDownload = document.getElementById('btn-download-excel');
-    if (btnDownload) {
-        btnDownload.addEventListener('click', downloadExcel);
-    }
+    if (btnDownload) btnDownload.addEventListener('click', downloadExcel);
 });
