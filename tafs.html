@@ -41,23 +41,24 @@
 
         </div>
 
-        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 min-h-[100px] flex items-center">
-            <div>
-                <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Status Koneksi Database</p>
-                <p class="text-sm font-black text-amber-500 uppercase italic" id="status-update">Memuat data dari Supabase...</p>
-            </div>
+        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex items-center">
+            <p class="text-xs font-bold uppercase tracking-wider text-emerald-600 italic" id="status-update">Memuat data dari Supabase...</p>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-4">
+        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-4 overflow-hidden">
             
-            <div class="grid grid-cols-4 bg-[#2563eb] text-white rounded-lg text-center font-semibold text-sm shadow-sm overflow-hidden">
-                <div class="py-3 border-r border-blue-500">Customer Name</div>
-                <div class="py-3 border-r border-blue-500">Salesman Name</div>
-                <div class="py-3 border-r border-blue-500">O/S Balance</div>
-                <div class="py-3">Material Code</div>
+            <div class="grid grid-cols-8 bg-[#2563eb] text-white rounded-lg text-center font-semibold text-xs shadow-sm overflow-hidden py-3">
+                <div class="px-1">Customer Name</div>
+                <div class="px-1">Salesman Name</div>
+                <div class="px-1">O/S Balance</div>
+                <div class="px-1">Material Code</div>
+                <div class="px-1">Ket Cabang</div>
+                <div class="px-1">Plan Bayar Leasing</div>
+                <div class="px-1">Keterangan Leasing</div>
+                <div class="px-1">Aksi</div>
             </div>
             
-            <div id="tafs-table-body" class="divide-y divide-gray-100 max-h-[450px] overflow-y-auto mt-2">
+            <div id="tafs-table-body" class="divide-y divide-gray-100 max-h-[500px] overflow-y-auto mt-2">
                 </div>
 
         </div>
@@ -67,15 +68,15 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-        // Konfigurasi Database Supabase
         const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Formatter Mata Uang Rupiah
+        // Global Cache untuk menyimpan data lokal sementara
+        window.cachedData = [];
+
         const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 
-        // Fungsi Cerdas Pembaca Properti Kolom (Besar/Kecil Huruf)
         function getProp(obj, key) {
             if (!obj) return undefined;
             if (obj[key.toLowerCase()] !== undefined) return obj[key.toLowerCase()];
@@ -89,31 +90,40 @@
             return undefined;
         }
 
-        // Fungsi Utama Fetch & Filter Data TAFS
         async function fetchTafsData() {
             try {
                 const { data, error } = await supabase.from('ar_unit').select('*');
                 if (error) throw error;
 
                 if (data) {
+                    window.cachedData = data;
+                    
+                    // Inisialisasi 4 Metrik pesanan Anda
                     let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
                     let htmlRows = '';
 
-                    data.forEach(d => {
+                    data.forEach((d, i) => {
                         const l = String(getProp(d, 'leasing_name') || '').toUpperCase().trim();
                         
-                        // ABSOLUTE BLOCKING FILTER: Hanya memproses data yang mengandung kata 'TAFS'
+                        // FILTER UTAMA: Hanya memproses data leasing TAFS
                         if (l.includes('TAFS')) {
                             const os = Number(getProp(d, 'os_balance') || 0);
                             const ov = Number(getProp(d, 'total_overdue') || 0);
                             const statusTagih = String(getProp(d, 'status_tagih') || '').toUpperCase().trim();
                             
-                            // Mapping Field Supabase sesuai permintaan Bapak
                             const customerName = getProp(d, 'customer_name') || '-';
                             const salesmanName = getProp(d, 'salesman_name') || getProp(d, 'supervisor_name') || 'OFFICE';
                             const materialCode = getProp(d, 'material_code') || '-';
+                            
+                            // Catatan keterangan dari database
+                            const ketCabang = getProp(d, 'ket_cabang') || '';
+                            const planBayar = getProp(d, 'plan_bayar_leasing') || '';
+                            const ketLeasing = getProp(d, 'ket_leasing') || '';
 
-                            // Pembagian Metrik Logika Penagihan Dashboard
+                            // Menentukan primary ID baris database
+                            const idUtama = getProp(d, 'No') || getProp(d, 'id') || i;
+
+                            // LOGIKA KALKULASI 4 MATRIKS UTAMA
                             if (statusTagih === 'SUDAH GI' || os === 0) {
                                 tafsMetrics.paid++;
                             } else {
@@ -125,45 +135,83 @@
                                 }
                             }
 
-                            // Generate Row Table HTML Grid Layout
+                            // GENERATE LAYOUT DETAIL TABEL INTERAKTIF SESUAI CAPTURE
                             htmlRows += `
-                            <div class="grid grid-cols-4 text-center py-3 text-xs font-bold uppercase text-gray-700 hover:bg-gray-50/80 items-center border-b border-gray-50">
-                                <div class="truncate px-3 text-left font-black text-slate-800">${customerName}</div>
-                                <div class="truncate px-2 text-slate-600 text-center">${salesmanName}</div>
-                                <div class="text-blue-600 font-black text-center">${fmtIDR(os)}</div>
-                                <div class="text-gray-500 font-mono text-[11px] text-center">${materialCode}</div>
+                            <div class="grid grid-cols-8 text-center py-3 text-xs font-bold uppercase text-gray-700 hover:bg-gray-50 items-center border-b border-gray-100">
+                                <div class="truncate px-2 text-left font-black text-slate-800">${customerName}</div>
+                                <div class="truncate px-1 text-slate-600">${salesmanName}</div>
+                                <div class="text-blue-600 font-black">${fmtIDR(os)}</div>
+                                <div class="text-gray-500 font-mono text-[11px]">${materialCode}</div>
+                                <div class="px-1">
+                                    <input type="text" id="cabang-${idUtama}" value="${ketCabang}" placeholder="Ket cabang..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div class="px-1">
+                                    <input type="text" id="plan-${idUtama}" value="${planBayar}" placeholder="Isi plan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div class="px-1">
+                                    <input type="text" id="ket-${idUtama}" value="${ketLeasing}" placeholder="Isi keterangan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div class="text-center">
+                                    <button onclick="simpanCatatanTafs('${idUtama}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan">💾</button>
+                                </div>
                             </div>`;
                         }
                     });
 
-                    // Tembak Hasil Kalkulasi Metrik ke Card UI Dashboard Atas
+                    // TEMBAK NILAI KE 4 CARDS UTAMA ATAS
                     if(document.getElementById('total-outstanding')) document.getElementById('total-outstanding').innerText = fmtIDR(tafsMetrics.os);
                     if(document.getElementById('total-paid')) document.getElementById('total-paid').innerText = `${tafsMetrics.paid} Unit`;
                     if(document.getElementById('total-on-proses')) document.getElementById('total-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
                     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = `${tafsMetrics.overdue} Unit`;
 
-                    // Tembak Data Baris ke Grid Bawah
+                    // Update Isi Detail Tabel Bawah
                     const tableBody = document.getElementById('tafs-table-body');
                     if(tableBody) {
-                        tableBody.innerHTML = htmlRows ? htmlRows : '<div class="text-center py-8 text-gray-400 text-xs font-bold">TIDAK ADA DATA DENGAN LEASING TAFS</div>';
+                        tableBody.innerHTML = htmlRows ? htmlRows : '<div class="text-center py-8 text-gray-400 text-xs font-bold">TIDAK ADA DATA PIUTANG TAFS</div>';
                     }
 
-                    // Perbarui Status Update Log
                     if (document.getElementById('status-update')) {
-                        document.getElementById('status-update').innerText = `KONEKSI BERHASIL - UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
-                        document.getElementById('status-update').className = "text-sm font-black text-emerald-600 uppercase italic";
+                        document.getElementById('status-update').innerText = `KONEKSI SUKSES - TERAKHIR DIPERBARUI: ${new Date().toLocaleString('id-ID')} WIB`;
                     }
                 }
             } catch (err) {
                 console.error("Gagal sinkronisasi data TAFS:", err);
                 if (document.getElementById('status-update')) {
-                    document.getElementById('status-update').innerText = `KONEKSI ERROR: ${err.message}`;
-                    document.getElementById('status-update').className = "text-sm font-black text-red-600 uppercase italic";
+                    document.getElementById('status-update').innerText = `KONEKSI GAGAL: ${err.message}`;
                 }
             }
         }
 
-        // Jalankan fetch data otomatis saat halaman selesai dimuat
+        // FUNGSI AKSI SIMPAN DATA KE SUPABASE
+        window.simpanCatatanTafs = async function(noId) {
+            try {
+                const valCabang = document.getElementById(`cabang-${noId}`).value;
+                const valPlan = document.getElementById(`plan-${noId}`).value;
+                const valKet = document.getElementById(`ket-${noId}`).value;
+
+                let targetKey = 'No';
+                if (window.cachedData.length > 0 && window.cachedData[0]['id'] !== undefined) {
+                    targetKey = 'id';
+                }
+
+                const { error } = await supabase
+                    .from('ar_unit')
+                    .update({
+                        ket_cabang: valCabang,
+                        plan_bayar_leasing: valPlan,
+                        ket_leasing: valKet
+                    })
+                    .eq(targetKey, noId);
+
+                if (error) throw error;
+                alert("Catatan TAFS Berhasil Disimpan ke Pusat! 👍");
+                fetchTafsData(); 
+            } catch (err) {
+                console.error(err);
+                alert("Gagal menyimpan data ke database: " + err.message);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', fetchTafsData);
     </script>
 </body>
