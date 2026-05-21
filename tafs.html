@@ -69,8 +69,8 @@
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
         const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
-        // MENGEMBALIKAN KEY ASLI BAPAK YANG VALID 100%
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emFidG5xaSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzc1MjM0NDUxLCJleHAiOjIwOTA4MTA0NTF9.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
+        // SUDAH DIKUNCI MENGGUNAKAN KEY VALID DARI BAPAK
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         window.cachedData = [];
@@ -133,84 +133,4 @@
                                 <div class="px-1">
                                     <input type="text" id="plan-${uiId}" value="${valPlanBayar}" placeholder="Isi plan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
                                 </div>
-                                <div class="px-1">
-                                    <input type="text" id="ket-${uiId}" value="${valKetLeasing}" placeholder="Isi keterangan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
-                                </div>
-                                <div class="text-center">
-                                    <button onclick="simpanCatatanTafs('${uiId}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan">💾</button>
-                                </div>
-                            </div>`;
-                        }
-                    });
-
-                    // TEMBAK HASIL PERHITUNGAN KE 4 METRIK ATAS
-                    if(document.getElementById('total-outstanding')) document.getElementById('total-outstanding').innerText = fmtIDR(tafsMetrics.os);
-                    if(document.getElementById('total-paid')) document.getElementById('total-paid').innerText = `${tafsMetrics.paid} Unit`;
-                    if(document.getElementById('total-on-proses')) document.getElementById('total-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
-                    if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = `${tafsMetrics.overdue} Unit`;
-
-                    // UPDATE TAMPILAN BARIS DATA TABEL LEASING
-                    const tableBody = document.getElementById('tafs-table-body');
-                    if(tableBody) {
-                        tableBody.innerHTML = htmlRows ? htmlRows : '<div class="text-center py-8 text-gray-400 text-xs font-bold">TIDAK ADA DATA PIUTANG TAFS</div>';
-                    }
-
-                    if (document.getElementById('status-update')) {
-                        document.getElementById('status-update').innerText = `KONEKSI BERHASIL - STRUKTUR SUPABASE SINKRON: ${new Date().toLocaleString('id-ID')} WIB`;
-                        document.getElementById('status-update').className = "text-xs font-bold uppercase tracking-wider text-emerald-600 italic";
-                    }
-                }
-            } catch (err) {
-                console.error("Gagal sinkronisasi data TAFS:", err);
-                if (document.getElementById('status-update')) {
-                    document.getElementById('status-update').innerText = `KONEKSI BERMASALAH: ${err.message}`;
-                    document.getElementById('status-update').className = "text-xs font-bold uppercase tracking-wider text-red-600 italic";
-                }
-            }
-        }
-
-        // FUNGSI UTAMA UPDATE MENGGUNAKAN MULTI-PARAMETER MATCHING (TERPAKEM AMAN)
-        window.simpanCatatanTafs = async function(uiId) {
-            try {
-                const inputCabang = document.getElementById(`cabang-${uiId}`);
-                const customerName = inputCabang.getAttribute('data-customer');
-                const dataNo = inputCabang.getAttribute('data-no');
-                const dataId = inputCabang.getAttribute('data-id');
-
-                const valCabang = inputCabang.value;
-                const valPlan = document.getElementById(`plan-${uiId}`).value;
-                const valKet = document.getElementById(`ket-${uiId}`).value;
-
-                // Tembak kolom sesuai skema database asli (ket_cabang, plan_bayar_leasing, ket_leasing)
-                let payload = {
-                    ket_cabang: valCabang,
-                    plan_bayar_leasing: valPlan,
-                    ket_leasing: valKet
-                };
-
-                let queryBuilder = supabase.from('ar_unit').update(payload);
-
-                // Jalankan hirarki pencarian baris yang paling valid
-                if (dataId && dataId !== "") {
-                    queryBuilder = queryBuilder.eq('id', dataId);
-                } else if (dataNo && dataNo !== "") {
-                    queryBuilder = queryBuilder.eq('No', Number(dataNo));
-                } else {
-                    queryBuilder = queryBuilder.eq('customer_name', customerName);
-                }
-
-                const { error } = await queryBuilder;
-                if (error) throw error;
-                
-                alert("Catatan TAFS Berhasil Disimpan Langsung ke Admin Pusat! 👍");
-                fetchTafsData(); 
-            } catch (err) {
-                console.error(err);
-                alert("Gagal sinkronisasi ke Admin: " + err.message);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', fetchTafsData);
-    </script>
-</body>
-</html>
+                                <div class="px-
