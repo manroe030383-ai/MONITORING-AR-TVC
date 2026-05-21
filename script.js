@@ -35,7 +35,7 @@ async function fetchData() {
         if (error) throw error;
         
         if (data) {
-            console.log("DATA DARI SUPABASE:", data); 
+            console.log("DATA DARI SUPABASE PADA AR UNIT:", data); 
             
             if (data.length === 0) {
                 if (document.getElementById('status-update')) {
@@ -67,14 +67,13 @@ async function fetchData() {
     }
 }
 
-// 2. FUNGSI UPDATE UI DASHBOARD (KODINGAN SINKRONISASI TOTAL 100%)
+// 2. FUNGSI UPDATE UI DASHBOARD
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
     let tvc = { total: 0, gi: 0, deliv: 0 };
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
 
-    // --- INITIALISASI CONTAINER METRIC KHUSUS ---
     let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
     let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
 
@@ -82,7 +81,7 @@ function updateDashboard(data) {
         const os = Number(getProp(d, 'os_balance') || 0);
         const ov = Number(getProp(d, 'total_overdue') || 0);
         
-        // SINKRONISASI OPTIMAL: Membaca fallback property jika skema kolom bervariasi
+        // Membaca property leasing secara fleksibel
         const l = String(getProp(d, 'leasing_name') || getProp(d, 'leasing') || 'CASH').toUpperCase().trim();
         
         const penalti = Number(getProp(d, 'penalty_amount') || 0);
@@ -114,9 +113,6 @@ function updateDashboard(data) {
             }
         }
 
-        // ========================================================
-        // ABSOLUTE BLOCKING FILTER: SINKRON DATA DARI INTERFACES LEASING
-        // ========================================================
         if (l.includes('TAFS')) {
             if (statusTagih === 'SUDAH GI' || os === 0) {
                 tafsMetrics.paid++;
@@ -151,7 +147,7 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // RENDER DATA KE ELEMENT DASHBOARD UTAMA (ASLI)
+    // RENDER METRIK KE KARTU UTAMA
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -173,19 +169,16 @@ function updateDashboard(data) {
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
-    // Dashboard Khusus TAFS
     if(document.getElementById('tafs-outstanding')) document.getElementById('tafs-outstanding').innerText = fmtIDR(tafsMetrics.os);
     if(document.getElementById('tafs-paid')) document.getElementById('tafs-paid').innerText = `${tafsMetrics.paid} Unit`;
     if(document.getElementById('tafs-on-proses')) document.getElementById('tafs-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
     if(document.getElementById('tafs-overdue')) document.getElementById('tafs-overdue').innerText = `${tafsMetrics.overdue} Unit`;
 
-    // Dashboard Khusus ACC
     if(document.getElementById('acc-outstanding')) document.getElementById('acc-outstanding').innerText = fmtIDR(accMetrics.os);
     if(document.getElementById('acc-paid')) document.getElementById('acc-paid').innerText = `${accMetrics.paid} Unit`;
     if(document.getElementById('acc-on-proses')) document.getElementById('acc-on-proses').innerText = `${accMetrics.onProses} Unit`;
     if(document.getElementById('acc-overdue')) document.getElementById('acc-overdue').innerText = `${accMetrics.overdue} Unit`;
 
-    // Sisa pemanggilan grafik bawaan (Asli)
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
@@ -199,7 +192,7 @@ function updateDashboard(data) {
     renderTabDatabaseFull(data); 
 }
 
-// 3. FUNGSI RENDER GRAFIK & LIST DATA (TIDAK ADA PERUBAHAN STRUCTURAL)
+// 3. RENDERERS
 function renderAgingChart(agingData) {
     const el = document.querySelector("#chart-aging");
     if (!el) return;
@@ -245,27 +238,7 @@ function renderDonutLeasing(mLeas) {
         legend: { show: false },
         dataLabels: { enabled: false },
         colors: ['#10B981', '#3B82F6'],
-        plotOptions: {
-            pie: {
-                donut: {
-                    labels: {
-                        show: false, 
-                        total: {
-                            show: false,
-                            label: 'TOTAL AR',
-                            fontSize: '10px',
-                            fontWeight: 'bold',
-                            color: '#64748B',
-                            formatter: function (w) {
-                                const total = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
-                                if (totalCash === 0 && totalLeasing === 0 && total === 2) return "Rp 0";
-                                return (total / 1000000000).toFixed(2) + " M";
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        plotOptions: { pie: { donut: { labels: { show: false } } } }
     };
     if (charts.donut) charts.donut.updateOptions(options);
     else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
@@ -377,7 +350,7 @@ function renderTabOverdueFull(data) {
         </div>`;
 }
 
-// FUNGSI UTAMA RENDER INPUT DATA LEASING DI DASHBOARD ADMIN (SINKRONISASI KOLOM TERBARU)
+// 4. TABEL UTAMA UNTUK INPUT DATA LEASING DI DASHBOARD UNIT
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
     if (!el) return;
@@ -390,34 +363,38 @@ function renderDataArUnitFull(data) {
     if(filterAR.length === 0) { el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing TAFS / ACC</td></tr>'; return; }
 
     el.innerHTML = filterAR.map((d, i) => {
-        const idUtama = getProp(d, 'No') || getProp(d, 'id') || i;
+        // PERBAIKAN: Gunakan index urutan (i) sebagai ID element UI agar aman, bukan No database
+        const uiId = i;
         
-        // Pembacaan field yang sekarang wajib diarahkan ke nama kolom Supabase asli Bapak
-        const valCabang = getProp(d, 'ket_cabang') || '';
-        const valPlan = getProp(d, 'plan_bayar_leasing') || '';
-        const valKet = getProp(d, 'ket_leasing') || '';
+        // Simpan referensi pencarian database yang akurat
+        const dbId = d.id || d.No || '';
+        const customerName = getProp(d, 'customer_name') || '';
+
+        const valCabang = d.ket_cabang || '';
+        const valPlan = d.plan_bayar_leasing || '';
+        const valKet = d.ket_leasing || '';
         const currentLeasing = getProp(d, 'leasing_name') || getProp(d, 'leasing') || '-';
 
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
-            <td class="p-4 text-slate-800 font-black">${getProp(d, 'customer_name') || '-'}</td>
+            <td class="p-4 text-slate-800 font-black">${customerName}</td>
             <td class="p-4">
                 <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${currentLeasing}</span>
                 <p class="text-[7px] text-slate-300 mt-1">SPK: ${getProp(d, 'no_spk') || '-'}</p>
             </td>
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'os_balance'))}</td>
             <td class="p-4 w-48">
-                <input type="text" id="cabang-${idUtama}" value="${valCabang}" placeholder="Ket cabang..." class="input-custom bg-white">
+                <input type="text" id="cabang-${uiId}" data-dbid="${dbId}" data-customer="${customerName}" value="${valCabang}" placeholder="Ket cabang..." class="input-custom bg-white">
             </td>
             <td class="p-4 w-48">
-                <input type="text" id="plan-${idUtama}" value="${valPlan}" placeholder="Isi plan..." class="input-custom bg-white">
+                <input type="text" id="plan-${uiId}" value="${valPlan}" placeholder="Isi plan..." class="input-custom bg-white">
             </td>
             <td class="p-4 w-48">
-                <input type="text" id="ket-${idUtama}" value="${valKet}" placeholder="Isi keterangan..." class="input-custom bg-white">
+                <input type="text" id="ket-${uiId}" value="${valKet}" placeholder="Isi keterangan..." class="input-custom bg-white">
             </td>
             <td class="p-4 text-center w-16">
-                <button onclick="simpanCatatan('${idUtama}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan">💾</button>
+                <button onclick="simpanCatatan('${uiId}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan">💾</button>
             </td>
         </tr>`;
     }).join('');
@@ -443,28 +420,37 @@ function renderTabDatabaseFull(data) {
     `).join('');
 }
 
-// 4. FUNGSI SIMPAN CATATAN KE SUPABASE
-window.simpanCatatan = async function(noId) {
+// 5. AMAN & PRESERVED: LOGIKA SIMPAN CATATAN MULTI-PARAMETER MATCHING
+window.simpanCatatan = async function(uiId) {
     try {
-        const valCabang = document.getElementById(`cabang-${noId}`).value;
-        const valPlan = document.getElementById(`plan-${noId}`).value;
-        const valKet = document.getElementById(`ket-${noId}`).value;
+        const inputCabang = document.getElementById(`cabang-${uiId}`);
+        const dbId = inputCabang.getAttribute('data-dbid');
+        const customerName = inputCabang.getAttribute('data-customer');
 
-        let targetKey = 'No';
-        if (cachedData.length > 0 && cachedData[0]['id'] !== undefined) {
-            targetKey = 'id';
+        const valCabang = inputCabang.value;
+        const valPlan = document.getElementById(`plan-${uiId}`).value;
+        const valKet = document.getElementById(`ket-${uiId}`).value;
+
+        let queryBuilder = supabase.from('ar_unit').update({
+            ket_cabang: valCabang,
+            plan_bayar_leasing: valPlan,
+            ket_leasing: valKet
+        });
+
+        // Pencarian Fallback: Jika ID angka bermasalah, tembak berdasarkan nama customer (sangat aman)
+        if (dbId && dbId !== "undefined" && dbId !== "") {
+            if (isNaN(dbId)) {
+                queryBuilder = queryBuilder.eq('id', dbId);
+            } else {
+                queryBuilder = queryBuilder.eq('No', Number(dbId));
+            }
+        } else {
+            queryBuilder = queryBuilder.eq('customer_name', customerName);
         }
 
-        const { error } = await supabase
-            .from('ar_unit')
-            .update({
-                ket_cabang: valCabang,
-                plan_bayar_leasing: valPlan,
-                ket_leasing: valKet
-            })
-            .eq(targetKey, noId);
-
+        const { error } = await queryBuilder;
         if (error) throw error;
+        
         alert("Catatan penagihan unit berhasil disimpan! 👍");
         fetchData(); 
     } catch (err) {
@@ -473,7 +459,7 @@ window.simpanCatatan = async function(noId) {
     }
 }
 
-// 5. FUNGSI DOWNLOAD EXCEL
+// 6. DOWNLOAD EXCEL
 function downloadExcel() {
     if (!cachedData || cachedData.length === 0) {
         alert("Data belum siap atau masih memuat. Silakan tunggu sebentar.");
@@ -494,9 +480,9 @@ function downloadExcel() {
             "Potensi Penalti": getProp(d, 'penalty_amount') || 0,
             "Salesman": getProp(d, 'salesman_name') || "-",
             "Supervisor": getProp(d, 'supervisor_name') || "-",
-            "Keterangan Cabang": getProp(d, 'ket_cabang') || "",
-            "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || "",
-            "Keterangan Leasing": getProp(d, 'ket_leasing') || ""
+            "Keterangan Cabang": d.ket_cabang || "",
+            "Plan Bayar Leasing": d.plan_bayar_leasing || "",
+            "Keterangan Leasing": d.ket_leasing || ""
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel);
@@ -513,10 +499,8 @@ function downloadExcel() {
     }
 }
 
-// 6. INITIALIZATION (DOM READY)
 document.addEventListener('DOMContentLoaded', () => {
     fetchData();
-
     const btnDownload = document.getElementById('btn-download-excel');
     if (btnDownload) {
         btnDownload.addEventListener('click', downloadExcel);
