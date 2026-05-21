@@ -15,14 +15,10 @@ const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
 // FUNGSI UNTUK MENGANTISIPASI HURUF BESAR/KECIL PADA KOLOM DATABASE
 function getProp(obj, key) {
     if (!obj) return undefined;
-    // Cek huruf kecil standar
     if (obj[key.toLowerCase()] !== undefined) return obj[key.toLowerCase()];
-    // Cek huruf besar standar
     if (obj[key.toUpperCase()] !== undefined) return obj[key.toUpperCase()];
-    // Cek variasi key aslinya
     if (obj[key] !== undefined) return obj[key];
     
-    // Cari manual jika ada kombinasi kapital seperti 'No' atau 'Ket_Cabang'
     const lowerKey = key.toLowerCase();
     for (let k in obj) {
         if (k.toLowerCase() === lowerKey) return obj[k];
@@ -71,12 +67,16 @@ async function fetchData() {
     }
 }
 
-// 2. FUNGSI UPDATE UI DASHBOARD (SUDAH DILINDUNGI DETEKSI HURUF KAPITAL)
+// 2. FUNGSI UPDATE UI DASHBOARD (KODINGAN ASLI + INTEGRASI LOGIKA TAFS & ACC AR)
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
     let tvc = { total: 0, gi: 0, deliv: 0 };
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
+
+    // --- INITIALISASI CONTAINER METRIC KHUSUS ---
+    let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
+    let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
 
     data.forEach(d => {
         const os = Number(getProp(d, 'os_balance') || 0);
@@ -84,6 +84,7 @@ function updateDashboard(data) {
         const l = String(getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
         const penalti = Number(getProp(d, 'penalty_amount') || 0);
         const lancarNominal = Number(getProp(d, 'lancar') || 0);
+        const statusTagih = String(getProp(d, 'status_tagih') || '').toUpperCase().trim();
         
         s.os += os; 
         s.ov += ov; 
@@ -105,8 +106,38 @@ function updateDashboard(data) {
             mLeas[l] = (mLeas[l] || 0) + os; 
             if (l.includes('TAFS') || l.includes('ACC')) {
                 tvc.total++;
-                if (String(getProp(d, 'status_tagih')).toUpperCase() === 'SUDAH GI') tvc.gi++;
+                if (statusTagih === 'SUDAH GI') tvc.gi++;
                 else tvc.deliv++;
+            }
+        }
+
+        // ========================================================
+        // ABSOLUTE BLOCKING FILTER: MEMPROSES TAFS DAN ACC SECARA ADIL
+        // ========================================================
+        if (l.includes('TAFS')) {
+            // Data mutlak milik TAFS
+            if (statusTagih === 'SUDAH GI' || os === 0) {
+                tafsMetrics.paid++;
+            } else {
+                tafsMetrics.os += os;
+                if (ov > 0) {
+                    tafsMetrics.overdue++;
+                } else {
+                    tafsMetrics.onProses++;
+                }
+            }
+        } 
+        else if (l.includes('ACC')) {
+            // Data mutlak milik ACC
+            if (statusTagih === 'SUDAH GI' || os === 0) {
+                accMetrics.paid++;
+            } else {
+                accMetrics.os += os;
+                if (ov > 0) {
+                    accMetrics.overdue++;
+                } else {
+                    accMetrics.onProses++;
+                }
             }
         }
 
@@ -119,6 +150,7 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
+    // RENDER DATA KE ELEMENT DASHBOARD UTAMA (ASLI)
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -140,6 +172,22 @@ function updateDashboard(data) {
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
+    // ==========================================
+    // PENEMBAKAN DATA SECARA TERISOLASI KE CARDS
+    // ==========================================
+    // Dashboard Khusus TAFS
+    if(document.getElementById('tafs-outstanding')) document.getElementById('tafs-outstanding').innerText = fmtIDR(tafsMetrics.os);
+    if(document.getElementById('tafs-paid')) document.getElementById('tafs-paid').innerText = `${tafsMetrics.paid} Unit`;
+    if(document.getElementById('tafs-on-proses')) document.getElementById('tafs-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
+    if(document.getElementById('tafs-overdue')) document.getElementById('tafs-overdue').innerText = `${tafsMetrics.overdue} Unit`;
+
+    // Dashboard Khusus ACC
+    if(document.getElementById('acc-outstanding')) document.getElementById('acc-outstanding').innerText = fmtIDR(accMetrics.os);
+    if(document.getElementById('acc-paid')) document.getElementById('acc-paid').innerText = `${accMetrics.paid} Unit`;
+    if(document.getElementById('acc-on-proses')) document.getElementById('acc-on-proses').innerText = `${accMetrics.onProses} Unit`;
+    if(document.getElementById('acc-overdue')) document.getElementById('acc-overdue').innerText = `${accMetrics.overdue} Unit`;
+
+    // Sisa pemanggilan grafik bawaan (Asli)
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
@@ -153,7 +201,7 @@ function updateDashboard(data) {
     renderTabDatabaseFull(data); 
 }
 
-// 3. FUNGSI RENDER GRAFIK & LIST DATA
+// 3. FUNGSI RENDER GRAFIK & LIST DATA (TIDAK ADA PERUBAHAN STRUCTURAL)
 function renderAgingChart(agingData) {
     const el = document.querySelector("#chart-aging");
     if (!el) return;
@@ -203,7 +251,6 @@ function renderDonutLeasing(mLeas) {
             pie: {
                 donut: {
                     labels: {
-                        // DIUBAH MENJADI FALSE AGAR TULISAN DAN ANGKA DI TENGAH LINGKARAN HILANG TOTAL
                         show: false, 
                         total: {
                             show: false,
@@ -390,7 +437,7 @@ function renderTabDatabaseFull(data) {
     `).join('');
 }
 
-// 4. FUNGSI SIMPAN CATATAN KE SUPABASE (MENDUKUNG MULTI FORMAT PRIMARY KEY 'No' atau 'id')
+// 4. FUNGSI SIMPAN CATATAN KE SUPABASE
 window.simpanCatatan = async function(noId) {
     try {
         const valCabang = document.getElementById(`cabang-${noId}`).value;
@@ -448,11 +495,10 @@ function downloadExcel() {
 
         const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Data AR Unit");
-
         const tglHariIni = new Date().toISOString().slice(0, 10);
         const namaFile = `Report_AR_Unit_Auto2000_${tglHariIni}.xlsx`;
 
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Data AR Unit");
         XLSX.writeFile(workbook, namaFile);
 
     } catch (error) {
