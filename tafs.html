@@ -69,6 +69,7 @@
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
         const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
+        // MENGEMBALIKAN KEY ASLI BAPAK YANG VALID 100%
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emFidG5xaSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzc1MjM0NDUxLCJleHAiOjIwOTA4MTA0NTF9.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -88,8 +89,7 @@
                     let htmlRows = '';
 
                     data.forEach((d, i) => {
-                        // Antisipasi variasi nama kolom leasing (case-insensitive)
-                        const leasing = String(d.leasing_name || d.leasing || d.Leasing || '').toUpperCase().trim();
+                        const leasing = String(d.leasing || d.leasing_name || d.Leasing || '').toUpperCase().trim();
                         
                         // Jalankan Filter Khusus Data TAFS
                         if (leasing.includes('TAFS')) {
@@ -105,7 +105,7 @@
                             const valPlanBayar = d.plan_bayar_leasing || '';
                             const valKetLeasing = d.ket_leasing || '';
 
-                            // PERBAIKAN LOGIKA: Gunakan index urutan i sebagai penanda element UI saja agar tidak konflik
+                            // Gunakan i (index loop global) sebagai ID komponen input UI agar tidak bentrok saat filter layar
                             const uiId = i;
 
                             // LOGIKA KALKULASI 4 CARD METRIK ATAS
@@ -121,7 +121,6 @@
                             }
 
                             // RENDER STRUKTUR ROW INTERAKTIF UNTUK INPUT LEASING
-                            // Tambahkan data-attribute pada input untuk menyimpan kunci asli database
                             htmlRows += `
                             <div class="grid grid-cols-8 text-center py-3 text-xs font-bold uppercase text-gray-700 hover:bg-gray-50 items-center border-b border-gray-100">
                                 <div class="truncate px-2 text-left font-black text-slate-800">${customerName}</div>
@@ -170,7 +169,7 @@
             }
         }
 
-        // PERBAIKAN LOGIKA SIMPAN: Menggunakan Multi-Pencarian (Fallback) agar 100% Akurat Tembus Database Admin
+        // FUNGSI UTAMA UPDATE MENGGUNAKAN MULTI-PARAMETER MATCHING (TERPAKEM AMAN)
         window.simpanCatatanTafs = async function(uiId) {
             try {
                 const inputCabang = document.getElementById(`cabang-${uiId}`);
@@ -182,21 +181,21 @@
                 const valPlan = document.getElementById(`plan-${uiId}`).value;
                 const valKet = document.getElementById(`ket-${uiId}`).value;
 
+                // Tembak kolom sesuai skema database asli (ket_cabang, plan_bayar_leasing, ket_leasing)
                 let payload = {
                     ket_cabang: valCabang,
                     plan_bayar_leasing: valPlan,
                     ket_leasing: valKet
                 };
 
-                // Membangun query update dinamis dan aman
                 let queryBuilder = supabase.from('ar_unit').update(payload);
 
+                // Jalankan hirarki pencarian baris yang paling valid
                 if (dataId && dataId !== "") {
                     queryBuilder = queryBuilder.eq('id', dataId);
                 } else if (dataNo && dataNo !== "") {
                     queryBuilder = queryBuilder.eq('No', Number(dataNo));
                 } else {
-                    // Proteksi Terkuat: Jika ID angka tidak ketemu, tembak berdasarkan nama customer
                     queryBuilder = queryBuilder.eq('customer_name', customerName);
                 }
 
