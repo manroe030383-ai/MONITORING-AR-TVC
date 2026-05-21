@@ -21,39 +21,150 @@
             
             <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
                 <span class="text-sm font-bold text-gray-800 tracking-tight">Total Outstanding</span>
-                <span class="text-4xl font-extrabold text-black mt-4" id="total-outstanding">0</span>
+                <span class="text-4xl font-extrabold text-black mt-4" id="total-outstanding">Rp 0</span>
             </div>
 
             <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
                 <span class="text-sm font-bold text-gray-800 tracking-tight">PAID</span>
-                <span class="text-4xl font-extrabold text-black mt-4" id="total-paid">0</span>
+                <span class="text-4xl font-extrabold text-black mt-4" id="total-paid">0 Unit</span>
             </div>
 
             <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
                 <span class="text-sm font-bold text-gray-800 tracking-tight">On Proses</span>
-                <span class="text-4xl font-extrabold text-black mt-4" id="total-on-proses">0</span>
+                <span class="text-4xl font-extrabold text-black mt-4" id="total-on-proses">0 Unit</span>
             </div>
 
             <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
                 <span class="text-sm font-bold text-gray-800 tracking-tight">Overdue</span>
-                <span class="text-4xl font-extrabold text-red-600 mt-4" id="total-overdue">0</span>
+                <span class="text-4xl font-extrabold text-red-600 mt-4" id="total-overdue">0 Unit</span>
             </div>
 
         </div>
 
-        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 min-h-[260px]">
+        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 min-h-[100px] flex items-center">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Status Koneksi Database</p>
+                <p class="text-sm font-black text-amber-500 uppercase italic" id="status-update">Memuat data dari Supabase...</p>
             </div>
+        </div>
 
         <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-4">
+            
             <div class="grid grid-cols-4 bg-[#2563eb] text-white rounded-lg text-center font-semibold text-sm shadow-sm overflow-hidden">
-                <button class="py-3 hover:bg-blue-700 border-r border-blue-500 transition-colors">Customer</button>
-                <button class="py-3 hover:bg-blue-700 border-r border-blue-500 transition-colors">Sales</button>
-                <button class="py-3 hover:bg-blue-700 border-r border-blue-500 transition-colors">Balance</button>
-                <button class="py-3 hover:bg-blue-700 transition-colors">Unit</button>
+                <div class="py-3 border-r border-blue-500">Customer Name</div>
+                <div class="py-3 border-r border-blue-500">Salesman Name</div>
+                <div class="py-3 border-r border-blue-500">O/S Balance</div>
+                <div class="py-3">Material Code</div>
             </div>
+            
+            <div id="tafs-table-body" class="divide-y divide-gray-100 max-h-[450px] overflow-y-auto mt-2">
+                </div>
+
         </div>
 
     </div>
 
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        // Konfigurasi Database Supabase
+        const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Formatter Mata Uang Rupiah
+        const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
+
+        // Fungsi Cerdas Pembaca Properti Kolom (Besar/Kecil Huruf)
+        function getProp(obj, key) {
+            if (!obj) return undefined;
+            if (obj[key.toLowerCase()] !== undefined) return obj[key.toLowerCase()];
+            if (obj[key.toUpperCase()] !== undefined) return obj[key.toUpperCase()];
+            if (obj[key] !== undefined) return obj[key];
+            
+            const lowerKey = key.toLowerCase();
+            for (let k in obj) {
+                if (k.toLowerCase() === lowerKey) return obj[k];
+            }
+            return undefined;
+        }
+
+        // Fungsi Utama Fetch & Filter Data TAFS
+        async function fetchTafsData() {
+            try {
+                const { data, error } = await supabase.from('ar_unit').select('*');
+                if (error) throw error;
+
+                if (data) {
+                    let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
+                    let htmlRows = '';
+
+                    data.forEach(d => {
+                        const l = String(getProp(d, 'leasing_name') || '').toUpperCase().trim();
+                        
+                        // ABSOLUTE BLOCKING FILTER: Hanya memproses data yang mengandung kata 'TAFS'
+                        if (l.includes('TAFS')) {
+                            const os = Number(getProp(d, 'os_balance') || 0);
+                            const ov = Number(getProp(d, 'total_overdue') || 0);
+                            const statusTagih = String(getProp(d, 'status_tagih') || '').toUpperCase().trim();
+                            
+                            // Mapping Field Supabase sesuai permintaan Bapak
+                            const customerName = getProp(d, 'customer_name') || '-';
+                            const salesmanName = getProp(d, 'salesman_name') || getProp(d, 'supervisor_name') || 'OFFICE';
+                            const materialCode = getProp(d, 'material_code') || '-';
+
+                            // Pembagian Metrik Logika Penagihan Dashboard
+                            if (statusTagih === 'SUDAH GI' || os === 0) {
+                                tafsMetrics.paid++;
+                            } else {
+                                tafsMetrics.os += os;
+                                if (ov > 0) {
+                                    tafsMetrics.overdue++;
+                                } else {
+                                    tafsMetrics.onProses++;
+                                }
+                            }
+
+                            // Generate Row Table HTML Grid Layout
+                            htmlRows += `
+                            <div class="grid grid-cols-4 text-center py-3 text-xs font-bold uppercase text-gray-700 hover:bg-gray-50/80 items-center border-b border-gray-50">
+                                <div class="truncate px-3 text-left font-black text-slate-800">${customerName}</div>
+                                <div class="truncate px-2 text-slate-600 text-center">${salesmanName}</div>
+                                <div class="text-blue-600 font-black text-center">${fmtIDR(os)}</div>
+                                <div class="text-gray-500 font-mono text-[11px] text-center">${materialCode}</div>
+                            </div>`;
+                        }
+                    });
+
+                    // Tembak Hasil Kalkulasi Metrik ke Card UI Dashboard Atas
+                    if(document.getElementById('total-outstanding')) document.getElementById('total-outstanding').innerText = fmtIDR(tafsMetrics.os);
+                    if(document.getElementById('total-paid')) document.getElementById('total-paid').innerText = `${tafsMetrics.paid} Unit`;
+                    if(document.getElementById('total-on-proses')) document.getElementById('total-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
+                    if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = `${tafsMetrics.overdue} Unit`;
+
+                    // Tembak Data Baris ke Grid Bawah
+                    const tableBody = document.getElementById('tafs-table-body');
+                    if(tableBody) {
+                        tableBody.innerHTML = htmlRows ? htmlRows : '<div class="text-center py-8 text-gray-400 text-xs font-bold">TIDAK ADA DATA DENGAN LEASING TAFS</div>';
+                    }
+
+                    // Perbarui Status Update Log
+                    if (document.getElementById('status-update')) {
+                        document.getElementById('status-update').innerText = `KONEKSI BERHASIL - UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
+                        document.getElementById('status-update').className = "text-sm font-black text-emerald-600 uppercase italic";
+                    }
+                }
+            } catch (err) {
+                console.error("Gagal sinkronisasi data TAFS:", err);
+                if (document.getElementById('status-update')) {
+                    document.getElementById('status-update').innerText = `KONEKSI ERROR: ${err.message}`;
+                    document.getElementById('status-update').className = "text-sm font-black text-red-600 uppercase italic";
+                }
+            }
+        }
+
+        // Jalankan fetch data otomatis saat halaman selesai dimuat
+        document.addEventListener('DOMContentLoaded', fetchTafsData);
+    </script>
 </body>
 </html>
