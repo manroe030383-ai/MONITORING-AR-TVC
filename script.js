@@ -67,7 +67,7 @@ async function fetchData() {
     }
 }
 
-// 2. FUNGSI UPDATE UI DASHBOARD (KODINGAN ASLI + INTEGRASI LOGIKA TAFS & ACC AR)
+// 2. FUNGSI UPDATE UI DASHBOARD (KODINGAN SINKRONISASI TOTAL 100%)
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
     let tvc = { total: 0, gi: 0, deliv: 0 };
@@ -81,7 +81,10 @@ function updateDashboard(data) {
     data.forEach(d => {
         const os = Number(getProp(d, 'os_balance') || 0);
         const ov = Number(getProp(d, 'total_overdue') || 0);
-        const l = String(getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
+        
+        // SINKRONISASI OPTIMAL: Membaca fallback property jika skema kolom bervariasi
+        const l = String(getProp(d, 'leasing_name') || getProp(d, 'leasing') || 'CASH').toUpperCase().trim();
+        
         const penalti = Number(getProp(d, 'penalty_amount') || 0);
         const lancarNominal = Number(getProp(d, 'lancar') || 0);
         const statusTagih = String(getProp(d, 'status_tagih') || '').toUpperCase().trim();
@@ -112,10 +115,9 @@ function updateDashboard(data) {
         }
 
         // ========================================================
-        // ABSOLUTE BLOCKING FILTER: MEMPROSES TAFS DAN ACC SECARA ADIL
+        // ABSOLUTE BLOCKING FILTER: SINKRON DATA DARI INTERFACES LEASING
         // ========================================================
         if (l.includes('TAFS')) {
-            // Data mutlak milik TAFS
             if (statusTagih === 'SUDAH GI' || os === 0) {
                 tafsMetrics.paid++;
             } else {
@@ -128,7 +130,6 @@ function updateDashboard(data) {
             }
         } 
         else if (l.includes('ACC')) {
-            // Data mutlak milik ACC
             if (statusTagih === 'SUDAH GI' || os === 0) {
                 accMetrics.paid++;
             } else {
@@ -172,9 +173,6 @@ function updateDashboard(data) {
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
-    // ==========================================
-    // PENEMBAKAN DATA SECARA TERISOLASI KE CARDS
-    // ==========================================
     // Dashboard Khusus TAFS
     if(document.getElementById('tafs-outstanding')) document.getElementById('tafs-outstanding').innerText = fmtIDR(tafsMetrics.os);
     if(document.getElementById('tafs-paid')) document.getElementById('tafs-paid').innerText = `${tafsMetrics.paid} Unit`;
@@ -210,7 +208,7 @@ function renderAgingChart(agingData) {
         chart: { type: 'bar', height: 250, toolbar: { show: false } },
         colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
         plotOptions: { bar: { borderRadius: 4, distributed: true, dataLabels: { position: 'top' } } },
-        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWave: 800 }, offsetY: -20 },
+        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWeight: 800 }, offsetY: -20 },
         xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontWeight: 700 } } },
         yaxis: { show: false },
         grid: { show: false },
@@ -229,7 +227,7 @@ function renderDonutLeasing(mLeas) {
 
     cachedData.forEach(d => {
         const os = Number(getProp(d, 'os_balance') || 0);
-        const l = String(getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
+        const l = String(getProp(d, 'leasing_name') || getProp(d, 'leasing') || 'CASH').toUpperCase().trim();
         if (["CASH", "CASH TERIMA", ""].includes(l)) {
             totalCash += os;
         } else {
@@ -310,7 +308,7 @@ function renderTabLeasingFull(data) {
     const el = document.getElementById('tab-leasing-full-list');
     if (!el) return;
     const leasingData = data.filter(d => {
-        const l = String(getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
+        const l = String(getProp(d, 'leasing_name') || getProp(d, 'leasing') || 'CASH').toUpperCase().trim();
         return !["CASH", "CASH TERIMA", ""].includes(l);
     });
     if(leasingData.length === 0) { el.innerHTML = '<p class="text-xs text-center py-4 text-slate-400">Tidak ada data kontribusi leasing</p>'; return; }
@@ -334,7 +332,7 @@ function renderTabLeasingFull(data) {
                                 <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${getProp(d, 'salesman_name') || getProp(d, 'supervisor_name') || 'OFFICE'}</p>
                             </td>
                             <td class="p-3">
-                                <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'leasing_name') || '-'}</span>
+                                <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'leasing_name') || getProp(d, 'leasing') || '-'}</span>
                             </td>
                             <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-black">${fmtIDR(getProp(d, 'os_balance'))}</td>
                         </tr>`).join('')}
@@ -369,7 +367,7 @@ function renderTabOverdueFull(data) {
                                 <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${getProp(d, 'salesman_name') || getProp(d, 'supervisor_name') || 'OFFICE'}</p>
                             </td>
                             <td class="p-3">
-                                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'leasing_name') || 'CASH'}</span>
+                                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'leasing_name') || getProp(d, 'leasing') || 'CASH'}</span>
                             </td>
                             <td class="p-3 text-right font-black text-red-600 bg-red-50/20">${fmtIDR(getProp(d, 'total_overdue'))}</td>
                             <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-bold">${fmtIDR(getProp(d, 'os_balance'))}</td>
@@ -379,12 +377,13 @@ function renderTabOverdueFull(data) {
         </div>`;
 }
 
+// FUNGSI UTAMA RENDER INPUT DATA LEASING DI DASHBOARD ADMIN (SINKRONISASI KOLOM TERBARU)
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
     if (!el) return;
 
     const filterAR = data.filter(d => {
-        const l = String(getProp(d, 'leasing_name') || '').toUpperCase().trim();
+        const l = String(getProp(d, 'leasing_name') || getProp(d, 'leasing') || '').toUpperCase().trim();
         return l.includes('TAFS') || l.includes('ACC');
     });
 
@@ -392,23 +391,30 @@ function renderDataArUnitFull(data) {
 
     el.innerHTML = filterAR.map((d, i) => {
         const idUtama = getProp(d, 'No') || getProp(d, 'id') || i;
+        
+        // Pembacaan field yang sekarang wajib diarahkan ke nama kolom Supabase asli Bapak
+        const valCabang = getProp(d, 'ket_cabang') || '';
+        const valPlan = getProp(d, 'plan_bayar_leasing') || '';
+        const valKet = getProp(d, 'ket_leasing') || '';
+        const currentLeasing = getProp(d, 'leasing_name') || getProp(d, 'leasing') || '-';
+
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
             <td class="p-4 text-slate-800 font-black">${getProp(d, 'customer_name') || '-'}</td>
             <td class="p-4">
-                <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'leasing_name') || '-'}</span>
+                <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${currentLeasing}</span>
                 <p class="text-[7px] text-slate-300 mt-1">SPK: ${getProp(d, 'no_spk') || '-'}</p>
             </td>
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'os_balance'))}</td>
             <td class="p-4 w-48">
-                <input type="text" id="cabang-${idUtama}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." class="input-custom bg-white">
+                <input type="text" id="cabang-${idUtama}" value="${valCabang}" placeholder="Ket cabang..." class="input-custom bg-white">
             </td>
             <td class="p-4 w-48">
-                <input type="text" id="plan-${idUtama}" value="${getProp(d, 'plan_bayar_leasing') || ''}" placeholder="Isi plan..." class="input-custom bg-white">
+                <input type="text" id="plan-${idUtama}" value="${valPlan}" placeholder="Isi plan..." class="input-custom bg-white">
             </td>
             <td class="p-4 w-48">
-                <input type="text" id="ket-${idUtama}" value="${getProp(d, 'ket_leasing') || ''}" placeholder="Isi keterangan..." class="input-custom bg-white">
+                <input type="text" id="ket-${idUtama}" value="${valKet}" placeholder="Isi keterangan..." class="input-custom bg-white">
             </td>
             <td class="p-4 text-center w-16">
                 <button onclick="simpanCatatan('${idUtama}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan">💾</button>
@@ -426,7 +432,7 @@ function renderTabDatabaseFull(data) {
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
             <td class="p-4 text-slate-800 font-black">${getProp(d, 'customer_name') || '-'}</td>
             <td class="p-4">
-                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'leasing_name') || 'CASH'}</span>
+                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'leasing_name') || getProp(d, 'leasing') || 'CASH'}</span>
             </td>
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'os_balance'))}</td>
             <td class="p-4 text-right text-emerald-600">${fmtIDR(getProp(d, 'hari_1_30') || getProp(d, 'lancar'))}</td>
@@ -479,7 +485,7 @@ function downloadExcel() {
             "No": index + 1,
             "Nama Customer": getProp(d, 'customer_name') || "-",
             "No SPK": getProp(d, 'no_spk') || "-",
-            "Leasing": getProp(d, 'leasing_name') || "CASH",
+            "Leasing": getProp(d, 'leasing_name') || getProp(d, 'leasing') || "CASH",
             "O/S Balance": getProp(d, 'os_balance') || 0,
             "Hari 1-30 (Lancar)": getProp(d, 'hari_1_30') || getProp(d, 'lancar') || 0,
             "Hari 31-60": getProp(d, 'hari_31_60') || 0,
