@@ -88,7 +88,6 @@
                     let htmlRows = '';
 
                     data.forEach((d, i) => {
-                        // SINKRONISASI NAMA FIELD SESUAI STRUKTUR ADMIN PUSAT
                         const leasing = String(d.leasing || d.leasing_name || d.Leasing || '').toUpperCase().trim();
                         
                         // Jalankan Filter Khusus Data TAFS
@@ -101,10 +100,10 @@
                             const salesmanName = d.salesman_name || d.supervisor_name || 'OFFICE';
                             const materialCode = d.material_code || '-';
                             
-                            // Field penampung catatan penagihan leasing
-                            const ketCabang = d.keterangan_cabang || d.ket_cabang || '';
-                            const planBayar = d.plan_bayar || d.plan_bayar_leasing || '';
-                            const ketLeasing = d.keterangan_leasing || d.ket_leasing || '';
+                            // DISESUAIKAN TOTAL 100% dengan nama kolom di database pusat Supabase Anda
+                            const valKetCabang = d.ket_cabang || '';
+                            const valPlanBayar = d.plan_bayar_leasing || '';
+                            const valKetLeasing = d.ket_leasing || '';
 
                             // Menentukan primary ID pencarian (Gunakan No atau id)
                             const idUtama = d.No || d.id || i;
@@ -129,13 +128,13 @@
                                 <div class="text-blue-600 font-black">${fmtIDR(os)}</div>
                                 <div class="text-gray-500 font-mono text-[11px]">${materialCode}</div>
                                 <div class="px-1">
-                                    <input type="text" id="cabang-${idUtama}" value="${ketCabang}" placeholder="Ket cabang..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
+                                    <input type="text" id="cabang-${idUtama}" value="${valKetCabang}" placeholder="Ket cabang..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
                                 </div>
                                 <div class="px-1">
-                                    <input type="text" id="plan-${idUtama}" value="${planBayar}" placeholder="Isi plan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
+                                    <input type="text" id="plan-${idUtama}" value="${valPlanBayar}" placeholder="Isi plan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
                                 </div>
                                 <div class="px-1">
-                                    <input type="text" id="ket-${idUtama}" value="${ketLeasing}" placeholder="Isi keterangan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
+                                    <input type="text" id="ket-${idUtama}" value="${valKetLeasing}" placeholder="Isi keterangan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
                                 </div>
                                 <div class="text-center">
                                     <button onclick="simpanCatatanTafs('${idUtama}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan">💾</button>
@@ -157,7 +156,7 @@
                     }
 
                     if (document.getElementById('status-update')) {
-                        document.getElementById('status-update').innerText = `KONEKSI SUKSES - DATA ADMIN TERINTEGRASI: ${new Date().toLocaleString('id-ID')} WIB`;
+                        document.getElementById('status-update').innerText = `KONEKSI BERHASIL - STRUKTUR SUPABASE SINKRON: ${new Date().toLocaleString('id-ID')} WIB`;
                         document.getElementById('status-update').className = "text-xs font-bold uppercase tracking-wider text-emerald-600 italic";
                     }
                 }
@@ -170,27 +169,26 @@
             }
         }
 
-        // FUNGSI AKSI: TEMBAK DATA UPDATE LANGSUNG KE TABEL ADMIN UTAMA (REALTIME)
+        // FUNGSI UTAMA: MENYIMPAN CATATAN KE KOLOM SUPABASE YANG BENAR (`ket_cabang`, `plan_bayar_leasing`, `ket_leasing`)
         window.simpanCatatanTafs = async function(noId) {
             try {
                 const valCabang = document.getElementById(`cabang-${noId}`).value;
                 const valPlan = document.getElementById(`plan-${noId}`).value;
                 const valKet = document.getElementById(`ket-${noId}`).value;
 
-                // Cari row objek asli untuk validasi key kolom index tabel ('No' atau 'id')
                 const rowAsli = window.cachedData.find(item => item.No == noId || item.id == noId);
                 let targetKey = 'No';
                 if (rowAsli && rowAsli.id !== undefined && rowAsli.No === undefined) {
                     targetKey = 'id';
                 }
 
-                // Payload disamakan 100% dengan kolom database Admin Pusat Bapak
-                let payload = {};
-                if (rowAsli) {
-                    payload.keterangan_cabang = valCabang;
-                    payload.plan_bayar = valPlan;
-                    payload.keterangan_leasing = valKet;
-                }
+                // PAYLOAD SINKRON 100% DENGAN SCHEMA DATABASE SUPABASE
+                // TIDAK BOLEH MENGGUNAKAN 'keterangan_cabang' AGAR TIDAK EROR CACHE SCHEMA Lagi
+                let payload = {
+                    ket_cabang: valCabang,
+                    plan_bayar_leasing: valPlan,
+                    ket_leasing: valKet
+                };
 
                 // Eksekusi update data ke database Supabase pusat
                 const { error } = await supabase
