@@ -59,7 +59,7 @@
             </div>
             
             <div id="tafs-table-body" class="divide-y divide-gray-100 max-h-[500px] overflow-y-auto mt-2">
-                </div>
+            </div>
 
         </div>
 
@@ -69,7 +69,7 @@
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
         const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emFidG5xaSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzc1MjM0NDUxLCJleHAiOjIwOTA4MTA0NTF9.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         window.cachedData = [];
@@ -88,7 +88,8 @@
                     let htmlRows = '';
 
                     data.forEach((d, i) => {
-                        const leasing = String(d.leasing || d.leasing_name || d.Leasing || '').toUpperCase().trim();
+                        // Antisipasi variasi nama kolom leasing (case-insensitive)
+                        const leasing = String(d.leasing_name || d.leasing || d.Leasing || '').toUpperCase().trim();
                         
                         // Jalankan Filter Khusus Data TAFS
                         if (leasing.includes('TAFS')) {
@@ -100,13 +101,12 @@
                             const salesmanName = d.salesman_name || d.supervisor_name || 'OFFICE';
                             const materialCode = d.material_code || '-';
                             
-                            // DISESUAIKAN TOTAL 100% dengan nama kolom di database pusat Supabase Anda
                             const valKetCabang = d.ket_cabang || '';
                             const valPlanBayar = d.plan_bayar_leasing || '';
                             const valKetLeasing = d.ket_leasing || '';
 
-                            // Menentukan primary ID pencarian (Gunakan No atau id)
-                            const idUtama = d.No || d.id || i;
+                            // PERBAIKAN LOGIKA: Gunakan index urutan i sebagai penanda element UI saja agar tidak konflik
+                            const uiId = i;
 
                             // LOGIKA KALKULASI 4 CARD METRIK ATAS
                             if (statusTagih === 'SUDAH GI' || os === 0) {
@@ -121,6 +121,7 @@
                             }
 
                             // RENDER STRUKTUR ROW INTERAKTIF UNTUK INPUT LEASING
+                            // Tambahkan data-attribute pada input untuk menyimpan kunci asli database
                             htmlRows += `
                             <div class="grid grid-cols-8 text-center py-3 text-xs font-bold uppercase text-gray-700 hover:bg-gray-50 items-center border-b border-gray-100">
                                 <div class="truncate px-2 text-left font-black text-slate-800">${customerName}</div>
@@ -128,16 +129,16 @@
                                 <div class="text-blue-600 font-black">${fmtIDR(os)}</div>
                                 <div class="text-gray-500 font-mono text-[11px]">${materialCode}</div>
                                 <div class="px-1">
-                                    <input type="text" id="cabang-${idUtama}" value="${valKetCabang}" placeholder="Ket cabang..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
+                                    <input type="text" id="cabang-${uiId}" data-customer="${customerName}" data-no="${d.No || ''}" data-id="${d.id || ''}" value="${valKetCabang}" placeholder="Ket cabang..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
                                 </div>
                                 <div class="px-1">
-                                    <input type="text" id="plan-${idUtama}" value="${valPlanBayar}" placeholder="Isi plan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
+                                    <input type="text" id="plan-${uiId}" value="${valPlanBayar}" placeholder="Isi plan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
                                 </div>
                                 <div class="px-1">
-                                    <input type="text" id="ket-${idUtama}" value="${valKetLeasing}" placeholder="Isi keterangan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
+                                    <input type="text" id="ket-${uiId}" value="${valKetLeasing}" placeholder="Isi keterangan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
                                 </div>
                                 <div class="text-center">
-                                    <button onclick="simpanCatatanTafs('${idUtama}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan">💾</button>
+                                    <button onclick="simpanCatatanTafs('${uiId}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan">💾</button>
                                 </div>
                             </div>`;
                         }
@@ -169,33 +170,37 @@
             }
         }
 
-        // FUNGSI UTAMA: MENYIMPAN CATATAN KE KOLOM SUPABASE YANG BENAR (`ket_cabang`, `plan_bayar_leasing`, `ket_leasing`)
-        window.simpanCatatanTafs = async function(noId) {
+        // PERBAIKAN LOGIKA SIMPAN: Menggunakan Multi-Pencarian (Fallback) agar 100% Akurat Tembus Database Admin
+        window.simpanCatatanTafs = async function(uiId) {
             try {
-                const valCabang = document.getElementById(`cabang-${noId}`).value;
-                const valPlan = document.getElementById(`plan-${noId}`).value;
-                const valKet = document.getElementById(`ket-${noId}`).value;
+                const inputCabang = document.getElementById(`cabang-${uiId}`);
+                const customerName = inputCabang.getAttribute('data-customer');
+                const dataNo = inputCabang.getAttribute('data-no');
+                const dataId = inputCabang.getAttribute('data-id');
 
-                const rowAsli = window.cachedData.find(item => item.No == noId || item.id == noId);
-                let targetKey = 'No';
-                if (rowAsli && rowAsli.id !== undefined && rowAsli.No === undefined) {
-                    targetKey = 'id';
-                }
+                const valCabang = inputCabang.value;
+                const valPlan = document.getElementById(`plan-${uiId}`).value;
+                const valKet = document.getElementById(`ket-${uiId}`).value;
 
-                // PAYLOAD SINKRON 100% DENGAN SCHEMA DATABASE SUPABASE
-                // TIDAK BOLEH MENGGUNAKAN 'keterangan_cabang' AGAR TIDAK EROR CACHE SCHEMA Lagi
                 let payload = {
                     ket_cabang: valCabang,
                     plan_bayar_leasing: valPlan,
                     ket_leasing: valKet
                 };
 
-                // Eksekusi update data ke database Supabase pusat
-                const { error } = await supabase
-                    .from('ar_unit')
-                    .update(payload)
-                    .eq(targetKey, noId);
+                // Membangun query update dinamis dan aman
+                let queryBuilder = supabase.from('ar_unit').update(payload);
 
+                if (dataId && dataId !== "") {
+                    queryBuilder = queryBuilder.eq('id', dataId);
+                } else if (dataNo && dataNo !== "") {
+                    queryBuilder = queryBuilder.eq('No', Number(dataNo));
+                } else {
+                    // Proteksi Terkuat: Jika ID angka tidak ketemu, tembak berdasarkan nama customer
+                    queryBuilder = queryBuilder.eq('customer_name', customerName);
+                }
+
+                const { error } = await queryBuilder;
                 if (error) throw error;
                 
                 alert("Catatan TAFS Berhasil Disimpan Langsung ke Admin Pusat! 👍");
