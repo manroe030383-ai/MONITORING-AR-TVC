@@ -201,7 +201,7 @@ function renderAgingChart(agingData) {
         chart: { type: 'bar', height: 250, toolbar: { show: false } },
         colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
         plotOptions: { bar: { borderRadius: 4, distributed: true, dataLabels: { position: 'top' } } },
-        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWeight: 800 }, offsetY: -20 },
+        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontGrad: 800 }, offsetY: -20 },
         xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontWeight: 700 } } },
         yaxis: { show: false },
         grid: { show: false },
@@ -363,10 +363,7 @@ function renderDataArUnitFull(data) {
     if(filterAR.length === 0) { el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing TAFS / ACC</td></tr>'; return; }
 
     el.innerHTML = filterAR.map((d, i) => {
-        // PERBAIKAN: Gunakan index urutan (i) sebagai ID element UI agar aman, bukan No database
         const uiId = i;
-        
-        // Simpan referensi pencarian database yang akurat
         const dbId = d.id || d.No || '';
         const customerName = getProp(d, 'customer_name') || '';
 
@@ -420,7 +417,7 @@ function renderTabDatabaseFull(data) {
     `).join('');
 }
 
-// 5. AMAN & PRESERVED: LOGIKA SIMPAN CATATAN MULTI-PARAMETER MATCHING
+// 5. AMAN & PRESERVED: LOGIKA SIMPAN CATATAN MULTI-PARAMETER MATCHING + REDIRECT JALUR CEPAT
 window.simpanCatatan = async function(uiId) {
     try {
         const inputCabang = document.getElementById(`cabang-${uiId}`);
@@ -437,7 +434,7 @@ window.simpanCatatan = async function(uiId) {
             ket_leasing: valKet
         });
 
-        // Pencarian Fallback: Jika ID angka bermasalah, tembak berdasarkan nama customer (sangat aman)
+        // Pencarian Fallback bawaan asal yang sangat aman
         if (dbId && dbId !== "undefined" && dbId !== "") {
             if (isNaN(dbId)) {
                 queryBuilder = queryBuilder.eq('id', dbId);
@@ -451,8 +448,9 @@ window.simpanCatatan = async function(uiId) {
         const { error } = await queryBuilder;
         if (error) throw error;
         
-        alert("Catatan penagihan unit berhasil disimpan! 👍");
-        fetchData(); 
+        // PENGALIHAN INSTAN BEGITU PROSES UPDATE DATABASE BERHASIL
+        window.location.href = "tafs.html";
+        
     } catch (err) {
         console.error(err);
         alert("Gagal menyimpan data: " + err.message);
@@ -467,42 +465,4 @@ function downloadExcel() {
     }
 
     try {
-        const dataUntukExcel = cachedData.map((d, index) => ({
-            "No": index + 1,
-            "Nama Customer": getProp(d, 'customer_name') || "-",
-            "No SPK": getProp(d, 'no_spk') || "-",
-            "Leasing": getProp(d, 'leasing_name') || getProp(d, 'leasing') || "CASH",
-            "O/S Balance": getProp(d, 'os_balance') || 0,
-            "Hari 1-30 (Lancar)": getProp(d, 'hari_1_30') || getProp(d, 'lancar') || 0,
-            "Hari 31-60": getProp(d, 'hari_31_60') || 0,
-            "Lebih 60 Hari": getProp(d, 'lebih_60_hari') || 0,
-            "Total Overdue": getProp(d, 'total_overdue') || 0,
-            "Potensi Penalti": getProp(d, 'penalty_amount') || 0,
-            "Salesman": getProp(d, 'salesman_name') || "-",
-            "Supervisor": getProp(d, 'supervisor_name') || "-",
-            "Keterangan Cabang": d.ket_cabang || "",
-            "Plan Bayar Leasing": d.plan_bayar_leasing || "",
-            "Keterangan Leasing": d.ket_leasing || ""
-        }));
-
-        const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel);
-        const workbook = XLSX.utils.book_new();
-        const tglHariIni = new Date().toISOString().slice(0, 10);
-        const namaFile = `Report_AR_Unit_Auto2000_${tglHariIni}.xlsx`;
-
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Data AR Unit");
-        XLSX.writeFile(workbook, namaFile);
-
-    } catch (error) {
-        console.error("Gagal mendownload Excel:", error);
-        alert("Terjadi masalah saat memproses Excel: " + error.message);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    fetchData();
-    const btnDownload = document.getElementById('btn-download-excel');
-    if (btnDownload) {
-        btnDownload.addEventListener('click', downloadExcel);
-    }
-});
+        const dataUntukExcel
