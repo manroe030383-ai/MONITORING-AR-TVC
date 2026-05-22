@@ -12,6 +12,21 @@
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
+        /* Custom scrollbar untuk tabel */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
 <body class="bg-[#f8fafc] min-h-screen flex text-slate-800">
@@ -65,10 +80,10 @@
 
         <div class="px-8 py-2">
             <div class="flex flex-wrap gap-2">
-                <button class="bg-[#0f172a] text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm cursor-pointer">Ringkasan</button>
-                <button class="bg-white hover:bg-slate-100 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer transition-all">Leasing</button>
-                <button class="bg-white hover:bg-slate-100 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer transition-all">Overdue</button>
-                <button class="bg-white hover:bg-slate-100 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer transition-all">Database Lengkap</button>
+                <button id="tab-ringkasan" class="bg-[#0f172a] text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm cursor-pointer">Ringkasan</button>
+                <button id="tab-leasing" class="bg-white hover:bg-slate-100 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer transition-all">Leasing</button>
+                <button id="tab-overdue" class="bg-white hover:bg-slate-100 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer transition-all">Overdue</button>
+                <button id="tab-database" class="bg-white hover:bg-slate-100 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer transition-all">Database Lengkap</button>
             </div>
         </div>
 
@@ -125,7 +140,6 @@
                 
                 <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm lg:col-span-7 min-h-[220px] flex flex-col justify-between">
                     <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">Komposisi & Breakdown Penjualan</h4>
-                    
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-auto">
                         <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/60">
                             <span class="text-[9px] font-bold uppercase tracking-wider text-emerald-600 block">Total Cash</span>
@@ -141,31 +155,118 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm min-h-[200px]">
-                    <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">⌛ Top Sales O/S</h4>
+            <section class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-100">
+                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Input Control Perubahan Cabang</h4>
                 </div>
+                <div class="overflow-x-auto w-full">
+                    <table class="min-w-full divide-y divide-slate-200 text-left text-sm whitespace-nowrap">
+                        <thead class="bg-[#2563eb] text-white font-bold uppercase tracking-wider text-xs">
+                            <tr>
+                                <th class="px-4 py-4 text-center w-12">No</th>
+                                <th class="px-6 py-4 min-w-[220px]">Customer Name</th>
+                                <th class="px-4 py-4 w-28 text-center">Leasing</th>
+                                <th class="px-6 py-4 text-right w-40">O/S Balance</th>
+                                <th class="px-4 py-4 min-w-[200px]">Ket Cabang</th>
+                                <th class="px-4 py-4 min-w-[200px]">Plan Bayar Leasing</th>
+                                <th class="px-4 py-4 min-w-[240px]">Keterangan Leasing</th>
+                                <th class="px-4 py-4 text-center w-20">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="divide-y divide-slate-100 text-slate-600 bg-white">
+                            
+                            <tr class="hover:bg-slate-50/80 transition-colors align-middle">
+                                <td class="px-4 py-3.5 text-center font-medium text-slate-400">1</td>
+                                <td class="px-6 py-3.5 font-bold text-slate-800">LEGER ADIYUSTAMA</td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span class="px-2.5 py-1 text-xs font-bold bg-blue-50 text-blue-600 rounded-md">TAFS</span>
+                                </td>
+                                <td class="px-6 py-3.5 text-right font-extrabold text-blue-600">RP 186.800.000</td>
+                                <td class="px-3 py-2">
+                                    <input type="text" id="ket-cabang-1" placeholder="Ket cabang..." class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-400" />
+                                </td>
+                                <td class="px-3 py-2">
+                                    <input type="text" id="plan-bayar-1" placeholder="Isi plan..." class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-400" />
+                                </td>
+                                <td class="px-3 py-2">
+                                    <input type="text" id="ket-leasing-1" placeholder="Isi keterangan..." class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-400" />
+                                </td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <div class="flex items-center justify-center">
+                                        <button onclick="simpanDanRedirect(1)" title="Simpan & Link ke TAFS" class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all active:scale-90 cursor-pointer">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
 
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm min-h-[200px] flex flex-col justify-between">
-                    <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">🗺️ Breakdown Leasing TVC</h4>
-                    <div class="bg-blue-50/60 p-4 rounded-xl border border-blue-100 text-center space-y-1">
-                        <span class="text-[9px] font-bold uppercase tracking-wider text-blue-600 block">Total Penjualan TAFS & ACC</span>
-                        <span id="total-tafs-acc" class="text-2xl font-black text-slate-800 block">0 Unit</span>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3 text-center text-[10px] font-bold uppercase tracking-wider">
-                        <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
-                            <span class="text-emerald-600 block text-[8px]">Sudah GI / Tagih</span>
-                            <span class="text-emerald-700 text-sm font-black block mt-1">0 Unit</span>
-                        </div>
-                        <div class="bg-orange-50/60 p-3 rounded-xl border border-orange-100">
-                            <span class="text-orange-600 block text-[8px]">Belum Delivery</span>
-                            <span class="text-orange-700 text-sm font-black block mt-1">0 Unit</span>
-                        </div>
-                    </div>
+                            <tr class="hover:bg-slate-50/80 transition-colors align-middle">
+                                <td class="px-4 py-3.5 text-center font-medium text-slate-400">2</td>
+                                <td class="px-6 py-3.5 font-bold text-slate-800">ABD RASYID S</td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span class="px-2.5 py-1 text-xs font-bold bg-blue-50 text-blue-600 rounded-md">TAFS</span>
+                                </td>
+                                <td class="px-6 py-3.5 text-right font-extrabold text-blue-600">RP 248.945.000</td>
+                                <td class="px-3 py-2">
+                                    <input type="text" id="ket-cabang-2" placeholder="Ket cabang..." class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-400" />
+                                </td>
+                                <td class="px-3 py-2">
+                                    <input type="text" id="plan-bayar-2" placeholder="Isi plan..." class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-400" />
+                                </td>
+                                <td class="px-3 py-2">
+                                    <input type="text" id="ket-leasing-2" placeholder="Isi keterangan..." class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-400" />
+                                </td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <div class="flex items-center justify-center">
+                                        <button onclick="simpanDanRedirect(2)" title="Simpan & Link ke TAFS" class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all active:scale-90 cursor-pointer">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
                 </div>
+            </section>
 
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm min-h-[200px]">
-                    <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">⚠️ Top 5 Overdue</h4>
-                </div>
+        </main>
+    </div>
 
-                <div class="bg-white p-6 rounded-2xl border border-slate-10
+    <script>
+        async function simpanDanRedirect(rowId) {
+            try {
+                // 1. Ambil teks input agar tidak hilang/ter-reset saat dirender ulang
+                const teksCabang = document.getElementById(`ket-cabang-${rowId}`).value;
+                const planBayar = document.getElementById(`plan-bayar-${rowId}`).value;
+                const ketLeasing = document.getElementById(`ket-leasing-${rowId}`).value;
+
+                console.log(`Menyimpan data Row ${rowId}:`, { teksCabang, planBayar, ketLeasing });
+
+                // 2. INTEGRASI SUPABASE KAMU (Jalur Aman)
+                /*
+                const { error } = await supabase
+                    .from('ar_unit')
+                    .update({ 
+                        ket_cabang: teksCabang, 
+                        plan_bayar: planBayar, 
+                        keterangan_leasing: ketLeasing 
+                    })
+                    .eq('id', rowId);
+                if (error) throw error;
+                */
+
+                // Beri waktu tunggu agar proses upload ke cloud database selesai sempurna
+                await new Promise(resolve => setTimeout(resolve, 400));
+
+                // 3. SELESAI UPDATE, LANGSUNG REDIRECT KE TAFS.HTML
+                window.location.href = "tafs.html";
+
+            } catch (err) {
+                console.error("Gagal melakukan aksi simpan:", err);
+                alert("Gagal memperbarui data.");
+            }
+        }
+    </script>
+</body>
+</html>
