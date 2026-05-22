@@ -115,7 +115,6 @@ function updateDashboard(data) {
         // ABSOLUTE BLOCKING FILTER: MEMPROSES TAFS DAN ACC SECARA ADIL
         // ========================================================
         if (l.includes('TAFS')) {
-            // Data mutlak milik TAFS
             if (statusTagih === 'SUDAH GI' || os === 0) {
                 tafsMetrics.paid++;
             } else {
@@ -128,7 +127,6 @@ function updateDashboard(data) {
             }
         } 
         else if (l.includes('ACC')) {
-            // Data mutlak milik ACC
             if (statusTagih === 'SUDAH GI' || os === 0) {
                 accMetrics.paid++;
             } else {
@@ -150,7 +148,7 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // RENDER DATA KE ELEMENT DASHBOARD UTAMA (ASLI)
+    // RENDER DATA KE ELEMENT DASHBOARD UTAMA
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -172,22 +170,17 @@ function updateDashboard(data) {
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
-    // ==========================================
     // PENEMBAKAN DATA SECARA TERISOLASI KE CARDS
-    // ==========================================
-    // Dashboard Khusus TAFS
     if(document.getElementById('tafs-outstanding')) document.getElementById('tafs-outstanding').innerText = fmtIDR(tafsMetrics.os);
     if(document.getElementById('tafs-paid')) document.getElementById('tafs-paid').innerText = `${tafsMetrics.paid} Unit`;
     if(document.getElementById('tafs-on-proses')) document.getElementById('tafs-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
     if(document.getElementById('tafs-overdue')) document.getElementById('tafs-overdue').innerText = `${tafsMetrics.overdue} Unit`;
 
-    // Dashboard Khusus ACC
     if(document.getElementById('acc-outstanding')) document.getElementById('acc-outstanding').innerText = fmtIDR(accMetrics.os);
     if(document.getElementById('acc-paid')) document.getElementById('acc-paid').innerText = `${accMetrics.paid} Unit`;
     if(document.getElementById('acc-on-proses')) document.getElementById('acc-on-proses').innerText = `${accMetrics.onProses} Unit`;
     if(document.getElementById('acc-overdue')) document.getElementById('acc-overdue').innerText = `${accMetrics.overdue} Unit`;
 
-    // Sisa pemanggilan grafik bawaan (Asli)
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
@@ -201,7 +194,7 @@ function updateDashboard(data) {
     renderTabDatabaseFull(data); 
 }
 
-// 3. FUNGSI RENDER GRAFIK & LIST DATA (TIDAK ADA PERUBAHAN STRUCTURAL)
+// 3. FUNGSI RENDER GRAFIK & LIST DATA
 function renderAgingChart(agingData) {
     const el = document.querySelector("#chart-aging");
     if (!el) return;
@@ -220,7 +213,6 @@ function renderAgingChart(agingData) {
     else { charts.bar = new ApexCharts(el, options); charts.bar.render(); }
 }
 
-// [renderDonutLeasing, renderLeasingList, renderTopList, renderOverdueTop, renderTabLeasingFull, renderTabOverdueFull, renderTabDatabaseFull tetap sama sesuai script Anda]
 function renderDonutLeasing(mLeas) {
     const el = document.querySelector("#chart-donut-leasing");
     if (!el) return;
@@ -258,12 +250,7 @@ function renderDonutLeasing(mLeas) {
                             label: 'TOTAL AR',
                             fontSize: '10px',
                             fontWeight: 'bold',
-                            color: '#64748B',
-                            formatter: function (w) {
-                                const total = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
-                                if (totalCash === 0 && totalLeasing === 0 && total === 2) return "Rp 0";
-                                return (total / 1000000000).toFixed(2) + " M";
-                            }
+                            color: '#64748B'
                         }
                     }
                 }
@@ -307,6 +294,10 @@ function renderOverdueTop(data) {
         </div>`).join('');
 }
 
+function borderTrClass(i) {
+    return 'hover:bg-slate-50/80 transition-all font-bold uppercase';
+}
+
 function renderTabLeasingFull(data) {
     const el = document.getElementById('tab-leasing-full-list');
     if (!el) return;
@@ -328,7 +319,7 @@ function renderTabLeasingFull(data) {
                 </thead>
                 <tbody class="divide-y divide-slate-50">
                     ${leasingData.map((d, i) => `
-                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase">
+                        <tr class="${borderTrClass(i)}">
                             <td class="p-3 text-center text-slate-400">${i+1}</td>
                             <td class="p-3">
                                 <p class="text-slate-800 text-[11px] font-black">${getProp(d, 'customer_name') || '-'}</p>
@@ -363,7 +354,7 @@ function renderTabOverdueFull(data) {
                 </thead>
                 <tbody class="divide-y divide-slate-50">
                     ${overdueData.map((d, i) => `
-                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase">
+                        <tr class="${borderTrClass(i)}">
                             <td class="p-3 text-center text-slate-400">${i+1}</td>
                             <td class="p-3">
                                 <p class="text-slate-800 text-[11px] font-black">${getProp(d, 'customer_name') || '-'}</p>
@@ -406,13 +397,13 @@ function renderDataArUnitFull(data) {
                 <input type="text" id="cabang-${idUtama}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." class="input-custom bg-white">
             </td>
             <td class="p-4 w-48">
-                <input type="text" id="plan-${idUtama}" value="${getProp(d, 'plan_bayar_leasing') || ''}" placeholder="Isi plan..." class="input-custom bg-white">
+                <input type="text" id="plan-${idUtama}" value="${getProp(d, 'plan_bayar_leasing') || ''}" placeholder="Menunggu isian leasing..." class="input-custom bg-slate-50 text-slate-500 cursor-not-allowed" readonly>
             </td>
             <td class="p-4 w-48">
-                <input type="text" id="ket-${idUtama}" value="${getProp(d, 'ket_leasing') || ''}" placeholder="Isi keterangan..." class="input-custom bg-white">
+                <input type="text" id="ket-${idUtama}" value="${getProp(d, 'ket_leasing') || ''}" placeholder="Menunggu keterangan leasing..." class="input-custom bg-slate-50 text-slate-500 cursor-not-allowed" readonly>
             </td>
             <td class="p-4 text-center w-16">
-                <button onclick="simpanCatatan('${idUtama}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan">💾</button>
+                <button onclick="simpanCatatan('${idUtama}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan Cabang">💾</button>
             </td>
         </tr>`;
     }).join('');
@@ -438,33 +429,30 @@ function renderTabDatabaseFull(data) {
     `).join('');
 }
 
-// 4. FUNGSI SIMPAN CATATAN KE SUPABASE (HANYA MENGUBAH ALUR REDIRECT)
+// 4. FUNGSI SIMPAN CATATAN KE SUPABASE (SUDAH DIPERBAIKI - TETAP DI HALAMAN ADMIN)
 window.simpanCatatan = async function(noId) {
     try {
         const valCabang = document.getElementById(`cabang-${noId}`).value;
-        const valPlan = document.getElementById(`plan-${noId}`).value;
-        const valKet = document.getElementById(`ket-${noId}`).value;
-
+        
         let targetKey = 'No';
         if (cachedData.length > 0 && cachedData[0]['id'] !== undefined) {
             targetKey = 'id';
         }
 
+        // Simpan eksklusif kolom ket_cabang tanpa menimpa isian leasing
         const { error } = await supabase
             .from('ar_unit')
             .update({
-                ket_cabang: valCabang,
-                plan_bayar_leasing: valPlan,
-                ket_leasing: valKet
+                ket_cabang: valCabang
             })
             .eq(targetKey, noId);
 
         if (error) throw error;
         
-        alert("Catatan penagihan unit berhasil disimpan! 👍");
+        alert("Keterangan cabang berhasil disimpan! 👍");
         
-        // Alihkan halaman secara instan ke tafs.html
-        window.location.href = "tafs.html";
+        // RE-FETCH DATA SECARA INSTAN TANPA PINDAH HALAMAN
+        fetchData();
         
     } catch (err) {
         console.error(err);
