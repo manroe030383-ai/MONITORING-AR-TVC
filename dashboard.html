@@ -1,284 +1,249 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Overview AR Unit - Auto2000</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <title>AUTO2000 - Branch Control</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .card-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04); }
-        .nav-active { background-color: #1B2559 !important; color: white !important; }
-        .box-total { border-radius: 12px; padding: 12px; }
-        .transition-all { transition: all 0.3s ease; }
-        .tab-content { display: block; }
-        .tab-content.hidden { display: none; }
-        .input-custom {
-            border: 1px solid #E2E8F0;
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 10px;
-            width: 100%;
-            transition: all 0.2s;
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
-        .input-custom:focus {
-            border-color: #3B82F6;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        /* Custom scrollbar untuk tabel */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
     </style>
 </head>
-<body class="bg-[#F8FAFC] min-h-screen flex text-[#1B2559]">
+<body class="bg-[#f8fafc] min-h-screen flex text-slate-800">
 
-    <aside class="w-64 bg-[#0B1324] text-slate-400 hidden lg:flex flex-col p-6 sticky top-0 h-screen">
-        <div class="flex items-center gap-3 mb-10">
-            <div class="bg-red-600 text-white w-9 h-9 rounded-lg flex items-center justify-center font-bold">A</div>
+    <aside class="w-64 bg-[#0f172a] text-slate-400 flex flex-col min-h-screen shrink-0 border-r border-slate-800">
+        <div class="p-4 flex items-center space-x-3 border-b border-slate-800">
+            <div class="bg-red-600 text-white w-8 h-8 rounded-lg flex items-center justify-center font-black text-lg shadow-md">
+                A
+            </div>
             <div>
-                <h1 class="text-white font-bold text-xs uppercase">Auto2000</h1>
-                <p class="text-[8px] uppercase tracking-widest text-slate-500">Branch Control</p>
+                <h1 class="text-white font-bold text-sm tracking-tight leading-none">AUTO2000</h1>
+                <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Branch Control</span>
             </div>
         </div>
-        <nav class="space-y-1">
-            <p class="text-[9px] font-bold text-slate-600 uppercase mb-4 px-2 tracking-widest">AR Kendaraan (Unit)</p>
-            <button id="side-btn-ringkasan" onclick="filterTab(this, 'ringkasan')" class="w-full flex items-center gap-3 p-3 bg-red-600 text-white rounded-xl text-xs font-bold shadow-lg transition-all text-left">
-                📊 Dashboard Unit
-            </button>
-            <button id="side-btn-ar-unit" onclick="filterTab(this, 'ar_unit')" class="w-full flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl text-xs font-medium transition-all text-left">
-                📄 Data AR Unit
-            </button>
-        </nav>
+
+        <div class="p-4 space-y-6 flex-1">
+            <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-600 px-3 mb-2">AR Kendaraan (Unit)</p>
+                <nav class="space-y-1">
+                    <a href="#" class="flex items-center space-x-3 bg-red-600 text-white px-3 py-2.5 rounded-xl font-medium text-sm transition-all shadow-sm shadow-red-600/20">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"></path></svg>
+                        <span>Dashboard Unit</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 hover:bg-slate-800/60 hover:text-slate-200 px-3 py-2.5 rounded-xl font-medium text-sm transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <span>Data AR Unit</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
     </aside>
 
-    <main class="flex-1 p-6 overflow-x-hidden">
+    <div class="flex-1 flex flex-col min-w-0">
         
-        <div class="flex justify-between items-start mb-6">
+        <header class="px-8 pt-6 pb-2 flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <div>
-                <p id="status-update" class="text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic">MEMUAT DATA...</p>
-                <h2 class="text-2xl font-extrabold tracking-tight">Overview AR Unit</h2>
-                <div class="flex gap-2 mt-4">
-                    <button onclick="filterTab(this, 'ringkasan')" class="nav-btn nav-active px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Ringkasan</button>
-                    <button onclick="filterTab(this, 'leasing')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Leasing</button>
-                    <button onclick="filterTab(this, 'overdue')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Overdue</button>
-                    <button onclick="filterTab(this, 'database')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 transition-all">Database Lengkap</button>
-                </div>
+                <span class="text-[10px] font-bold text-emerald-600 tracking-wider uppercase">Data Aktif</span>
+                <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5">Overview AR Unit</h2>
             </div>
-            <div class="flex gap-4 items-center">
-                <div class="bg-white p-3 rounded-xl border border-slate-100 flex flex-col items-end">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase">ARSIP DB:</span>
-                    <span id="tgl-arsip" class="text-xs font-black">Memuat...</span>
+            <div class="flex items-center space-x-3">
+                <div class="bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm text-right">
+                    <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Arsip DB:</span>
+                    <span id="archive-status" class="text-xs font-bold text-slate-700">22/5/2026</span>
                 </div>
-                <button id="btn-download-excel" class="bg-white border border-slate-200 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all">Download Excel</button>
+                <button id="btn-download" class="bg-white hover:bg-slate-50 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs border border-slate-200 shadow-sm transition-all flex items-center space-x-2 cursor-pointer active:scale-95">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>DOWNLOAD EXCEL</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="px-8 py-2">
+            <div class="flex flex-wrap gap-2">
+                <button class="bg-[#0f172a] text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm cursor-pointer">Ringkasan</button>
+                <button class="bg-white hover:bg-slate-100 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer transition-all">Leasing</button>
+                <button class="bg-white hover:bg-slate-100 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer transition-all">Overdue</button>
+                <button class="bg-white hover:bg-slate-100 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer transition-all">Database Lengkap</button>
             </div>
         </div>
 
-        <div id="content-ringkasan" class="tab-content">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total O/S Balance</p>
-                    <h3 id="total-os" class="text-xl font-black mb-4 tracking-tighter">Rp 0</h3>
-                    <div class="h-1.5 w-full bg-slate-100 rounded-full flex overflow-hidden mb-1">
-                        <div id="bar-cash" class="bg-emerald-400 h-full" style="width: 0%"></div>
-                        <div id="bar-leasing" class="bg-blue-600 h-full" style="width: 0%"></div>
+        <main class="p-8 space-y-6 overflow-y-auto flex-1">
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 flex flex-col justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total O/S Balance</p>
+                        <h3 id="total-outstanding" class="text-2xl font-extrabold text-blue-900 tracking-tight mt-1">Rp 19.607.953.211</h3>
                     </div>
-                    <div class="flex justify-between text-[8px] font-bold uppercase tracking-tighter">
-                        <span class="text-emerald-500">Cash</span>
-                        <span class="text-blue-600">Leasing</span>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-50 text-[9px] font-bold uppercase tracking-wider">
+                        <span class="text-emerald-500">Cash: 0</span>
+                        <span class="text-blue-500">Leasing: 42</span>
                     </div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Total Overdue (> TOP)</p>
-                    <h3 id="total-overdue" class="text-xl font-black text-red-600 tracking-tighter">Rp 0</h3>
-                    <span id="badge-overdue" class="text-[9px] font-bold text-red-400 mt-2 block uppercase italic">0 SPK Lewat TOP</span>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 flex flex-col justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Overdue</p>
+                        <h3 id="total-overdue" class="text-2xl font-extrabold text-red-600 tracking-tight mt-1">29 Unit</h3>
+                    </div>
+                    <div class="pt-2 border-t border-slate-50 text-[9px] font-bold text-red-500 uppercase tracking-wider italic">
+                        29 SPK Lewat TOP
+                    </div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Potensi Penalti</p>
-                    <h3 id="total-penalty" class="text-xl font-black text-orange-500 tracking-tighter">Rp 0</h3>
-                    <span id="spk-penalty" class="text-[9px] font-bold text-slate-400 mt-2 block uppercase italic text-orange-400">0 SPK</span>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 flex flex-col justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">On Proses</p>
+                        <h3 id="potensi-penalti" class="text-2xl font-extrabold text-amber-600 tracking-tight mt-1">42 Unit</h3>
+                    </div>
+                    <div class="pt-2 border-t border-slate-50 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                        Proses Tagihan Leasing
+                    </div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase mb-2">Belum Jatuh Tempo</p>
-                    <h3 id="total-lancar" class="text-xl font-black text-emerald-500 tracking-tighter">Rp 0</h3>
-                    <div class="mt-2 flex items-center gap-1">
-                        <span class="w-2 h-2 bg-emerald-400 rounded-full"></span>
-                        <span class="text-[9px] font-bold text-emerald-400 uppercase italic">O/S Aman</span>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 flex flex-col justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">PAID</p>
+                        <h3 id="belum-jatuh-tempo" class="text-2xl font-extrabold text-emerald-600 tracking-tight mt-1">0 Unit</h3>
+                    </div>
+                    <div class="pt-2 border-t border-slate-50 text-[9px] font-bold text-emerald-500 uppercase tracking-wider flex items-center space-x-1">
+                        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block"></span>
+                        <span>O/S Aman</span>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
-                    <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-10">Aging Analysis (Nominal)</h4>
-                    <div id="chart-aging"></div>
+            <section class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-100">
+                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Input Control Perubahan Cabang</h4>
                 </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow lg:col-span-2">
-                    <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">Komposisi & Breakdown Penjualan</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-                        <div class="md:col-span-4"><div id="chart-donut-leasing"></div></div>
-                        <div class="md:col-span-8 space-y-6">
-                            <div class="flex gap-4">
-                                <div class="box-total bg-emerald-50 border border-emerald-100 flex-1">
-                                    <p class="text-[8px] font-bold text-emerald-600 uppercase mb-1">Total Cash</p>
-                                    <p id="val-total-cash" class="text-sm font-black text-emerald-700">Rp 0</p>
-                                    <p id="unit-total-cash" class="text-[8px] font-bold text-emerald-500">0 Unit</p>
-                                </div>
-                                <div class="box-total bg-blue-50 border border-blue-100 flex-1">
-                                    <p class="text-[8px] font-bold text-blue-600 uppercase mb-1">Total Leasing</p>
-                                    <p id="val-total-leas" class="text-sm font-black text-blue-700">Rp 0</p>
-                                    <p id="unit-total-leas" class="text-[8px] font-bold text-blue-500">0 Unit</p>
-                                </div>
-                            </div>
-                            <div id="leasing-list" class="space-y-4 pt-2 border-t border-slate-50"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                    <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">🏆 Top Sales O/S</h4>
-                    <div id="list-sales" class="space-y-4"></div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                    <h4 class="text-[10px] font-bold text-blue-500 uppercase mb-4">📊 Breakdown Leasing TVC</h4>
-                    <div class="bg-[#F0F7FF] p-6 rounded-2xl border border-blue-100 text-center mb-4">
-                        <span class="text-[9px] font-bold text-blue-600 uppercase tracking-widest">Total Penjualan TAFS & ACC</span>
-                        <p id="total-unit-tvc" class="text-3xl font-black text-[#1B2559]">0 Unit</p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 mb-4">
-                        <div class="bg-[#F0FDF4] p-3 rounded-xl text-center border border-emerald-100">
-                            <p class="text-[8px] font-bold text-emerald-600 uppercase mb-1">SUDAH GI / TAGIH</p>
-                            <p id="unit-gi-tvc" class="text-2xl font-black text-emerald-700">0 Unit</p>
-                        </div>
-                        <div class="bg-[#FFF7ED] p-3 rounded-xl text-center border border-orange-100">
-                            <p class="text-[8px] font-bold text-orange-600 uppercase mb-1">BELUM DELIVERY</p>
-                            <p id="unit-delivery-tvc" class="text-2xl font-black text-orange-700">0 Unit</p>
-                        </div>
-                    </div>
-                    <div id="tvc-detail-list" class="space-y-1"></div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                    <h4 class="text-[10px] font-bold text-red-500 uppercase mb-4 italic">⚠️ Top 5 Overdue</h4>
-                    <div id="list-overdue" class="space-y-4"></div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                    <h4 class="text-[10px] font-bold text-purple-600 uppercase mb-4 tracking-widest">🏢 Top SPV AR Distribution</h4>
-                    <div id="list-spv" class="space-y-6"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="content-leasing" class="tab-content hidden">
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">Detail Kontribusi Leasing</h4>
-                <div id="tab-leasing-full-list" class="space-y-4"></div>
-            </div>
-        </div>
-
-        <div id="content-overdue" class="tab-content hidden">
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
-                <h4 class="text-[10px] font-bold text-red-500 uppercase mb-4 italic">Semua Data Overdue Unit</h4>
-                <div id="tab-overdue-full-list" class="space-y-4"></div>
-            </div>
-        </div>
-
-        <div id="content-ar_unit" class="tab-content hidden">
-            <div class="bg-white rounded-2xl border border-slate-100 card-shadow overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-[10px]">
-                        <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100 whitespace-nowrap">
+                <div class="overflow-x-auto w-full">
+                    <table class="min-w-full divide-y divide-slate-200 text-left text-sm whitespace-nowrap">
+                        <thead class="bg-[#2563eb] text-white font-bold uppercase tracking-wider text-xs">
                             <tr>
-                                <th class="p-4 text-center">No</th>
-                                <th class="p-4">Customer Name</th>
-                                <th class="p-4">Leasing</th>
-                                <th class="p-4 text-right">O/S Balance</th>
-                                <th class="p-4">Ket Cabang</th>
-                                <th class="p-4">Plan Bayar Leasing</th>
-                                <th class="p-4">Keterangan Leasing</th>
-                                <th class="p-4 text-center">Aksi</th>
+                                <th class="px-4 py-4 text-center w-12">No</th>
+                                <th class="px-6 py-4 min-w-[220px]">Customer Name</th>
+                                <th class="px-4 py-4 w-28 text-center">Leasing</th>
+                                <th class="px-6 py-4 text-right w-40">O/S Balance</th>
+                                <th class="px-4 py-4 min-w-[200px]">Ket Cabang</th>
+                                <th class="px-4 py-4 min-w-[200px]">Plan Bayar Leasing</th>
+                                <th class="px-4 py-4 min-w-[240px]">Keterangan Leasing</th>
+                                <th class="px-4 py-4 text-center w-20">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody id="tab-ar-unit-body" class="divide-y divide-slate-50"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="content-database" class="tab-content hidden">
-            <div class="bg-white rounded-2xl border border-slate-100 card-shadow overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-[10px]">
-                        <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100 whitespace-nowrap">
-                            <tr>
-                                <th class="p-4 text-center">No</th>
-                                <th class="p-4">Customer Name</th>
-                                <th class="p-4">Leasing Name</th>
-                                <th class="p-4 text-right">O/S Balance</th>
-                                <th class="p-4 text-right">Hari 1-30</th>
-                                <th class="p-4 text-right">Hari 31-60</th>
-                                <th class="p-4 text-right">Lebih 60 Hari</th>
-                                <th class="p-4 text-right">Total Overdue</th>
+                        <tbody id="table-body" class="divide-y divide-slate-100 text-slate-600 bg-white">
+                            
+                            <tr class="hover:bg-slate-50/80 transition-colors align-middle">
+                                <td class="px-4 py-3.5 text-center font-medium text-slate-400">1</td>
+                                <td class="px-6 py-3.5 font-bold text-slate-800">LEGER ADIYUSTAMA</td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span class="px-2.5 py-1 text-xs font-bold bg-blue-50 text-blue-600 rounded-md">TAFS</span>
+                                </td>
+                                <td class="px-6 py-3.5 text-right font-extrabold text-blue-600">RP 186.800.000</td>
+                                <td class="px-3 py-2">
+                                    <input type="text" id="ket-cabang-1" placeholder="Ket cabang..." class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white transition-all" />
+                                </td>
+                                <td class="px-3 py-2">
+                                    <input type="text" id="plan-bayar-1" placeholder="Isi plan..." class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white transition-all" />
+                                </td>
+                                <td class="px-3 py-2">
+                                    <input type="text" id="ket-leasing-1" placeholder="Isi keterangan..." class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white transition-all" />
+                                </td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <div class="flex items-center justify-center">
+                                        <button onclick="simpanDanRedirect(1)" title="Simpan & Link ke TAFS" class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all active:scale-90 cursor-pointer">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody id="tab-database-body" class="divide-y divide-slate-50"></tbody>
+
+                            <tr class="hover:bg-slate-50/80 transition-colors align-middle">
+                                <td class="px-4 py-3.5 text-center font-medium text-slate-400">2</td>
+                                <td class="px-6 py-3.5 font-bold text-slate-800">ABD RASYID S</td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span class="px-2.5 py-1 text-xs font-bold bg-blue-50 text-blue-600 rounded-md">TAFS</span>
+                                </td>
+                                <td class="px-6 py-3.5 text-right font-extrabold text-blue-600">RP 248.945.000</td>
+                                <td class="px-3 py-2">
+                                    <input type="text" id="ket-cabang-2" placeholder="Ket cabang..." class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white transition-all" />
+                                </td>
+                                <td class="px-3 py-2">
+                                    <input type="text" id="plan-bayar-2" placeholder="Isi plan..." class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white transition-all" />
+                                </td>
+                                <td class="px-3 py-2">
+                                    <input type="text" id="ket-leasing-2" placeholder="Isi keterangan..." class="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white transition-all" />
+                                </td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <div class="flex items-center justify-center">
+                                        <button onclick="simpanDanRedirect(2)" title="Simpan & Link ke TAFS" class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all active:scale-90 cursor-pointer">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                        </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
-
-    </main>
-
-    <script type="module" src="script.js"></script>
+            </section>
+        </main>
+    </div>
 
     <script>
-        function filterTab(btn, tabName) {
-            // Reset status aktif tombol navigasi atas (jika ada)
-            document.querySelectorAll('.nav-btn').forEach(b => {
-                b.classList.remove('nav-active');
-                b.classList.add('bg-white', 'text-slate-500');
-            });
+        // Fungsi handle simpan data input agar tidak hilang dan langsung pindah ke tafs.html
+        async function simpanDanRedirect(rowId) {
+            try {
+                // 1. Ambil data teks yang diisi user secara realtime dari input field berdasarkan rowId
+                const teksCabang = document.getElementById(`ket-cabang-${rowId}`).value;
+                const planBayar = document.getElementById(`plan-bayar-${rowId}`).value;
+                const ketLeasing = document.getElementById(`ket-leasing-${rowId}`).value;
 
-            const sideDashboard = document.getElementById('side-btn-ringkasan');
-            const sideDatabase = document.getElementById('side-btn-ar-unit');
-            
-            // Atur status aktif pada Sidebar Menu kiri secara akurat
-            if (sideDashboard && sideDatabase) {
-                [sideDashboard, sideDatabase].forEach(sb => {
-                    sb.classList.remove('bg-red-600', 'text-white', 'font-bold', 'shadow-lg');
-                    sb.classList.add('text-slate-400', 'font-medium');
-                });
+                console.log(`Mengirim data Row ${rowId}:`, { teksCabang, planBayar, ketLeasing });
 
-                if (['ringkasan', 'leasing', 'overdue', 'database'].includes(tabName)) {
-                    sideDashboard.classList.add('bg-red-600', 'text-white', 'font-bold', 'shadow-lg');
-                    sideDashboard.classList.remove('text-slate-400', 'font-medium');
-                } else if (tabName === 'ar_unit') {
-                    sideDatabase.classList.add('bg-red-600', 'text-white', 'font-bold', 'shadow-lg');
-                    sideDatabase.classList.remove('text-slate-400', 'font-medium');
-                }
-            }
+                // 2. LOGIKA DATABASE KAMU (Contoh Sinkronisasi Supabase / API)
+                // Jika kamu menggunakan Supabase aktifkan baris await di bawah ini:
+                /*
+                const { error } = await supabase
+                    .from('ar_unit') 
+                    .update({ 
+                        ket_cabang: teksCabang,
+                        plan_bayar: planBayar,
+                        keterangan_leasing: ketLeasing
+                    })
+                    .eq('id', rowId);
+                if (error) throw error;
+                */
 
-            // Atur status aktif tombol navigasi atas jika yang diklik adalah tab atas
-            const targetTopBtn = document.querySelector(`button[onclick*="'${tabName}'"]`);
-            if (targetTopBtn && targetTopBtn.classList.contains('nav-btn')) {
-                targetTopBtn.classList.add('nav-active');
-                targetTopBtn.classList.remove('bg-white', 'text-slate-500');
-            }
+                // Simulasi delay penyimpanan database agar proses upload sukses sempurna & data tidak korup/hilang
+                await new Promise(resolve => setTimeout(resolve, 300)); 
 
-            // Sembunyikan semua konten tab terlebih dahulu
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.add('hidden');
-            });
-            
-            // Tampilkan tab yang dipilih
-            const targetContent = document.getElementById(`content-${tabName}`);
-            if (targetContent) {
-                targetContent.classList.remove('hidden');
-            }
+                // 3. SELESAI SIMPAN, LANGSUNG PINDAH KE TAFS.HTML
+                window.location.href = "tafs.html";
 
-            // Trigger resize untuk mematangkan visual render ApexCharts
-            if (tabName === 'ringkasan') {
-                window.dispatchEvent(new Event('resize'));
+            } catch (err) {
+                console.error("Gagal memproses penyimpanan:", err);
+                alert("Terjadi kesalahan saat menyimpan data.");
             }
         }
     </script>
