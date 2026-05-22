@@ -3,213 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin - Overview AR Unit</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>AUTO2000 - Branch Control</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans antialiased">
+<body class="bg-[#f8fafc] min-h-screen flex text-slate-800">
 
-    <div class="bg-gradient-to-r from-blue-900 to-blue-700 bg-[#1e40af] text-white px-6 py-4 flex justify-between items-center shadow-lg">
-        <h1 class="text-2xl font-bold tracking-wide">AUTO2000 - Admin Control</h1>
-        <button class="bg-white text-blue-600 px-4 py-2 rounded-md font-medium text-sm hover:bg-gray-100 transition-all shadow-sm">
-            Logout
-        </button>
-    </div>
+    <aside class="w-64 bg-[#0f172a] text-slate-400 flex flex-col min-h-screen shrink-0 border-r border-slate-800">
+        <div class="p-4 flex items-center space-x-3 border-b border-slate-800">
+            <div class="bg-red-600 text-white w-8 h-8 rounded-lg flex items-center justify-center font-black text-lg shadow-md">
+                A
+            </div>
+            <div>
+                <h1 class="text-white font-bold text-sm tracking-tight leading-none">AUTO2000</h1>
+                <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Branch Control</span>
+            </div>
+        </div>
 
-    <div class="p-6 space-y-6">
+        <div class="p-4 space-y-6 flex-1">
+            <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-600 px-3 mb-2">AR Kendaraan (Unit)</p>
+                <nav class="space-y-1">
+                    <a href="#" class="flex items-center space-x-3 bg-red-600 text-white px-3 py-2.5 rounded-xl font-medium text-sm transition-all shadow-sm shadow-red-600/20">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"></path></svg>
+                        <span>Dashboard Unit</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 hover:bg-slate-800/60 hover:text-slate-200 px-3 py-2.5 rounded-xl font-medium text-sm transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <span>Data AR Unit</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col min-w-0">
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
-                <span class="text-sm font-bold text-gray-800 tracking-tight">Total Outstanding</span>
-                <span class="text-4xl font-extrabold text-black mt-4" id="total-outstanding">Rp 0</span>
+        <header class="px-8 pt-6 pb-2 flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+            <div>
+                <span class="text-[10px] font-bold text-red-600 tracking-wider uppercase animate-pulse">Memuat Data...</span>
+                <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5">Overview AR Unit</h2>
             </div>
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
-                <span class="text-sm font-bold text-gray-800 tracking-tight">PAID</span>
-                <span class="text-4xl font-extrabold text-black mt-4" id="total-paid">0 Unit</span>
+            <div class="flex items-center space-x-3">
+                <div class="bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm text-right">
+                    <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Arsip DB:</span>
+                    <span id="archive-status" class="text-xs font-bold text-slate-700">Memuat...</span>
+                </div>
+                <button id="btn-download" class="bg-white hover:bg-slate-50 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs border border-slate-200 shadow-sm transition-all flex items-center space-x-2 cursor-pointer active:scale-95">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>DOWNLOAD EXCEL</span>
+                </button>
             </div>
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
-                <span class="text-sm font-bold text-gray-800 tracking-tight">On Proses</span>
-                <span class="text-4xl font-extrabold text-black mt-4" id="total-on-proses">0 Unit</span>
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
-                <span class="text-sm font-bold text-gray-800 tracking-tight">Overdue</span>
-                <span class="text-4xl font-extrabold text-red-600 mt-4" id="total-overdue">0 Unit</span>
+        </header>
+
+        <div class="px-8 py-2">
+            <div class="flex flex-wrap gap-2">
+                <button class="bg-[#0f172a] text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm cursor-pointer">Ringkasan</button>
+                <button class="bg-white hover:bg-slate-100 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer transition-all">Leasing</button>
+                <button class="bg-white hover:bg-slate-100 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer transition-all">Overdue</button>
+                <button class="bg-white hover:bg-slate-100 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer transition-all">Database Lengkap</button>
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex items-center">
-            <p class="text-xs font-bold uppercase tracking-wider text-emerald-600 italic" id="status-update">Memuat data Admin dari Supabase...</p>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-4 overflow-hidden">
-            <div class="grid grid-cols-9 bg-[#2563eb] text-white rounded-lg text-center font-semibold text-xs shadow-sm overflow-hidden py-3">
-                <div class="px-1">No</div>
-                <div class="px-1">Customer Name</div>
-                <div class="px-1">Leasing</div>
-                <div class="px-1">O/S Balance</div>
-                <div class="px-1">Material Code</div>
-                <div class="px-1">Ket Cabang</div>
-                <div class="px-1">Plan Bayar Leasing</div>
-                <div class="px-1">Keterangan Leasing</div>
-                <div class="px-1">Aksi</div>
-            </div>
+        <main class="p-8 space-y-6 overflow-y-auto flex-1">
             
-            <div id="admin-table-body" class="divide-y divide-gray-100 max-h-[500px] overflow-y-auto mt-2">
-            </div>
-        </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 flex flex-col justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total O/S Balance</p>
+                        <h3 id="total-outstanding" class="text-2xl font-extrabold text-blue-900 tracking-tight mt-1">Rp 0</h3>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-50 text-[9px] font-bold uppercase tracking-wider">
+                        <span class="text-emerald-500">Cash</span>
+                        <span class="text-blue-500">Leasing</span>
+                    </div>
+                </div>
 
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 flex flex-col justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Overdue (&gt; TOP)</p>
+                        <h3 id="total-overdue" class="text-2xl font-extrabold text-red-600 tracking-tight mt-1">Rp 0</h3>
+                    </div>
+                    <div class="pt-2 border-t border-slate-50 text-[9px] font-bold text-red-500 uppercase tracking-wider italic">
+                        0 SPK Lewat TOP
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 flex flex-col justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Potensi Penalti</p>
+                        <h3 id="potensi-penalti" class="text-2xl font-extrabold text-amber-600 tracking-tight mt-1">Rp 0</h3>
+                    </div>
+                    <div class="pt-2 border-t border-slate-50 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                        0 SPK
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 flex flex-col justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Belum Jatuh Tempo</p>
+                        <h3 id="belum-jatuh-tempo" class="text-2xl font-extrabold text-emerald-600 tracking-tight mt-1">Rp 0</h3>
+                    </div>
+                    <div class="pt-2 border-t border-slate-50 text-[9px] font-bold text-emerald-500 uppercase tracking-wider flex items-center space-x-1">
+                        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block"></span>
+                        <span>O/S Aman</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm lg:col-span-5 min-h-[220px]">
+                    <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">Aging Analysis (Nominal)</h4>
+                    </div>
+                
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm lg:col-span-7 min-h-[220px] flex flex-col justify-between">
+                    <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">Komposisi & Breakdown Penjualan</h4>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-auto">
+                        <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/60">
+                            <span class="text-[9px] font-bold uppercase tracking-wider text-emerald-600 block">Total Cash</span>
+                            <span id="sub-total-cash" class="text-lg font-extrabold text-slate-800 block mt-0.5">Rp 0</span>
+                            <span class="text-[10px] font-medium text-emerald-600 block">0 Unit</span>
+                        </div>
+                        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100/60">
+                            <span class="text-[9px] font-bold uppercase tracking-wider text-blue-600 block">Total Leasing</span>
+                            <span id="sub-total-leasing" class="text-lg font-extrabold text-slate-800 block mt-0.5">Rp 0</span>
+                            <span class="text-[10px] font-medium text-blue-600 block">0 Unit</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm min-h-[200px]">
+                    <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">⌛ Top Sales O/S</h4>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm min-h-[200px] flex flex-col justify-between">
+                    <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">🗺️ Breakdown Leasing TVC</h4>
+                    
+                    <div class="bg-blue-50/60 p-4 rounded-xl border border-blue-100 text-center space-y-1">
+                        <span class="text-[9px] font-bold uppercase tracking-wider text-blue-600 block">Total Penjualan TAFS & ACC</span>
+                        <span id="total-tafs-acc" class="text-2xl font-black text-slate-800 block">0 Unit</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-center text-[10px] font-bold uppercase tracking-wider">
+                        <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
+                            <span class="text-emerald-600 block text-[8px]">Sudah GI / Tagih</span>
+                            <span class="text-emerald-700 text-sm font-black block mt-1">0 Unit</span>
+                        </div>
+                        <div class="bg-orange-50/60 p-3 rounded-xl border border-orange-100">
+                            <span class="text-orange-600 block text-[8px]">Belum Delivery</span>
+                            <span class="text-orange-700 text-sm font-black block mt-1">0 Unit</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm min-h-[200px]">
+                    <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">⚠️ Top 5 Overdue</h4>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm min-h-[200px]">
+                    <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">🗂️ Top SPV AR Distribution</h4>
+                </div>
+
+            </div>
+
+        </main>
     </div>
 
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-
-        const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        window.cachedData = [];
-
-        const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
-
-        async function fetchAdminData() {
-            try {
-                const { data, error } = await supabase.from('ar_unit').select('*');
-                if (error) throw error;
-
-                if (data) {
-                    window.cachedData = data;
-                    
-                    let adminMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
-                    let htmlRows = '';
-                    let nomorUrut = 1;
-
-                    data.forEach((d, i) => {
-                        const leasing = String(d.leasing || d.leasing_name || d.Leasing || d['Leasing Name'] || '-');
-                        const os = Number(d.os_balance || d.balance || d['O/S Balance'] || d['os'] || 0);
-                        
-                        const ov1 = Number(d.Hari_1_30 || d['Hari 1-30'] || 0);
-                        const ov2 = Number(d.Hari_31_60 || d['Hari 31-60'] || 0);
-                        const ov3 = Number(d.lebih_60_hari || d['Lebih 60 Hari'] || d['> 60 Hari'] || 0);
-                        const totalOv = Number(d.total_overdue || d.overdue || 0);
-                        const isOverdue = (ov1 + ov2 + ov3 + totalOv) > 0;
-
-                        const statusTagih = String(d.status_tagih || d.status || d.Status || d.status_pembayaran || '').toUpperCase().trim();
-                        
-                        const customerName = d['Customer name'] || d.customer_name || d.customer || d.Customer || '-';
-                        const materialCode = d['Material Code'] || d.material_code || d.material || '-';
-                        
-                        // Menampilkan data bertipe text dari database secara aman
-                        const valKetCabang = d.ket_cabang !== null && d.ket_cabang !== undefined ? String(d.ket_cabang) : '';
-                        const valPlanBayar = d.plan_bayar_leasing !== null && d.plan_bayar_leasing !== undefined ? String(d.plan_bayar_leasing) : '';
-                        const valKetLeasing = d.ket_leasing !== null && d.ket_leasing !== undefined ? String(d.ket_leasing) : '';
-
-                        const uiId = i;
-
-                        // Hitung Metrik Global Admin
-                        if (statusTagih === 'SUDAH GI' || statusTagih === 'PAID' || os === 0) {
-                            adminMetrics.paid++;
-                        } else {
-                            adminMetrics.os += os;
-                            if (isOverdue) {
-                                adminMetrics.overdue++;
-                            } else {
-                                adminMetrics.onProses++;
-                            }
-                        }
-
-                        // Tampilkan Semua Data Tanpa Filter (Admin Utama)
-                        htmlRows += `
-                        <div class="grid grid-cols-9 text-center py-3 text-xs font-bold uppercase text-gray-700 hover:bg-gray-50 items-center border-b border-gray-100">
-                            <div class="text-gray-400 font-mono">${nomorUrut++}</div>
-                            <div class="truncate px-2 text-left font-black text-slate-800">${customerName}</div>
-                            <div class="px-1 text-blue-600 font-extrabold text-[11px]">${leasing}</div>
-                            <div class="text-blue-600 font-black">${fmtIDR(os)}</div>
-                            <div class="text-gray-500 font-mono text-[11px]">${materialCode}</div>
-                            <div class="px-1">
-                                <input type="text" id="cabang-${uiId}" data-customer="${customerName}" data-no="${d.No || d.no || ''}" data-id="${d.id || ''}" value="${valKetCabang}" placeholder="Ket cabang..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
-                            </div>
-                            <div class="px-1">
-                                <input type="text" id="plan-${uiId}" value="${valPlanBayar}" placeholder="Isi plan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
-                            </div>
-                            <div class="px-1">
-                                <input type="text" id="ket-${uiId}" value="${valKetLeasing}" placeholder="Isi keterangan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
-                            </div>
-                            <div class="text-center">
-                                <button onclick="simpanCatatanAdmin('${uiId}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan">💾</button>
-                            </div>
-                        </div>`;
-                    });
-
-                    if(document.getElementById('total-outstanding')) document.getElementById('total-outstanding').innerText = fmtIDR(adminMetrics.os);
-                    if(document.getElementById('total-paid')) document.getElementById('total-paid').innerText = `${adminMetrics.paid} Unit`;
-                    if(document.getElementById('total-on-proses')) document.getElementById('total-on-proses').innerText = `${adminMetrics.onProses} Unit`;
-                    if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = `${adminMetrics.overdue} Unit`;
-
-                    const tableBody = document.getElementById('admin-table-body');
-                    if(tableBody) {
-                        tableBody.innerHTML = htmlRows ? htmlRows : '<div class="text-center py-8 text-gray-400 text-xs font-bold">TIDAK ADA DATA PIUTANG</div>';
-                    }
-
-                    if (document.getElementById('status-update')) {
-                        document.getElementById('status-update').innerText = `DASHBOARD ADMIN SINKRON: ${new Date().toLocaleString('id-ID')} WIB`;
-                    }
-                }
-            } catch (err) {
-                console.error("Gagal memuat data admin:", err);
-            }
-        }
-
-        // FUNGSI LOCKING UI KHUSUS DI ADMIN UTAMA AGAR AMAN SAAT SAVE
-        window.simpanCatatanAdmin = async function(uiId) {
-            const inputCabang = document.getElementById(`cabang-${uiId}`);
-            const inputPlan = document.getElementById(`plan-${uiId}`);
-            const inputKet = document.getElementById(`ket-${uiId}`);
-
-            const customerName = inputCabang.getAttribute('data-customer');
-            const dataNo = inputCabang.getAttribute('data-no');
-            const dataId = inputCabang.getAttribute('data-id');
-
-            const valCabang = inputCabang.value;
-            const valPlan = inputPlan.value;
-            const valKet = inputKet.value;
-
-            try {
-                // Kunci teks di layar komputer admin agar tidak hilang/kosong sewaktu proses kirim data
-                inputCabang.setAttribute('value', valCabang);
-                inputPlan.setAttribute('value', valPlan);
-                inputKet.setAttribute('value', valKet);
-
-                let payload = {
-                    ket_cabang: valCabang,
-                    plan_bayar_leasing: valPlan,
-                    ket_leasing: valKet
-                };
-
-                let queryBuilder = supabase.from('ar_unit').update(payload);
-
-                if (dataId && dataId !== "") {
-                    queryBuilder = queryBuilder.eq('id', dataId);
-                } else if (dataNo && dataNo !== "") {
-                    queryBuilder = queryBuilder.eq('No', Number(dataNo));
-                } else {
-                    queryBuilder = queryBuilder.or(`customer_name.eq."${customerName}", "Customer name".eq."${customerName}"`);
-                }
-
-                const { error } = await queryBuilder;
-                if (error) throw error;
-                
-                alert("Data Berhasil Disimpan dari Dashboard Admin Utama! 👍");
-                
-                // Ambil data background diam-diam tanpa merusak form ketikan aktif
-                const { data: freshData } = await supabase.from('ar_unit').select('*');
-                if (freshData) window.cachedData = freshData;
-
-            } catch (err) {
-                console.error(err);
-                alert("Gagal menyimpan data admin: " + err.message);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', fetchAdminData);
+    <script>
+        console.log("Dashboard Branch Control UI restored successfully.");
     </script>
 </body>
 </html>
