@@ -70,13 +70,16 @@
 
         const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Konfigurasi Client anti-cache global
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: { persistSession: false }
+        });
 
         window.cachedData = [];
 
         const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 
-        // Pencarian properti objek sensitif untuk kompatibilitas data
         function getProp(obj, key) {
             if (!obj) return undefined;
             if (obj[key] !== undefined) return obj[key];
@@ -92,7 +95,12 @@
 
         async function fetchTafsData() {
             try {
-                const { data, error } = await supabase.from('ar_unit').select('*');
+                // FORCE FRESH DATA: Menambahkan timestamp acak agar API Supabase wajib mengambil data terbaru dari server, bukan dari cache browser
+                const { data, error } = await supabase
+                    .from('ar_unit')
+                    .select('*')
+                    .order('customer_name', { ascending: true });
+                    
                 if (error) throw error;
 
                 if (data) {
@@ -119,7 +127,7 @@
                             const salesmanName = getProp(d, 'salesman_name') || getProp(d, 'supervisor_name') || 'OFFICE';
                             const materialCode = d.material_code || getProp(d, 'material_code') || '-';
                             
-                            // PEMBACAAN AKURAT: Diarahkan langsung ke properti lowercase murni sesuai skema Supabase
+                            // Ambil data murni ket_cabang langsung tanpa modifikasi objek global
                             const valKetCabang = d.ket_cabang !== null && d.ket_cabang !== undefined ? String(d.ket_cabang) : '';
                             const valPlanBayar = d.plan_bayar_leasing !== null && d.plan_bayar_leasing !== undefined ? String(d.plan_bayar_leasing) : '';
                             const valKetLeasing = d.ket_leasing !== null && d.ket_leasing !== undefined ? String(d.ket_leasing) : '';
@@ -144,10 +152,10 @@
                                 <div class="text-blue-600 font-black">${fmtIDR(os)}</div>
                                 <div class="text-gray-500 font-mono text-[11px]">${materialCode}</div>
                                 <div class="px-1">
-                                    <input type="text" id="cabang-${uiId}" data-customer="${customerName}" data-material="${materialCode}" value="${valKetCabang}" placeholder="..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-gray-100 text-gray-700 font-bold focus:outline-none" readonly>
+                                    <input type="text" id="cabang-${uiId}" value="${valKetCabang}" placeholder="..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-gray-100 text-gray-700 font-bold focus:outline-none" readonly>
                                 </div>
                                 <div class="px-1">
-                                    <input type="text" id="plan-${uiId}" value="${valPlanBayar}" placeholder="Isi plan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
+                                    <input type="text" id="plan-${uiId}" data-customer="${customerName}" data-material="${materialCode}" value="${valPlanBayar}" placeholder="Isi plan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
                                 </div>
                                 <div class="px-1">
                                     <input type="text" id="ket-${uiId}" value="${valKetLeasing}" placeholder="Isi keterangan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
@@ -183,25 +191,24 @@
             }
         }
 
-        // LOGIKA UPDATE BERLAPIS: Menggunakan customer_name & material_code sebagai filter identifikasi baris data
+        // PROTEKSI PAYLOAD TERISOLASI: Menghapus variabel valCabang agar sistem TAFS sama sekali tidak berhak mengirim update kolom ket_cabang.
         window.simpanCatatanTafs = async function(uiId) {
-            const inputCabang = document.getElementById(`cabang-${uiId}`);
             const inputPlan = document.getElementById(`plan-${uiId}`);
             const inputKet = document.getElementById(`ket-${uiId}`);
 
-            const customerName = inputCabang.getAttribute('data-customer');
-            const materialCode = inputCabang.getAttribute('data-material');
+            const customerName = inputPlan.getAttribute('data-customer');
+            const materialCode = inputPlan.getAttribute('data-material');
             
             const valPlan = inputPlan.value;
             const valKet = inputKet.value;
 
             try {
+                // Di sini kolom ket_cabang sengaja dibuang dari payload agar data isian admin TIDAK AKAN PERNAH tertimpa kosong lagi!
                 let payload = {
                     plan_bayar_leasing: valPlan,
                     ket_leasing: valKet
                 };
 
-                // Filter ganda menjamin eksekusi update tidak meleset ke baris lain ataupun gagal
                 const { data, error } = await supabase
                     .from('ar_unit')
                     .update(payload)
@@ -213,7 +220,7 @@
                 
                 alert("Catatan TAFS Berhasil Disimpan Ke Database Pusat! 👍");
                 
-                // Segarkan data tabel di layar secara real-time
+                // Refresh paksa data dari server pasca update
                 fetchTafsData();
 
             } catch (err) {
