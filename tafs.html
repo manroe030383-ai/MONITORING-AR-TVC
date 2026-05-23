@@ -76,7 +76,6 @@
 
         const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 
-        // FUNGSI PENYELAMAT SINKRONISASI KOLOM BESAR KECIL
         function getProp(obj, key) {
             if (!obj) return undefined;
             if (obj[key.toLowerCase()] !== undefined) return obj[key.toLowerCase()];
@@ -119,13 +118,23 @@
                             const salesmanName = getProp(d, 'salesman_name') || getProp(d, 'supervisor_name') || 'OFFICE';
                             const materialCode = getProp(d, 'material_code') || '-';
                             
-                            // MODIFIKASI AMAN: Menambah deteksi alternatif kolom 'Ket_Cabang' atau 'ket cabang' agar sinkronisasi tidak terputus
-                            const valKetCabang = getProp(d, 'ket_cabang') !== null && getProp(d, 'ket_cabang') !== undefined ? String(getProp(d, 'ket_cabang')) : (getProp(d, 'ket cabang') !== null && getProp(d, 'ket cabang') !== undefined ? String(getProp(d, 'ket cabang')) : '');
-                            const valPlanBayar = getProp(d, 'plan_bayar_leasing') !== null && getProp(d, 'plan_bayar_leasing') !== undefined ? String(getProp(d, 'plan_bayar_leasing')) : '';
-                            const valKetLeasing = getProp(d, 'ket_leasing') !== null && getProp(d, 'ket_leasing') !== undefined ? String(getProp(d, 'ket_leasing')) : '';
+                            // PERBAIKAN LOGIKA BACA KET CABANG: Dibuat fallback berantai yang sangat aman agar data dari dashboard pasti tampil
+                            let valKetCabang = '';
+                            if (d.ket_cabang !== null && d.ket_cabang !== undefined) {
+                                valKetCabang = String(d.ket_cabang);
+                            } else if (d['Ket Cabang'] !== null && d['Ket Cabang'] !== undefined) {
+                                valKetCabang = String(d['Ket Cabang']);
+                            } else {
+                                valKetCabang = getProp(d, 'ket_cabang') || getProp(d, 'ket cabang') || '';
+                            }
+
+                            const valPlanBayar = d.plan_bayar_leasing !== null && d.plan_bayar_leasing !== undefined ? String(d.plan_bayar_leasing) : (getProp(d, 'plan_bayar_leasing') || '');
+                            const valKetLeasing = d.ket_leasing !== null && d.ket_leasing !== undefined ? String(d.ket_leasing) : (getProp(d, 'ket_leasing') || '');
 
                             const uiId = i;
-                            const idUtama = getProp(d, 'No') || getProp(d, 'id') || i;
+                            
+                            const rowNo = d.No || d.no || '';
+                            const rowId = d.id || '';
 
                             if (statusTagih === 'SUDAH GI' || statusTagih === 'PAID' || os === 0) {
                                 tafsMetrics.paid++;
@@ -145,7 +154,7 @@
                                 <div class="text-blue-600 font-black">${fmtIDR(os)}</div>
                                 <div class="text-gray-500 font-mono text-[11px]">${materialCode}</div>
                                 <div class="px-1">
-                                    <input type="text" id="cabang-${uiId}" data-customer="${customerName}" data-no="${getProp(d, 'No') || ''}" data-id="${getProp(d, 'id') || ''}" value="${valKetCabang}" placeholder="Ket cabang..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-gray-50 text-gray-500 font-medium cursor-not-allowed focus:outline-none" readonly>
+                                    <input type="text" id="cabang-${uiId}" data-customer="${customerName}" data-no="${rowNo}" data-id="${rowId}" value="${valKetCabang}" placeholder="Ket cabang..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-gray-50 text-gray-500 font-medium cursor-not-allowed focus:outline-none" readonly>
                                 </div>
                                 <div class="px-1">
                                     <input type="text" id="plan-${uiId}" value="${valPlanBayar}" placeholder="Isi plan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
@@ -184,7 +193,7 @@
             }
         }
 
-        // UPDATE BAGIAN SIMPAN DATA DENGAN PENCARIAN REKONSILIASI KETAT
+        // PERBAIKAN UTAMA LOGIKA SIMPAN: Menambahkan field ket_cabang ke dalam payload agar data tidak lenyap setelah disave
         window.simpanCatatanTafs = async function(uiId) {
             const inputCabang = document.getElementById(`cabang-${uiId}`);
             const inputPlan = document.getElementById(`plan-${uiId}`);
@@ -194,52 +203,33 @@
             const dataNo = inputCabang.getAttribute('data-no');
             const dataId = inputCabang.getAttribute('data-id');
 
+            const valCabang = inputCabang.value;
             const valPlan = inputPlan.value;
             const valKet = inputKet.value;
 
             try {
-                inputPlan.setAttribute('value', valPlan);
-                inputKet.setAttribute('value', valKet);
-
-                let payload = {};
-                
-                // Cek ketersediaan nama kolom asli server secara dinamis
-                if (window.cachedData && window.cachedData.length > 0) {
-                    const sample = window.cachedData[0];
-                    const kPlan = sample['Plan_Bayar_Leasing'] !== undefined ? 'Plan_Bayar_Leasing' : 
-                                  (sample['plan_bayar_leasing'] !== undefined ? 'plan_bayar_leasing' : 'plan_bayar_leasing');
-                    const kKet = sample['Ket_Leasing'] !== undefined ? 'Ket_Leasing' : 
-                                 (sample['ket_leasing'] !== undefined ? 'ket_leasing' : 'ket_leasing');
-                    
-                    payload[kPlan] = valPlan;
-                    payload[kKet] = valKet;
-                } else {
-                    payload['plan_bayar_leasing'] = valPlan;
-                    payload['ket_leasing'] = valKet;
-                }
+                // Terapkan penulisan objek data penyeimbang secara utuh ke Supabase
+                let payload = {
+                    plan_bayar_leasing: valPlan,
+                    ket_leasing: valKet,
+                    ket_cabang: valCabang // Memastikan nilai Ket Cabang saat ini ikut dikunci ke database agar tidak hilang saat refresh data
+                };
 
                 let queryBuilder = supabase.from('ar_unit').update(payload);
 
-                // STRATEGI PENCOCOKAN BERLAPIS (ID -> NO -> COMBINED MULTI-NAME OR QUERY)
-                if (dataId && dataId !== "") {
-                    queryBuilder = queryBuilder.eq('id', dataId);
-                } else if (dataNo && dataNo !== "") {
-                    // Mendukung kolom id numerik "No" atau "no"
-                    if (window.cachedData && window.cachedData.length > 0 && window.cachedData[0]['no'] !== undefined) {
-                        queryBuilder = queryBuilder.eq('no', Number(dataNo));
-                    } else {
-                        queryBuilder = queryBuilder.eq('No', Number(dataNo));
-                    }
+                if (dataId && dataId !== "undefined" && dataId !== "") {
+                    queryBuilder = isNaN(dataId) ? queryBuilder.eq('id', dataId) : queryBuilder.eq('id', Number(dataId));
+                } else if (dataNo && dataNo !== "undefined" && dataNo !== "") {
+                    queryBuilder = queryBuilder.eq('No', Number(dataNo));
                 } else {
-                    queryBuilder = queryBuilder.or(`customer_name.eq."${customerName}","Customer name".eq."${customerName}","CUSTOMER_NAME".eq."${customerName}"`);
+                    queryBuilder = queryBuilder.eq('customer_name', customerName);
                 }
 
-                const { error } = await queryBuilder;
+                const { data, error } = await queryBuilder.select();
                 if (error) throw error;
                 
-                alert("Catatan TAFS Berhasil Disimpan Langsung ke Admin Pusat! 👍");
+                alert("Catatan TAFS Berhasil Disimpan Ke Database Pusat! 👍");
                 
-                // Menarik data paling segar dari database tanpa reload paksa browser
                 fetchTafsData();
 
             } catch (err) {
