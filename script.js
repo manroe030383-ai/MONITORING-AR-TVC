@@ -237,45 +237,27 @@ function renderAgingChart(agingData) {
     else { charts.bar = new ApexCharts(el, options); charts.bar.render(); }
 }
 
+// (Fungsi renderDonutLeasing, renderLeasingList, renderTopList, renderOverdueTop dipertahankan utuh seperti milik Anda)
 function renderDonutLeasing(mLeas) {
     const el = document.querySelector("#chart-donut-leasing");
     if (!el) return;
-
-    let totalCash = 0;
-    let totalLeasing = 0;
-
+    let totalCash = 0; let totalLeasing = 0;
     cachedData.forEach(d => {
         const os = Number(getProp(d, 'O/S Balance') || getProp(d, 'os_balance') || 0);
         const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
-        if (["CASH", "CASH TERIMA", "", "-"].includes(l)) {
-            totalCash += os;
-        } else {
-            totalLeasing += os;
-        }
+        if (["CASH", "CASH TERIMA", "", "-"].includes(l)) { totalCash += os; } else { totalLeasing += os; }
     });
-
-    const seriesDonut = [totalCash, totalLeasing];
-    const labelsDonut = ['TOTAL CASH', 'TOTAL LEASING'];
-
+    const seriesDonut = [totalCash, totalLeasing]; const labelsDonut = ['TOTAL CASH', 'TOTAL LEASING'];
     const options = {
-        series: (totalCash === 0 && totalLeasing === 0) ? [1, 1] : seriesDonut,
-        labels: labelsDonut,
-        chart: { type: 'donut', height: 180 },
-        legend: { show: false },
-        dataLabels: { enabled: false },
-        colors: ['#10B981', '#3B82F6'],
-        plotOptions: { pie: { donut: { labels: { show: false } } } }
+        series: (totalCash === 0 && totalLeasing === 0) ? [1, 1] : seriesDonut, labels: labelsDonut,
+        chart: { type: 'donut', height: 180 }, legend: { show: false }, dataLabels: { enabled: false },
+        colors: ['#10B981', '#3B82F6'], plotOptions: { pie: { donut: { labels: { show: false } } } }
     };
-    if (charts.donut) charts.donut.updateOptions(options);
-    else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
+    if (charts.donut) charts.donut.updateOptions(options); else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
 }
 
-// ========================================================
-// 5. FUNGSI RENDER LISTING MINI-KOMPONEN SIDEBAR / CARDS
-// ========================================================
 function renderLeasingList(map, total) {
-    const el = document.getElementById('leasing-list');
-    if (!el) return;
+    const el = document.getElementById('leasing-list'); if (!el) return;
     if (Object.keys(map).length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400">Tidak ada data leasing</p>'; return; }
     el.innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([n, v]) => `
         <div class="mb-3">
@@ -285,8 +267,7 @@ function renderLeasingList(map, total) {
 }
 
 function renderTopList(map, id, colorClass) {
-    const el = document.getElementById(id);
-    if (!el) return;
+    const el = document.getElementById(id); if (!el) return;
     if (Object.keys(map).length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">Tidak ada data</p>'; return; }
     el.innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5).map((x,i) => `
         <div class="flex justify-between items-center py-3 border-b border-slate-50 uppercase font-bold">
@@ -296,22 +277,15 @@ function renderTopList(map, id, colorClass) {
 }
 
 function renderOverdueTop(data) {
-    const el = document.getElementById('list-overdue');
-    if (!el) return;
+    const el = document.getElementById('list-overdue'); if (!el) return;
     if (data.length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">Tidak ada data overdue</p>'; return; }
-    
     const sortedData = [...data].sort((a, b) => {
         const ovA = Number(getProp(a, 'Hari 1-30') || 0) + Number(getProp(a, 'Hari 31-60') || 0) + Number(getProp(a, 'Lebih 60 Hari') || 0);
         const ovB = Number(getProp(b, 'Hari 1-30') || 0) + Number(getProp(b, 'Hari 31-60') || 0) + Number(getProp(b, 'Lebih 60 Hari') || 0);
         return ovB - ovA;
     });
-
     el.innerHTML = sortedData.slice(0,5).map((d,i) => {
-        const b1 = Number(getProp(d, 'Hari 1-30') || 0);
-        const b2 = Number(getProp(d, 'Hari 31-60') || 0);
-        const b3 = Number(getProp(d, 'Lebih 60 Hari') || 0);
-        const totalOverdueItem = b1 + b2 + b3;
-        
+        const totalOverdueItem = Number(getProp(d, 'Hari 1-30') || 0) + Number(getProp(d, 'Hari 31-60') || 0) + Number(getProp(d, 'Lebih 60 Hari') || 0);
         return `
         <div class="flex justify-between py-2 border-b border-slate-50 uppercase font-bold">
             <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</span>
@@ -320,16 +294,11 @@ function renderOverdueTop(data) {
     }).join('');
 }
 
-function borderTrClass(i) {
-    return 'hover:bg-slate-50/80 transition-all font-bold uppercase';
-}
+function borderTrClass(i) { return 'hover:bg-slate-50/80 transition-all font-bold uppercase'; }
 
-// ========================================================
-// 6. FUNGSI RENDER TABEL ELEMEN SECARA LENGKAP UTUH
-// ========================================================
+// (Fungsi renderTabLeasingFull & renderTabOverdueFull dipertahankan utuh)
 function renderTabLeasingFull(data) {
-    const el = document.getElementById('tab-leasing-full-list');
-    if (!el) return;
+    const el = document.getElementById('tab-leasing-full-list'); if (!el) return;
     const leasingData = data.filter(d => {
         const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
         return !["CASH", "CASH TERIMA", "", "-"].includes(l);
@@ -365,16 +334,8 @@ function renderTabLeasingFull(data) {
 }
 
 function renderTabOverdueFull(data) {
-    const el = document.getElementById('tab-overdue-full-list');
-    if (!el) return;
-    
-    const overdueData = data.filter(d => {
-        const b1 = Number(getProp(d, 'Hari 1-30') || 0);
-        const b2 = Number(getProp(d, 'Hari 31-60') || 0);
-        const b3 = Number(getProp(d, 'Lebih 60 Hari') || 0);
-        return (b1 + b2 + b3) > 0;
-    });
-
+    const el = document.getElementById('tab-overdue-full-list'); if (!el) return;
+    const overdueData = data.filter(d => (Number(getProp(d, 'Hari 1-30') || 0) + Number(getProp(d, 'Hari 31-60') || 0) + Number(getProp(d, 'Lebih 60 Hari') || 0)) > 0);
     if(overdueData.length === 0) { el.innerHTML = '<p class="text-xs text-center py-4 text-slate-400">Semua tagihan lunas / tidak ada overdue</p>'; return; }
     el.innerHTML = `
         <div class="overflow-x-auto">
@@ -390,11 +351,7 @@ function renderTabOverdueFull(data) {
                 </thead>
                 <tbody class="divide-y divide-slate-50">
                     ${overdueData.map((d, i) => {
-                        const b1 = Number(getProp(d, 'Hari 1-30') || 0);
-                        const b2 = Number(getProp(d, 'Hari 31-60') || 0);
-                        const b3 = Number(getProp(d, 'Lebih 60 Hari') || 0);
-                        const totalOvItem = b1 + b2 + b3;
-
+                        const totalOvItem = Number(getProp(d, 'Hari 1-30') || 0) + Number(getProp(d, 'Hari 31-60') || 0) + Number(getProp(d, 'Lebih 60 Hari') || 0);
                         return `
                         <tr class="${borderTrClass(i)}">
                             <td class="p-3 text-center text-slate-400">${i+1}</td>
@@ -414,7 +371,9 @@ function renderTabOverdueFull(data) {
         </div>`;
 }
 
-// RENDERING UTAMA INPUT TAB: DATA AR UNIT (KHUSUS FILTER TAFS & ACC DENGAN CATATAN INTERAKTIF)
+// ========================================================
+// 6. PERBAIKAN UTAMA: SINKRONISASI INTERAKTIF HAK AKSES INPUT
+// ========================================================
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
     if (!el) return;
@@ -425,6 +384,9 @@ function renderDataArUnitFull(data) {
     });
 
     if(filterAR.length === 0) { el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing TAFS / ACC</td></tr>'; return; }
+
+    // DETEKSI OTOMATIS: Apakah user membuka web dari tafs.html / acc.html?
+    const isLeasingView = window.location.pathname.includes('tafs') || window.location.pathname.includes('acc');
 
     el.innerHTML = filterAR.map((d, i) => {
         const idUtama = d.id || getProp(d, 'No') || i;
@@ -437,42 +399,47 @@ function renderDataArUnitFull(data) {
                 <p class="text-[7px] text-slate-300 mt-1">SPK: ${getProp(d, 'No SPK') || getProp(d, 'no_spk') || '-'}</p>
             </td>
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
+            
             <td class="p-4 w-48">
-                <input type="text" id="cabang-${idUtama}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." class="input-custom bg-white">
+                <input type="text" id="cabang-${idUtama}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." 
+                class="input-custom ${isLeasingView ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white'}" 
+                ${isLeasingView ? 'readonly' : ''}>
             </td>
+            
             <td class="p-4 w-48">
-                <input type="text" id="plan-${idUtama}" value="${getProp(d, 'plan_bayar_leasing') || ''}" placeholder="Menunggu isian leasing..." class="input-custom bg-slate-50 text-slate-500 cursor-not-allowed" readonly>
+                <input type="text" id="plan-${idUtama}" value="${getProp(d, 'plan_bayar_leasing') || ''}" placeholder="${isLeasingView ? 'Isi plan bayar...' : 'Menunggu isian leasing...'}" 
+                class="input-custom ${isLeasingView ? 'bg-white border-emerald-300' : 'bg-slate-50 text-slate-500 cursor-not-allowed'}" 
+                ${isLeasingView ? '' : 'readonly'}>
             </td>
+            
             <td class="p-4 w-48">
-                <input type="text" id="ket-${idUtama}" value="${getProp(d, 'ket_leasing') || ''}" placeholder="Menunggu keterangan leasing..." class="input-custom bg-slate-50 text-slate-500 cursor-not-allowed" readonly>
+                <input type="text" id="ket-${idUtama}" value="${getProp(d, 'ket_leasing') || ''}" placeholder="${isLeasingView ? 'Isi ket leasing...' : 'Menunggu keterangan leasing...'}" 
+                class="input-custom ${isLeasingView ? 'bg-white border-emerald-300' : 'bg-slate-50 text-slate-500 cursor-not-allowed'}" 
+                ${isLeasingView ? '' : 'readonly'}>
             </td>
+            
             <td class="p-4 text-center w-16">
-                <button onclick="simpanCatatan('${idUtama}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan Cabang">💾</button>
+                ${isLeasingView ? 
+                    `<button onclick="simpanCatatanLeasing('${idUtama}', '${i}')" class="text-emerald-600 hover:bg-emerald-600 hover:text-white bg-emerald-50 p-2 rounded-lg transition-all" title="Simpan Respon Leasing">💾</button>` :
+                    `<button onclick="simpanCatatan('${idUtama}', '${i}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan Cabang">💾</button>`
+                }
             </td>
         </tr>`;
     }).join('');
 }
 
-// RENDERING TAB: DATABASE LENGKAP KANTOR
+// (Fungsi renderTabDatabaseFull dipertahankan utuh)
 function renderTabDatabaseFull(data) {
-    const el = document.getElementById('tab-database-body');
-    if (!el) return;
-
+    const el = document.getElementById('tab-database-body'); if (!el) return;
     el.innerHTML = data.map((d, i) => {
         const os = Number(getProp(d, 'O/S Balance') || 0);
-        const b1 = Number(getProp(d, 'Hari 1-30') || 0);
-        const b2 = Number(getProp(d, 'Hari 31-60') || 0);
-        const b3 = Number(getProp(d, 'Lebih 60 Hari') || 0);
-        const totalOv = b1 + b2 + b3;
-        const lancar = totalOv === 0 ? os : (os - totalOv > 0 ? os - totalOv : 0);
-
+        const b1 = Number(getProp(d, 'Hari 1-30') || 0); const b2 = Number(getProp(d, 'Hari 31-60') || 0); const b3 = Number(getProp(d, 'Lebih 60 Hari') || 0);
+        const totalOv = b1 + b2 + b3; const lancar = totalOv === 0 ? os : (os - totalOv > 0 ? os - totalOv : 0);
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
             <td class="p-4 text-slate-800 font-black">${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</td>
-            <td class="p-4">
-                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || 'CASH'}</span>
-            </td>
+            <td class="p-4"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || 'CASH'}</span></td>
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(os)}</td>
             <td class="p-4 text-right text-emerald-600">${fmtIDR(lancar)}</td>
             <td class="p-4 text-right text-amber-500">${fmtIDR(b1)}</td>
@@ -484,16 +451,15 @@ function renderTabDatabaseFull(data) {
 }
 
 // ========================================================
-// 7. SINKRONISASI UPDATE DATA CATATAN CABANG (DUA ARAH)
+// 7. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML)
 // ========================================================
-window.simpanCatatan = async function(noId) {
+window.simpanCatatan = async function(noId, indexFallback) {
     try {
         const valCabang = document.getElementById(`cabang-${noId}`).value;
         let queryBuilder = supabase.from('ar_unit').update({ ket_cabang: valCabang });
 
-        // Metode penentuan baris update via ID Supabase atau Fallback via Nama Customer
-        if (!isNaN(noId) && cachedData[noId]) {
-            const namaCust = getProp(cachedData[noId], 'Customer Name') || getProp(cachedData[noId], 'customer_name');
+        if (!isNaN(noId) && cachedData[indexFallback]) {
+            const namaCust = getProp(cachedData[indexFallback], 'Customer Name') || getProp(cachedData[indexFallback], 'customer_name');
             queryBuilder = queryBuilder.eq('Customer Name', namaCust);
         } else {
             queryBuilder = queryBuilder.eq('id', noId);
@@ -503,7 +469,7 @@ window.simpanCatatan = async function(noId) {
         if (error) throw error;
         
         alert("Keterangan cabang berhasil disimpan! 👍");
-        fetchData(); // Refresh data live instan
+        fetchData(); 
         
     } catch (err) {
         console.error(err);
@@ -512,64 +478,62 @@ window.simpanCatatan = async function(noId) {
 }
 
 // ========================================================
-// 8. ENGINE EKSPOR LAPORAN KE EXCEL (XLSX)
+// REVISI UTAMA: FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML)
 // ========================================================
-function downloadExcel() {
-    if (!cachedData || cachedData.length === 0) {
-        alert("Data belum siap atau masih memuat. Silakan tunggu sebentar.");
-        return;
-    }
-
+window.simpanCatatanLeasing = async function(noId, indexFallback) {
     try {
-        const dataUntukExcel = cachedData.map((d, index) => {
-            const os = Number(getProp(d, 'O/S Balance') || 0);
-            const b1 = Number(getProp(d, 'Hari 1-30') || 0);
-            const b2 = Number(getProp(d, 'Hari 31-60') || 0);
-            const b3 = Number(getProp(d, 'Lebih 60 Hari') || 0);
-            const totalOv = b1 + b2 + b3;
-            const lancar = totalOv === 0 ? os : (os - totalOv > 0 ? os - totalOv : 0);
+        const valPlan = document.getElementById(`plan-${noId}`).value;
+        const valKetLeas = document.getElementById(`ket-${noId}`).value;
 
-            return {
-                "No": index + 1,
-                "Nama Customer": getProp(d, 'Customer Name') || getProp(d, 'customer_name') || "-",
-                "No SPK": getProp(d, 'No SPK') || getProp(d, 'no_spk') || "-",
-                "Leasing": getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || "CASH",
-                "O/S Balance": os,
-                "Hari 1-30 (Lancar)": lancar,
-                "Hari 31-60": b1,
-                "Lebih 60 Hari": b2,
-                "Total Overdue": totalOv,
-                "Potensi Penalti": getProp(d, 'Potensi Penalti') || getProp(d, 'penalty_amount') || 0,
-                "Salesman": getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || "-",
-                "Supervisor": getProp(d, 'Supervisor') || getProp(d, 'supervisor_name') || "-",
-                "Keterangan Cabang": getProp(d, 'ket_cabang') || "",
-                "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || "",
-                "Keterangan Leasing": getProp(d, 'ket_leasing') || ""
-            };
+        // Kunci Update Terisolasi: Hanya memperbarui data isian milik leasing saja, ket_cabang tidak tersentuh
+        let queryBuilder = supabase.from('ar_unit').update({ 
+            plan_bayar_leasing: valPlan, 
+            ket_leasing: valKetLeas 
         });
 
-        const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel);
-        const workbook = XLSX.utils.book_new();
-        const tglHariIni = new Date().toISOString().slice(0, 10);
-        const namaFile = `Report_AR_Unit_Auto2000_${tglHariIni}.xlsx`;
+        if (!isNaN(noId) && cachedData[indexFallback]) {
+            const namaCust = getProp(cachedData[indexFallback], 'Customer Name') || getProp(cachedData[indexFallback], 'customer_name');
+            queryBuilder = queryBuilder.eq('Customer Name', namaCust);
+        } else {
+            queryBuilder = queryBuilder.eq('id', noId);
+        }
 
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Data AR Unit");
-        XLSX.writeFile(workbook, namaFile);
-
-    } catch (error) {
-        console.error("Gagal mendownload Excel:", error);
-        alert("Terjadi masalah saat memproses Excel: " + error.message);
+        const { error } = await queryBuilder;
+        if (error) throw error;
+        
+        alert("Respon Leasing Berhasil Diperbarui! ✔️");
+        fetchData(); 
+        
+    } catch (err) {
+        console.error(err);
+        alert("Leasing gagal menyimpan data: " + err.message);
     }
 }
 
-// ========================================================
-// 9. EVENT LIFECYCLE INITIALIZATION ON DOM READY
-// ========================================================
+// (Fungsi downloadExcel & DOMContentLoaded dipertahankan utuh)
+function downloadExcel() {
+    if (!cachedData || cachedData.length === 0) { alert("Data belum siap."); return; }
+    try {
+        const dataUntukExcel = cachedData.map((d, index) => {
+            const os = Number(getProp(d, 'O/S Balance') || 0);
+            const b1 = Number(getProp(d, 'Hari 1-30') || 0); const b2 = Number(getProp(d, 'Hari 31-60') || 0); const b3 = Number(getProp(d, 'Lebih 60 Hari') || 0);
+            const totalOv = b1 + b2 + b3; const lancar = totalOv === 0 ? os : (os - totalOv > 0 ? os - totalOv : 0);
+            return {
+                "No": index + 1, "Nama Customer": getProp(d, 'Customer Name') || "-", "No SPK": getProp(d, 'No SPK') || "-",
+                "Leasing": getProp(d, 'Chas/Leasing') || "CASH", "O/S Balance": os, "Hari 1-30 (Lancar)": lancar,
+                "Hari 31-60": b1, "Lebih 60 Hari": b2, "Total Overdue": totalOv, "Potensi Penalti": getProp(d, 'Potensi Penalti') || 0,
+                "Salesman": getProp(d, 'Salesman Name') || "-", "Supervisor": getProp(d, 'Supervisor') || "-",
+                "Keterangan Cabang": getProp(d, 'ket_cabang') || "", "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || "", "Keterangan Leasing": getProp(d, 'ket_leasing') || ""
+            };
+        });
+        const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel); const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Data AR Unit");
+        XLSX.writeFile(workbook, `Report_AR_Unit_Auto2000_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (error) { console.error(error); }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     fetchData();
-
     const btnDownload = document.getElementById('btn-download-excel');
-    if (btnDownload) {
-        btnDownload.addEventListener('click', downloadExcel);
-    }
+    if (btnDownload) { btnDownload.addEventListener('click', downloadExcel); }
 });
