@@ -184,6 +184,7 @@
             }
         }
 
+        // UPDATE BAGIAN SIMPAN DATA DENGAN PENCARIAN REKONSILIASI KETAT
         window.simpanCatatanTafs = async function(uiId) {
             const inputCabang = document.getElementById(`cabang-${uiId}`);
             const inputPlan = document.getElementById(`plan-${uiId}`);
@@ -202,11 +203,13 @@
 
                 let payload = {};
                 
-                // Cek ketersediaan nama kolom asli di server untuk update presisi
-                if (window.cachedData.length > 0) {
+                // Cek ketersediaan nama kolom asli server secara dinamis
+                if (window.cachedData && window.cachedData.length > 0) {
                     const sample = window.cachedData[0];
-                    const kPlan = sample['plan_bayar_leasing'] !== undefined ? 'plan_bayar_leasing' : 'Plan_Bayar_Leasing';
-                    const kKet = sample['ket_leasing'] !== undefined ? 'ket_leasing' : 'Ket_Leasing';
+                    const kPlan = sample['Plan_Bayar_Leasing'] !== undefined ? 'Plan_Bayar_Leasing' : 
+                                  (sample['plan_bayar_leasing'] !== undefined ? 'plan_bayar_leasing' : 'plan_bayar_leasing');
+                    const kKet = sample['Ket_Leasing'] !== undefined ? 'Ket_Leasing' : 
+                                 (sample['ket_leasing'] !== undefined ? 'ket_leasing' : 'ket_leasing');
                     
                     payload[kPlan] = valPlan;
                     payload[kKet] = valKet;
@@ -217,12 +220,18 @@
 
                 let queryBuilder = supabase.from('ar_unit').update(payload);
 
+                // STRATEGI PENCOCOKAN BERLAPIS (ID -> NO -> COMBINED MULTI-NAME OR QUERY)
                 if (dataId && dataId !== "") {
                     queryBuilder = queryBuilder.eq('id', dataId);
                 } else if (dataNo && dataNo !== "") {
-                    queryBuilder = queryBuilder.eq('No', Number(dataNo));
+                    // Mendukung kolom id numerik "No" atau "no"
+                    if (window.cachedData && window.cachedData.length > 0 && window.cachedData[0]['no'] !== undefined) {
+                        queryBuilder = queryBuilder.eq('no', Number(dataNo));
+                    } else {
+                        queryBuilder = queryBuilder.eq('No', Number(dataNo));
+                    }
                 } else {
-                    queryBuilder = queryBuilder.or(`customer_name.eq."${customerName}", "Customer name".eq."${customerName}"`);
+                    queryBuilder = queryBuilder.or(`customer_name.eq."${customerName}","Customer name".eq."${customerName}","CUSTOMER_NAME".eq."${customerName}"`);
                 }
 
                 const { error } = await queryBuilder;
@@ -230,7 +239,7 @@
                 
                 alert("Catatan TAFS Berhasil Disimpan Langsung ke Admin Pusat! 👍");
                 
-                // Ambil ulang data agar tampilan langsung sinkron tanpa reload
+                // Menarik data paling segar dari database tanpa reload paksa browser
                 fetchTafsData();
 
             } catch (err) {
