@@ -119,8 +119,8 @@
                             const salesmanName = getProp(d, 'salesman_name') || getProp(d, 'supervisor_name') || 'OFFICE';
                             const materialCode = getProp(d, 'material_code') || '-';
                             
-                            // PEMBACAAN DATA AMAN MENGGUNAKAN GETPROP
-                            const valKetCabang = getProp(d, 'ket_cabang') !== null && getProp(d, 'ket_cabang') !== undefined ? String(getProp(d, 'ket_cabang')) : '';
+                            // MODIFIKASI AMAN: Menambah deteksi alternatif kolom 'Ket_Cabang' atau 'ket cabang' agar sinkronisasi tidak terputus
+                            const valKetCabang = getProp(d, 'ket_cabang') !== null && getProp(d, 'ket_cabang') !== undefined ? String(getProp(d, 'ket_cabang')) : (getProp(d, 'ket cabang') !== null && getProp(d, 'ket cabang') !== undefined ? String(getProp(d, 'ket cabang')) : '');
                             const valPlanBayar = getProp(d, 'plan_bayar_leasing') !== null && getProp(d, 'plan_bayar_leasing') !== undefined ? String(getProp(d, 'plan_bayar_leasing')) : '';
                             const valKetLeasing = getProp(d, 'ket_leasing') !== null && getProp(d, 'ket_leasing') !== undefined ? String(getProp(d, 'ket_leasing')) : '';
 
