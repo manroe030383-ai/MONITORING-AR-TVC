@@ -1,235 +1,117 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TAFS Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Co-Branding Portal - TAFS Respon System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .input-custom {
+            width: 100%; padding: 0.5rem; font-size: 11px; font-weight: 700;
+            border: 1px solid #e2e8f0; border-radius: 0.375rem; outline: none;
+            transition: all 0.2s;
+        }
+        .input-custom:focus { border-color: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,0.1); }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans antialiased">
+<body class="p-4 lg:p-6 bg-slate-50 text-slate-900 antialiased">
 
-    <div class="bg-gradient-to-r from-blue-900 to-blue-700 bg-[#1e40af] text-white px-6 py-4 flex justify-between items-center shadow-lg">
-        <h1 class="text-2xl font-bold tracking-wide">TAFS Dashboard</h1>
-        <button class="bg-white text-blue-600 px-4 py-2 rounded-md font-medium text-sm hover:bg-gray-100 transition-all shadow-sm">
-            Logout
-        </button>
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-4 mb-6 gap-4">
+        <div>
+            <div id="status-update" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 italic">Menghubungkan ke Supabase...</div>
+            <h1 class="text-xl lg:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                PORTAL RESEP AR <span class="bg-emerald-600 text-white text-[10px] px-2 py-0.5 rounded-md font-extrabold tracking-wide">LEASING SYSTEM</span>
+            </h1>
+            <p class="text-[11px] text-slate-500 font-semibold mt-0.5">AUTO2000 CO-BRANDING &bull; TOYOTA ASTRA FINANCIAL SERVICES (TAFS)</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-download-excel" class="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-[11px] px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 cursor-pointer uppercase">
+                <span>💾</span> DOWNLOAD EXCEL REPORT
+            </button>
+        </div>
+    </header>
+
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
+            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">OUTSTANDING DATA (TAFS ONLY)</span>
+            <h2 id="tafs-outstanding" class="text-lg lg:text-xl font-black text-emerald-600 mt-2">Rp 0</h2>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
+            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">UNIT SUDAH CLEAR / GI</span>
+            <h2 id="tafs-paid" class="text-lg lg:text-xl font-black text-slate-700 mt-2">0 Unit</h2>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
+            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">UNIT PROGRESS LULUS TOP</span>
+            <h2 id="tafs-on-proses" class="text-lg lg:text-xl font-black text-blue-600 mt-2">0 Unit</h2>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
+            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">UNIT RISK ACCUMULATED OVERDUE</span>
+            <h2 id="tafs-overdue" class="text-lg lg:text-xl font-black text-red-500 mt-2">0 Unit</h2>
+        </div>
+    </section>
+
+    <section class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden mb-6">
+        <div class="bg-slate-100 px-4 py-3 border-b border-slate-200/60 flex items-center justify-between">
+            <h3 class="text-xs font-black uppercase text-slate-700 tracking-wide flex items-center gap-2">
+                <span>📝</span> BINDING ENTRY UPDATE RESPONS REKONSILIASI TAGIHAN LEASING
+            </h3>
+            <span class="text-[9px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md font-bold">MODE: LEASING EDITOR</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-[10px]">
+                <thead>
+                    <tr class="bg-slate-50/70 border-b border-slate-200 text-slate-500 font-extrabold uppercase">
+                        <th class="p-4 w-12 text-center">No</th>
+                        <th class="p-4">Nama Customer</th>
+                        <th class="p-4">Leasing & SPK</th>
+                        <th class="p-4 text-right">O/S Balance</th>
+                        <th class="p-4 text-slate-400">Keterangan Admin Cabang</th>
+                        <th class="p-4 bg-emerald-50/40 text-emerald-700">Plan Bayar Leasing</th>
+                        <th class="p-4 bg-emerald-50/40 text-emerald-700">Keterangan Leasing</th>
+                        <th class="p-4 text-center w-16">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tab-ar-unit-body" class="divide-y divide-slate-100">
+                    <tr>
+                        <td colspan="8" class="p-4 text-center text-slate-400 font-bold uppercase">Memuat input control leasing data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="hidden">
+        <div id="chart-aging"></div>
+        <div id="chart-donut-leasing"></div>
+        <div id="leasing-list"></div>
+        <div id="list-sales"></div>
+        <div id="list-spv"></div>
+        <div id="list-overdue"></div>
+        <div id="tab-leasing-full-list"></div>
+        <div id="tab-overdue-full-list"></div>
+        <div id="tab-database-body"></div>
+        <div id="total-os"></div>
+        <div id="total-overdue"></div>
+        <div id="total-lancar"></div>
+        <div id="total-penalty"></div>
+        <div id="badge-overdue"></div>
+        <div id="spk-penalty"></div>
+        <div id="val-total-cash"></div>
+        <div id="unit-total-cash"></div>
+        <div id="val-total-leas"></div>
+        <div id="unit-total-leas"></div>
+        <div id="total-unit-tvc"></div>
+        <div id="unit-gi-tvc"></div>
+        <div id="unit-delivery-tvc"></div>
+        <div id="acc-outstanding"></div>
+        <div id="acc-paid"></div>
+        <div id="acc-on-proses"></div>
+        <div id="acc-overdue"></div>
     </div>
 
-    <div class="p-6 space-y-6">
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
-                <span class="text-sm font-bold text-gray-800 tracking-tight">Total Outstanding</span>
-                <span class="text-4xl font-extrabold text-black mt-4" id="total-outstanding">Rp 0</span>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
-                <span class="text-sm font-bold text-gray-800 tracking-tight">PAID</span>
-                <span class="text-4xl font-extrabold text-black mt-4" id="total-paid">0 Unit</span>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
-                <span class="text-sm font-bold text-gray-800 tracking-tight">On Proses</span>
-                <span class="text-4xl font-extrabold text-black mt-4" id="total-on-proses">0 Unit</span>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
-                <span class="text-sm font-bold text-gray-800 tracking-tight">Overdue</span>
-                <span class="text-4xl font-extrabold text-red-600 mt-4" id="total-overdue">0 Unit</span>
-            </div>
-
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex items-center">
-            <p class="text-xs font-bold uppercase tracking-wider text-amber-500 italic" id="status-update">Memuat data penagihan dari Supabase...</p>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-4 overflow-hidden">
-            
-            <div class="grid grid-cols-8 bg-[#2563eb] text-white rounded-lg text-center font-semibold text-xs shadow-sm overflow-hidden py-3">
-                <div class="px-1">Customer Name</div>
-                <div class="px-1">Salesman Name</div>
-                <div class="px-1">O/S Balance</div>
-                <div class="px-1">Material Code</div>
-                <div class="px-1">Ket Cabang (Read Only)</div>
-                <div class="px-1">Plan Bayar Leasing</div>
-                <div class="px-1">Keterangan Leasing</div>
-                <div class="px-1">Aksi</div>
-            </div>
-            
-            <div id="tafs-table-body" class="divide-y divide-gray-100 max-h-[500px] overflow-y-auto mt-2">
-            </div>
-
-        </div>
-
-    </div>
-
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-
-        const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
-        
-        // Konfigurasi Client anti-cache global
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-            auth: { persistSession: false }
-        });
-
-        window.cachedData = [];
-
-        const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
-
-        function getProp(obj, key) {
-            if (!obj) return undefined;
-            if (obj[key] !== undefined) return obj[key];
-            if (obj[key.toLowerCase()] !== undefined) return obj[key.toLowerCase()];
-            if (obj[key.toUpperCase()] !== undefined) return obj[key.toUpperCase()];
-            
-            const lowerKey = key.toLowerCase();
-            for (let k in obj) {
-                if (k.toLowerCase() === lowerKey) return obj[k];
-            }
-            return undefined;
-        }
-
-        async function fetchTafsData() {
-            try {
-                // FORCE FRESH DATA: Menambahkan timestamp acak agar API Supabase wajib mengambil data terbaru dari server, bukan dari cache browser
-                const { data, error } = await supabase
-                    .from('ar_unit')
-                    .select('*')
-                    .order('customer_name', { ascending: true });
-                    
-                if (error) throw error;
-
-                if (data) {
-                    window.cachedData = data;
-                    
-                    let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
-                    let htmlRows = '';
-
-                    data.forEach((d, i) => {
-                        const leasing = String(getProp(d, 'leasing_name') || getProp(d, 'leasing') || '').toUpperCase().trim();
-                        
-                        if (leasing.includes('TAFS')) {
-                            const os = Number(getProp(d, 'os_balance') || getProp(d, 'balance') || 0);
-                            
-                            const ov1 = Number(getProp(d, 'hari_1_30') || getProp(d, 'lancar') || 0);
-                            const ov2 = Number(getProp(d, 'hari_31_60') || 0);
-                            const ov3 = Number(getProp(d, 'lebih_60_hari') || 0);
-                            const totalOv = Number(getProp(d, 'total_overdue') || 0);
-                            const isOverdue = (ov1 + ov2 + ov3 + totalOv) > 0;
-
-                            const statusTagih = String(getProp(d, 'status_tagih') || getProp(d, 'status') || '').toUpperCase().trim();
-                            
-                            const customerName = d.customer_name || getProp(d, 'customer_name') || '-';
-                            const salesmanName = getProp(d, 'salesman_name') || getProp(d, 'supervisor_name') || 'OFFICE';
-                            const materialCode = d.material_code || getProp(d, 'material_code') || '-';
-                            
-                            // Ambil data murni ket_cabang langsung tanpa modifikasi objek global
-                            const valKetCabang = d.ket_cabang !== null && d.ket_cabang !== undefined ? String(d.ket_cabang) : '';
-                            const valPlanBayar = d.plan_bayar_leasing !== null && d.plan_bayar_leasing !== undefined ? String(d.plan_bayar_leasing) : '';
-                            const valKetLeasing = d.ket_leasing !== null && d.ket_leasing !== undefined ? String(d.ket_leasing) : '';
-
-                            const uiId = i;
-
-                            if (statusTagih === 'SUDAH GI' || statusTagih === 'PAID' || os === 0) {
-                                tafsMetrics.paid++;
-                            } else {
-                                tafsMetrics.os += os;
-                                if (isOverdue) {
-                                    tafsMetrics.overdue++;
-                                } else {
-                                    tafsMetrics.onProses++;
-                                }
-                            }
-
-                            htmlRows += `
-                            <div class="grid grid-cols-8 text-center py-3 text-xs font-bold uppercase text-gray-700 hover:bg-gray-50 items-center border-b border-gray-100">
-                                <div class="truncate px-2 text-left font-black text-slate-800">${customerName}</div>
-                                <div class="truncate px-1 text-slate-600">${salesmanName}</div>
-                                <div class="text-blue-600 font-black">${fmtIDR(os)}</div>
-                                <div class="text-gray-500 font-mono text-[11px]">${materialCode}</div>
-                                <div class="px-1">
-                                    <input type="text" id="cabang-${uiId}" value="${valKetCabang}" placeholder="..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-gray-100 text-gray-700 font-bold focus:outline-none" readonly>
-                                </div>
-                                <div class="px-1">
-                                    <input type="text" id="plan-${uiId}" data-customer="${customerName}" data-material="${materialCode}" value="${valPlanBayar}" placeholder="Isi plan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
-                                </div>
-                                <div class="px-1">
-                                    <input type="text" id="ket-${uiId}" value="${valKetLeasing}" placeholder="Isi keterangan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-blue-500">
-                                </div>
-                                <div class="text-center">
-                                    <button onclick="simpanCatatanTafs('${uiId}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan">💾</button>
-                                </div>
-                            </div>`;
-                        }
-                    });
-
-                    if(document.getElementById('total-outstanding')) document.getElementById('total-outstanding').innerText = fmtIDR(tafsMetrics.os);
-                    if(document.getElementById('total-paid')) document.getElementById('total-paid').innerText = `${tafsMetrics.paid} Unit`;
-                    if(document.getElementById('total-on-proses')) document.getElementById('total-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
-                    if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = `${tafsMetrics.overdue} Unit`;
-
-                    const tableBody = document.getElementById('tafs-table-body');
-                    if(tableBody) {
-                        tableBody.innerHTML = htmlRows ? htmlRows : '<div class="text-center py-8 text-gray-400 text-xs font-bold">TIDAK ADA DATA PIUTANG TAFS</div>';
-                    }
-
-                    if (document.getElementById('status-update')) {
-                        document.getElementById('status-update').innerText = `KONEKSI BERHASIL - DATA TERKONEKSI SINKRON: ${new Date().toLocaleString('id-ID')} WIB`;
-                        document.getElementById('status-update').className = "text-xs font-bold uppercase tracking-wider text-emerald-600 italic";
-                    }
-                }
-            } catch (err) {
-                console.error("Gagal sinkronisasi data TAFS:", err);
-                if (document.getElementById('status-update')) {
-                    document.getElementById('status-update').innerText = `KONEKSI BERMASALAH: ${err.message}`;
-                    document.getElementById('status-update').className = "text-xs font-bold uppercase tracking-wider text-red-600 italic";
-                }
-            }
-        }
-
-        // PROTEKSI PAYLOAD TERISOLASI: Menghapus variabel valCabang agar sistem TAFS sama sekali tidak berhak mengirim update kolom ket_cabang.
-        window.simpanCatatanTafs = async function(uiId) {
-            const inputPlan = document.getElementById(`plan-${uiId}`);
-            const inputKet = document.getElementById(`ket-${uiId}`);
-
-            const customerName = inputPlan.getAttribute('data-customer');
-            const materialCode = inputPlan.getAttribute('data-material');
-            
-            const valPlan = inputPlan.value;
-            const valKet = inputKet.value;
-
-            try {
-                // Di sini kolom ket_cabang sengaja dibuang dari payload agar data isian admin TIDAK AKAN PERNAH tertimpa kosong lagi!
-                let payload = {
-                    plan_bayar_leasing: valPlan,
-                    ket_leasing: valKet
-                };
-
-                const { data, error } = await supabase
-                    .from('ar_unit')
-                    .update(payload)
-                    .eq('customer_name', customerName)
-                    .eq('material_code', materialCode)
-                    .select();
-
-                if (error) throw error;
-                
-                alert("Catatan TAFS Berhasil Disimpan Ke Database Pusat! 👍");
-                
-                // Refresh paksa data dari server pasca update
-                fetchTafsData();
-
-            } catch (err) {
-                console.error(err);
-                alert("Gagal sinkronisasi data: " + err.message);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', fetchTafsData);
-    </script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
