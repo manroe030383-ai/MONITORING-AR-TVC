@@ -442,11 +442,32 @@ window.simpanCatatan = async function(noId) {
         
         const valCabang = inputEl.value;
 
-        // EKSEKUSI PERBAIKAN: Langsung perbarui data berdasarkan ID unik Row Database
+        // 1. Cari data asli di cachedData untuk mencocokkan ID/SPK yang benar
+        const dataRow = cachedData.find(d => {
+            const currentId = d.id !== undefined ? d.id : (getProp(d, 'id') || getProp(d, 'no_spk') || getProp(d, 'No SPK'));
+            return String(currentId) === String(noId);
+        });
+
+        if (!dataRow) {
+            alert("Data tidak ditemukan di cache untuk disimpan.");
+            return;
+        }
+
+        // 2. Deteksi otomatis nama kolom primary key yang eksis di database Anda
+        let pkColumn = 'id'; // default fallback
+        if (dataRow.id !== undefined) pkColumn = 'id';
+        else if (dataRow['ID'] !== undefined) pkColumn = 'ID';
+        else if (dataRow['no_spk'] !== undefined) pkColumn = 'no_spk';
+        else if (dataRow['No SPK'] !== undefined) pkColumn = 'No SPK';
+
+        // 3. Ambil nilai key aslinya (misal nomor SPK atau ID numerik)
+        const pkValue = dataRow[pkColumn];
+
+        // 4. Eksekusi update menggunakan kolom primary key hasil deteksi otomatis
         const { error } = await supabase
             .from('ar_unit')
             .update({ ket_cabang: valCabang })
-            .eq('id', noId);
+            .eq(pkColumn, pkValue);
 
         if (error) throw error;
         
@@ -470,14 +491,34 @@ window.simpanCatatanLeasing = async function(noId) {
         const valPlan = planEl.value;
         const valKetLeas = ketEl.value;
 
-        // EKSEKUSI PERBAIKAN: Langsung perbarui data berdasarkan ID unik Row Database
+        // 1. Cari data asli di cachedData untuk mencocokkan ID/SPK yang benar
+        const dataRow = cachedData.find(d => {
+            const currentId = d.id !== undefined ? d.id : (getProp(d, 'id') || getProp(d, 'no_spk') || getProp(d, 'No SPK'));
+            return String(currentId) === String(noId);
+        });
+
+        if (!dataRow) {
+            alert("Data tidak ditemukan di cache untuk disimpan.");
+            return;
+        }
+
+        // 2. Deteksi otomatis nama kolom primary key yang eksis di database Anda
+        let pkColumn = 'id';
+        if (dataRow.id !== undefined) pkColumn = 'id';
+        else if (dataRow['ID'] !== undefined) pkColumn = 'ID';
+        else if (dataRow['no_spk'] !== undefined) pkColumn = 'no_spk';
+        else if (dataRow['No SPK'] !== undefined) pkColumn = 'No SPK';
+
+        const pkValue = dataRow[pkColumn];
+
+        // 3. Eksekusi update menggunakan kolom primary key hasil deteksi otomatis
         const { error } = await supabase
             .from('ar_unit')
             .update({ 
                 plan_bayar_leasing: valPlan, 
                 ket_leasing: valKetLeas 
             })
-            .eq('id', noId);
+            .eq(pkColumn, pkValue);
 
         if (error) throw error;
         
