@@ -420,3 +420,153 @@ function renderTabDatabaseFull(data) {
     el.innerHTML = data.map((d, i) => {
         const os = Number(getProp(d, 'O/S Balance') || 0);
         const b1 = Number(getProp(d, 'Hari 1-30') || 0); const b2 = Number(getProp(d, 'Hari 31-60') || 0); const b3 = Number(getProp(d, 'Lebih 60 Hari') || 0);
+        const totalOv = b1 + b2 + b3; const lancar = totalOv === 0 ? os : (os - totalOv > 0 ? os - totalOv : 0);
+        return `
+        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
+            <td class="p-4 text-center text-slate-400">${i + 1}</td>
+            <td class="p-4 text-slate-800 font-black">${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</td>
+            <td class="p-4"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || 'CASH'}</span></td>
+            <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(os)}</td>
+            <td class="p-4 text-right text-emerald-600">${fmtIDR(lancar)}</td>
+            <td class="p-4 text-right text-amber-500">${fmtIDR(b1)}</td>
+            <td class="p-4 text-right text-orange-500">${fmtIDR(b2)}</td>
+            <td class="p-4 text-right text-red-500">${fmtIDR(b3)}</td>
+            <td class="p-4 text-right text-red-600 font-black bg-red-50/30">${fmtIDR(totalOv)}</td>
+        </tr>`;
+    }).join('');
+}
+
+// ========================================================
+// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML)
+// ========================================================
+window.simpanCatatan = async function(nomorSPK) {
+    try {
+        const idSistem = nomorSPK.replace(/[^a-zA-Z0-9]/g, '_');
+        const inputEl = document.getElementById(`cabang-${idSistem}`);
+        if (!inputEl) return;
+        
+        const valCabang = inputEl.value;
+
+        const dataRow = cachedData.find(d => {
+            const spkData = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
+            return spkData === String(nomorSPK).trim();
+        });
+
+        if (!dataRow) {
+            alert("Data SPK tidak ditemukan di cache untuk disimpan.");
+            return;
+        }
+
+        let kolomSPK = 'no_spk';
+        if (dataRow['No SPK'] !== undefined) kolomSPK = 'No SPK';
+        else if (dataRow['no_spk'] !== undefined) kolomSPK = 'no_spk';
+
+        const { error } = await supabase
+            .from('ar_unit')
+            .update({ ket_cabang: valCabang })
+            .eq(kolomSPK, nomorSPK);
+
+        if (error) throw error;
+        
+        alert("Keterangan cabang berhasil disimpan ke database! 👍");
+        
+    } catch (err) {
+        console.error(err);
+        alert("Gagal menyimpan data: " + err.message);
+    }
+}
+
+// ========================================================
+// 7. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML)
+// ========================================================
+window.simpanCatatanLeasing = async function(nomorSPK) {
+    try {
+        const idSistem = nomorSPK.replace(/[^a-zA-Z0-9]/g, '_');
+        const planEl = document.getElementById(`plan-${idSistem}`);
+        const ketEl = document.getElementById(`ket-${idSistem}`);
+        if (!planEl || !ketEl) return;
+
+        const valPlan = planEl.value;
+        const valKetLeas = ketEl.value;
+
+        const dataRow = cachedData.find(d => {
+            const spkData = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
+            return spkData === String(nomorSPK).trim();
+        });
+
+        if (!dataRow) {
+            alert("Data SPK tidak ditemukan di cache untuk disimpan.");
+            return;
+        }
+
+        let kolomSPK = 'no_spk';
+        if (dataRow['No SPK'] !== undefined) kolomSPK = 'No SPK';
+        else if (dataRow['no_spk'] !== undefined) kolomSPK = 'no_spk';
+
+        const { error } = await supabase
+            .from('ar_unit')
+            .update({ 
+                plan_bayar_leasing: valPlan, 
+                ket_leasing: valKetLeas 
+            })
+            .eq(kolomSPK, nomorSPK);
+
+        if (error) throw error;
+        
+        alert("Respon Leasing Berhasil Diperbarui ke Database! ✔️");
+        
+    } catch (err) {
+        console.error(err);
+        alert("Leasing gagal menyimpan data: " + err.message);
+    }
+}
+
+// ========================================================
+// 8. FUNGSI DOWNLOAD DATA KE EXCEL
+// ========================================================
+function downloadExcel() {
+    if (!cachedData || cachedData.length === 0) { alert("Data belum siap."); return; }
+    try {
+        const dataUntukExcel = cachedData.map((d, index) => {
+            const os = Number(getProp(d, 'O/S Balance') || 0);
+            const b1 = Number(getProp(d, 'Hari 1-30') || 0); const b2 = Number(getProp(d, 'Hari 31-60') || 0); const b3 = Number(getProp(d, 'Lebih 60 Hari') || 0);
+            const totalOv = b1 + b2 + b3; const lancar = totalOv === 0 ? os : (os - totalOv > 0 ? os - totalOv : 0);
+            return {
+                "No": index + 1, "Nama Customer": getProp(d, 'Customer Name') || "-", "No SPK": getProp(d, 'No SPK') || "-",
+                "Leasing": getProp(d, 'Chas/Leasing') || "CASH", "O/S Balance": os, "Hari 1-30 (Lancar)": lancar,
+                "Hari 31-60": b1, "Lebih 60 Hari": b2, "Total Overdue": totalOv, "Potensi Penalti": getProp(d, 'Potensi Penalti') || 0,
+                "Salesman": getProp(d, 'Salesman Name') || "-", "Supervisor": getProp(d, 'Supervisor') || "-",
+                "Keterangan Cabang": getProp(d, 'ket_cabang') || "", "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || "", "Keterangan Leasing": getProp(d, 'ket_leasing') || ""
+            };
+        });
+        const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel); const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Data AR Unit");
+        XLSX.writeFile(workbook, `Report_AR_Unit_Auto2000_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (error) { console.error(error); }
+}
+
+// ========================================================
+// 9. INISIALISASI REALTIME LISTENER (SINKRONISASI OTOMATIS)
+// ========================================================
+document.addEventListener('DOMContentLoaded', () => {
+    const btnDownload = document.getElementById('btn-download-excel');
+    if (btnDownload) { btnDownload.addEventListener('click', downloadExcel); }
+    
+    fetchData();
+
+    supabase
+        .channel('schema-db-changes')
+        .on(
+            'postgres_changes',
+            {
+                event: '*', 
+                schema: 'public',
+                table: 'ar_unit'
+            },
+            (payload) => {
+                console.log('Database Berubah Real-time!', payload);
+                fetchData(); 
+            }
+        )
+        .subscribe();
+});
