@@ -353,7 +353,7 @@ function renderTabOverdueFull(data) {
 }
 
 // ========================================================
-// 5. FUNGSI RENDER UTAMA INPUT CONTROL DATA (FIXED FOR LEASING)
+// 5. FUNGSI RENDER UTAMA INPUT CONTROL DATA (FIXED FOR LEASING & NO SPK = 1)
 // ========================================================
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
@@ -364,18 +364,22 @@ function renderDataArUnitFull(data) {
         return l.includes('TAFS') || l.includes('ACC');
     });
 
-    if(filterAR.length === 0) { el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing TAFS / ACC</td></tr>'; return; }
+    if(filterAR.length === 0) { 
+        el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing TAFS / ACC</td></tr>'; 
+        return; 
+    }
 
-    // DETEKSI YANG DI-FIX: Mengubah ke lowercase agar pembacaan nama file di Vercel selalu cocok
     const currentPath = window.location.pathname.toLowerCase();
     const isLeasingView = currentPath.includes('tafs') || currentPath.includes('acc');
 
     el.innerHTML = filterAR.map((d, i) => {
-        const spkAsli = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
-        const idSistem = spkAsli.replace(/[^a-zA-Z0-9]/g, '_');
+        // AMANKAN JANGKAR: Ambil ID unik baris database Supabase (bukan dari No SPK yang isinya 1 semua)
+        const idRowSistem = d['id'] || i;
+        const spkAsli = String(d['No SPK'] || d['no_spk'] || getProp(d, 'No SPK') || '1').trim();
         
-        // MEMASUKKAN NILAI DARI DATABASE SECARA ABSOLUT KE INPUT
-        const nilaiKetCabang = getProp(d, 'ket_cabang') || '';
+        const nilaiKetCabang = d['ket_cabang'] || '';
+        const nilaiPlanLeasing = d['plan_bayar_leasing'] || '';
+        const nilaiKetLeasing = d['ket_leasing'] || '';
         
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
@@ -388,27 +392,27 @@ function renderDataArUnitFull(data) {
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
             
             <td class="p-4 w-48">
-                <input type="text" id="cabang-${idSistem}" value="${nilaiKetCabang}" placeholder="Ket cabang..." 
+                <input type="text" id="cabang-${idRowSistem}" value="${nilaiKetCabang}" placeholder="Ket cabang..." 
                 class="input-custom ${isLeasingView ? 'bg-slate-100 text-slate-600 cursor-not-allowed font-semibold' : 'bg-white'}" 
                 ${isLeasingView ? 'readonly' : ''}>
             </td>
             
             <td class="p-4 w-48">
-                <input type="text" id="plan-${idSistem}" value="${getProp(d, 'plan_bayar_leasing') || ''}" placeholder="${isLeasingView ? 'Isi plan bayar...' : 'Menunggu isian leasing...'}" 
+                <input type="text" id="plan-${idRowSistem}" value="${nilaiPlanLeasing}" placeholder="${isLeasingView ? 'Isi plan bayar...' : 'Menunggu isian leasing...'}" 
                 class="input-custom ${isLeasingView ? 'bg-white border-emerald-300' : 'bg-slate-50 text-slate-500 cursor-not-allowed'}" 
                 ${isLeasingView ? '' : 'readonly'}>
             </td>
             
             <td class="p-4 w-48">
-                <input type="text" id="ket-${idSistem}" value="${getProp(d, 'ket_leasing') || ''}" placeholder="${isLeasingView ? 'Isi ket leasing...' : 'Menunggu keterangan leasing...'}" 
+                <input type="text" id="ket-${idRowSistem}" value="${nilaiKetLeasing}" placeholder="${isLeasingView ? 'Isi ket leasing...' : 'Menunggu keterangan leasing...'}" 
                 class="input-custom ${isLeasingView ? 'bg-white border-emerald-300' : 'bg-slate-50 text-slate-500 cursor-not-allowed'}" 
                 ${isLeasingView ? '' : 'readonly'}>
             </td>
             
             <td class="p-4 text-center w-16">
                 ${isLeasingView ? 
-                    `<button onclick="simpanCatatanLeasing('${spkAsli}')" class="text-emerald-600 hover:bg-emerald-600 hover:text-white bg-emerald-50 p-2 rounded-lg transition-all" title="Simpan Respon Leasing">💾</button>` :
-                    `<button onclick="simpanCatatan('${spkAsli}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan Cabang">💾</button>`
+                    `<button onclick="simpanCatatanLeasing('${idRowSistem}')" class="text-emerald-600 hover:bg-emerald-600 hover:text-white bg-emerald-50 p-2 rounded-lg transition-all" title="Simpan Respon Leasing">💾</button>` :
+                    `<button onclick="simpanCatatan('${idRowSistem}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan Cabang">💾</button>`
                 }
             </td>
         </tr>`;
@@ -437,37 +441,22 @@ function renderTabDatabaseFull(data) {
 }
 
 // ========================================================
-// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML)
+// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (BERDASARKAN ID PRIMARY KEY)
 // ========================================================
-window.simpanCatatan = async function(nomorSPK) {
+window.simpanCatatan = async function(idRowSistem) {
     try {
-        const idSistem = nomorSPK.replace(/[^a-zA-Z0-9]/g, '_');
-        const inputEl = document.getElementById(`cabang-${idSistem}`);
+        const inputEl = document.getElementById(`cabang-${idRowSistem}`);
         if (!inputEl) return;
         
         const valCabang = inputEl.value;
 
-        const dataRow = cachedData.find(d => {
-            const spkData = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
-            return spkData === String(nomorSPK).trim();
-        });
-
-        if (!dataRow) {
-            alert("Data SPK tidak ditemukan di cache untuk disimpan.");
-            return;
-        }
-
-        let kolomSPK = 'no_spk';
-        if (dataRow['No SPK'] !== undefined) kolomSPK = 'No SPK';
-        else if (dataRow['no_spk'] !== undefined) kolomSPK = 'no_spk';
-
+        // Tembak data update langsung mendasarkan ID unik bawaan Supabase
         const { error } = await supabase
             .from('ar_unit')
             .update({ ket_cabang: valCabang })
-            .eq(kolomSPK, nomorSPK);
+            .eq('id', idRowSistem);
 
         if (error) throw error;
-        
         alert("Keterangan cabang berhasil disimpan ke database! 👍");
         
     } catch (err) {
@@ -477,42 +466,27 @@ window.simpanCatatan = async function(nomorSPK) {
 }
 
 // ========================================================
-// 7. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML)
+// 7. FUNGSI SIMPAN KHUSUS LEASING (BERDASARKAN ID PRIMARY KEY)
 // ========================================================
-window.simpanCatatanLeasing = async function(nomorSPK) {
+window.simpanCatatanLeasing = async function(idRowSistem) {
     try {
-        const idSistem = nomorSPK.replace(/[^a-zA-Z0-9]/g, '_');
-        const planEl = document.getElementById(`plan-${idSistem}`);
-        const ketEl = document.getElementById(`ket-${idSistem}`);
+        const planEl = document.getElementById(`plan-${idRowSistem}`);
+        const ketEl = document.getElementById(`ket-${idRowSistem}`);
         if (!planEl || !ketEl) return;
 
         const valPlan = planEl.value;
         const valKetLeas = ketEl.value;
 
-        const dataRow = cachedData.find(d => {
-            const spkData = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
-            return spkData === String(nomorSPK).trim();
-        });
-
-        if (!dataRow) {
-            alert("Data SPK tidak ditemukan di cache untuk disimpan.");
-            return;
-        }
-
-        let kolomSPK = 'no_spk';
-        if (dataRow['No SPK'] !== undefined) kolomSPK = 'No SPK';
-        else if (dataRow['no_spk'] !== undefined) kolomSPK = 'no_spk';
-
+        // Tembak data update langsung mendasarkan ID unik bawaan Supabase
         const { error } = await supabase
             .from('ar_unit')
             .update({ 
                 plan_bayar_leasing: valPlan, 
                 ket_leasing: valKetLeas 
             })
-            .eq(kolomSPK, nomorSPK);
+            .eq('id', idRowSistem);
 
         if (error) throw error;
-        
         alert("Respon Leasing Berhasil Diperbarui ke Database! ✔️");
         
     } catch (err) {
@@ -536,7 +510,7 @@ function downloadExcel() {
                 "Leasing": getProp(d, 'Chas/Leasing') || "CASH", "O/S Balance": os, "Hari 1-30 (Lancar)": lancar,
                 "Hari 31-60": b1, "Lebih 60 Hari": b2, "Total Overdue": totalOv, "Potensi Penalti": getProp(d, 'Potensi Penalti') || 0,
                 "Salesman": getProp(d, 'Salesman Name') || "-", "Supervisor": getProp(d, 'Supervisor') || "-",
-                "Keterangan Cabang": getProp(d, 'ket_cabang') || "", "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || "", "Keterangan Leasing": getProp(d, 'ket_leasing') || ""
+                "Keterangan Cabang": d['ket_cabang'] || "", "Plan Bayar Leasing": d['plan_bayar_leasing'] || "", "Keterangan Leasing": d['ket_leasing'] || ""
             };
         });
         const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel); const workbook = XLSX.utils.book_new();
