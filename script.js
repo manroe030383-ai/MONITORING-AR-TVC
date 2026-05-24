@@ -92,7 +92,6 @@ function updateDashboard(data) {
         
         const ov = (getProp(d, 'Total Overdue') !== undefined) ? Number(getProp(d, 'Total Overdue')) : (b1_30 + b31_60 + b60);
         
-        // PENGAMAN FILTER UTAMA: Mencakup pencarian nama kolom format text excel maupun format database asli Supabase
         const l = String(d['chas_leasing'] || d['leasing_name'] || getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || 'CASH').toUpperCase().trim();
         const penalti = Number(getProp(d, 'Potensi Penalti') || getProp(d, 'penalty_amount') || 0);
         const statusTagih = String(getProp(d, 'status_tagih') || getProp(d, 'Status Tagih') || '').toUpperCase().trim();
@@ -211,8 +210,8 @@ function renderAgingChart(agingData) {
         chart: { type: 'bar', height: 250, toolbar: { show: false } },
         colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
         plotOptions: { bar: { borderRadius: 4, distributed: true, dataLabels: { position: 'top' } } },
-        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontfont: 800 }, offsetY: -20 },
-        xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontfont: 700 } } },
+        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWeight: 800 }, offsetY: -20 },
+        xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontWeight: 700 } } },
         yaxis: { show: false },
         grid: { show: false },
         legend: { show: false }
@@ -354,44 +353,60 @@ function renderTabOverdueFull(data) {
 }
 
 // ========================================================
-// 5. FUNGSI RENDER INPUT DATA Halaman TAFS/ACC & Dashboard Control
+// 5. FUNGSI RENDER INPUT DATA UTAMA (FIX INTEGRASI SINKRONISASI TAFS/ACC)
 // ========================================================
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
     if (!el) return;
 
-    // Filter data khusus untuk halaman TAFS / ACC secara aman
+    // DETEKSI URL SEARA AKURAT DAN FLEKSIBEL (BAIK LOKAL MAUPUN SERVER HOSTING)
+    const currentPath = window.location.pathname.toLowerCase();
+    const isTafsPage = currentPath.includes('tafs');
+    const isAccPage = currentPath.includes('acc');
+    const isLeasingView = isTafsPage || isAccPage;
+
+    // JAMINAN FILTER KETAT: Memisahkan data TAFS dan ACC secara mutlak tanpa memandang struktur folder URL
     const filterAR = data.filter(d => {
         const l = String(d['chas_leasing'] || d['leasing_name'] || getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
+        
+        if (isTafsPage) {
+            return l.includes('TAFS');
+        }
+        if (isAccPage) {
+            return l.includes('ACC');
+        }
+        // Jika dibuka dari dashboard.html utama, tampilkan gabungan keduanya
         return l.includes('TAFS') || l.includes('ACC');
     });
 
     if(filterAR.length === 0) { 
-        el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing TAFS / ACC</td></tr>'; 
+        let pesanKosong = "Tidak ada unit dengan Leasing TAFS / ACC";
+        if (isTafsPage) pesanKosong = "Tidak ada data dengan status Leasing TAFS di database Supabase.";
+        if (isAccPage) pesanKosong = "Tidak ada data dengan status Leasing ACC di database Supabase.";
+        
+        el.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">${pesanKosong}</td></tr>`; 
         return; 
     }
 
-    const currentPath = window.location.pathname.toLowerCase();
-    const isLeasingView = currentPath.includes('tafs') || currentPath.includes('acc');
-
     el.innerHTML = filterAR.map((d, i) => {
-        const namaCustAsli = String(getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '').trim();
+        const namaCustAsli = String(getProp(d, 'Customer Name') || d['customer_name'] || '').trim();
         const idSistemDOM = namaCustAsli.replace(/[^a-zA-Z0-9]/g, '_');
         
         const spkAsli = String(d['No SPK'] || d['no_spk'] || getProp(d, 'No SPK') || '1').trim();
-        const nilaiKetCabang = d['ket_cabang'] || '';
-        const nilaiPlanLeasing = d['plan_bayar_leasing'] || '';
-        const nilaiKetLeasing = d['ket_leasing'] || '';
+        const nilaiKetCabang = d['ket_cabang'] || d['Keterangan Cabang'] || '';
+        const nilaiPlanLeasing = d['plan_bayar_leasing'] || d['Plan Bayar Leasing'] || '';
+        const nilaiKetLeasing = d['ket_leasing'] || d['Keterangan Leasing'] || '';
+        const merekLeasing = d['chas_leasing'] || d['leasing_name'] || getProp(d, 'Chas/Leasing') || '-';
         
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
             <td class="p-4 text-slate-800 font-black">${namaCustAsli}</td>
             <td class="p-4">
-                <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${d['chas_leasing'] || d['leasing_name'] || getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '-'}</span>
+                <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${merekLeasing}</span>
                 <p class="text-[7px] text-slate-400 mt-1">SPK: ${spkAsli}</p>
             </td>
-            <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
+            <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'O/S Balance') || d['os_balance'])}</td>
             
             <td class="p-4 w-48">
                 <input type="text" id="cabang-${idSistemDOM}" value="${nilaiKetCabang}" placeholder="Ket cabang..." 
