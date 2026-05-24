@@ -244,6 +244,9 @@ function renderDataArUnitFull(data) {
         // AMBIL NO CUSTOMER LANGSUNG DARI KOLOM SUPABASE
         const noCustomer = getProp(d, 'no_customer') || '-';
 
+        // AMBIL VALUE KETERANGAN CABANG
+        const ketCabangVal = getProp(d, 'ket_cabang') || '';
+
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
@@ -258,9 +261,12 @@ function renderDataArUnitFull(data) {
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
             
             <td class="p-4 w-48">
-                <input type="text" id="cabang-${idSistem}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." 
-                class="input-custom ${isLeasingView ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white'}" 
-                ${isLeasingView ? 'readonly' : ''}>
+                ${isLeasingView ? 
+                    `<input type="text" value="${ketCabangVal}" placeholder="Ket cabang..." 
+                     class="input-custom bg-slate-100 text-slate-500 cursor-not-allowed border-none shadow-none" readonly>` : 
+                    `<input type="text" id="cabang-${idSistem}" value="${ketCabangVal}" placeholder="Ket cabang..." 
+                     class="input-custom bg-white">`
+                }
             </td>
             
             <td class="p-4 w-48">
