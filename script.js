@@ -220,6 +220,7 @@ function renderAgingChart(agingData) {
     else { charts.bar = new ApexCharts(el, options); charts.bar.render(); }
 }
 
+// Fixed: cachedData context bound inside Donut
 function renderDonutLeasing(mLeas) {
     const el = document.querySelector("#chart-donut-leasing");
     if (!el) return;
@@ -305,7 +306,7 @@ function renderTabLeasingFull(data) {
                                 <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || 'OFFICE'}</p>
                             </td>
                             <td class="p-3">
-                                <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || '-'}</span>
+                                <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '-'}</span>
                             </td>
                             <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
                         </tr>`).join('')}
@@ -353,7 +354,7 @@ function renderTabOverdueFull(data) {
 }
 
 // ========================================================
-// 6. SINKRONISASI INTERAKTIF HAK AKSES INPUT
+// 5. SINKRONISASI INTERAKTIF HAK AKSES INPUT & PERBAIKAN ID
 // ========================================================
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
@@ -369,7 +370,9 @@ function renderDataArUnitFull(data) {
     const isLeasingView = window.location.pathname.includes('tafs') || window.location.pathname.includes('acc');
 
     el.innerHTML = filterAR.map((d, i) => {
-        const idUtama = d.id || getProp(d, 'No') || i;
+        // PERBAIKAN TOTAL: Ambil ID primary key asli milik database Supabase
+        const idUtama = d.id !== undefined ? d.id : (getProp(d, 'id') || i);
+        
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
@@ -400,8 +403,8 @@ function renderDataArUnitFull(data) {
             
             <td class="p-4 text-center w-16">
                 ${isLeasingView ? 
-                    `<button onclick="simpanCatatanLeasing('${idUtama}', '${i}')" class="text-emerald-600 hover:bg-emerald-600 hover:text-white bg-emerald-50 p-2 rounded-lg transition-all" title="Simpan Respon Leasing">💾</button>` :
-                    `<button onclick="simpanCatatan('${idUtama}', '${i}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan Cabang">💾</button>`
+                    `<button onclick="simpanCatatanLeasing('${idUtama}')" class="text-emerald-600 hover:bg-emerald-600 hover:text-white bg-emerald-50 p-2 rounded-lg transition-all" title="Simpan Respon Leasing">💾</button>` :
+                    `<button onclick="simpanCatatan('${idUtama}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan Cabang">💾</button>`
                 }
             </td>
         </tr>`;
@@ -430,25 +433,24 @@ function renderTabDatabaseFull(data) {
 }
 
 // ========================================================
-// 7. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML)
+// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML)
 // ========================================================
-window.simpanCatatan = async function(noId, indexFallback) {
+window.simpanCatatan = async function(noId) {
     try {
-        const valCabang = document.getElementById(`cabang-${noId}`).value;
-        let queryBuilder = supabase.from('ar_unit').update({ ket_cabang: valCabang });
+        const inputEl = document.getElementById(`cabang-${noId}`);
+        if (!inputEl) return;
+        
+        const valCabang = inputEl.value;
 
-        if (!isNaN(noId) && cachedData[indexFallback]) {
-            const namaCust = getProp(cachedData[indexFallback], 'Customer Name') || getProp(cachedData[indexFallback], 'customer_name');
-            queryBuilder = queryBuilder.eq('Customer Name', namaCust);
-        } else {
-            queryBuilder = queryBuilder.eq('id', noId);
-        }
+        // EKSEKUSI PERBAIKAN: Langsung perbarui data berdasarkan ID unik Row Database
+        const { error } = await supabase
+            .from('ar_unit')
+            .update({ ket_cabang: valCabang })
+            .eq('id', noId);
 
-        const { error } = await queryBuilder;
         if (error) throw error;
         
-        alert("Keterangan cabang berhasil disimpan! 👍");
-        // Catatan: fetchData() sengaja tidak dipanggil manual di sini karena fitur Realtime Channel di bawah akan otomatis mendeteksi perubahan data.
+        alert("Keterangan cabang berhasil disimpan ke database! 👍");
         
     } catch (err) {
         console.error(err);
@@ -457,30 +459,29 @@ window.simpanCatatan = async function(noId, indexFallback) {
 }
 
 // ========================================================
-// 8. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML)
+// 7. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML)
 // ========================================================
-window.simpanCatatanLeasing = async function(noId, indexFallback) {
+window.simpanCatatanLeasing = async function(noId) {
     try {
-        const valPlan = document.getElementById(`plan-${noId}`).value;
-        const valKetLeas = document.getElementById(`ket-${noId}`).value;
+        const planEl = document.getElementById(`plan-${noId}`);
+        const ketEl = document.getElementById(`ket-${noId}`);
+        if (!planEl || !ketEl) return;
 
-        let queryBuilder = supabase.from('ar_unit').update({ 
-            plan_bayar_leasing: valPlan, 
-            ket_leasing: valKetLeas 
-        });
+        const valPlan = planEl.value;
+        const valKetLeas = ketEl.value;
 
-        if (!isNaN(noId) && cachedData[indexFallback]) {
-            const namaCust = getProp(cachedData[indexFallback], 'Customer Name') || getProp(cachedData[indexFallback], 'customer_name');
-            queryBuilder = queryBuilder.eq('Customer Name', namaCust);
-        } else {
-            queryBuilder = queryBuilder.eq('id', noId);
-        }
+        // EKSEKUSI PERBAIKAN: Langsung perbarui data berdasarkan ID unik Row Database
+        const { error } = await supabase
+            .from('ar_unit')
+            .update({ 
+                plan_bayar_leasing: valPlan, 
+                ket_leasing: valKetLeas 
+            })
+            .eq('id', noId);
 
-        const { error } = await queryBuilder;
         if (error) throw error;
         
-        alert("Respon Leasing Berhasil Diperbarui! ✔️");
-        // Catatan: Realtime Channel di bawah otomatis mendeteksi pembaruan data ini.
+        alert("Respon Leasing Berhasil Diperbarui ke Database! ✔️");
         
     } catch (err) {
         console.error(err);
@@ -488,6 +489,9 @@ window.simpanCatatanLeasing = async function(noId, indexFallback) {
     }
 }
 
+// ========================================================
+// 8. FUNGSI DOWNLOAD DATA KE EXCEL
+// ========================================================
 function downloadExcel() {
     if (!cachedData || cachedData.length === 0) { alert("Data belum siap."); return; }
     try {
@@ -516,23 +520,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnDownload = document.getElementById('btn-download-excel');
     if (btnDownload) { btnDownload.addEventListener('click', downloadExcel); }
     
-    // Muat data awal secara langsung saat halaman dibuka
+    // Ambil data pertama kali saat dashboard dibuka
     fetchData();
 
-    // AKTIFKAN LIVE UPDATE: Memantau database secara real-time. 
-    // Begitu dashboard.html menyimpan data, tafs.html akan otomatis ter-refresh datanya di latar belakang.
+    // AKTIFKAN LIVE SYNC REAL-TIME
     supabase
         .channel('schema-db-changes')
         .on(
             'postgres_changes',
             {
-                event: '*', // Menangkap event INSERT, UPDATE, maupun DELETE
+                event: '*', 
                 schema: 'public',
                 table: 'ar_unit'
             },
             (payload) => {
                 console.log('Database Berubah Real-time! Memperbarui tampilan...', payload);
-                fetchData(); // Menarik data terbaru otomatis tanpa memuat ulang browser (no hard reload)
+                fetchData(); 
             }
         )
         .subscribe();
