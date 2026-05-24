@@ -8,7 +8,7 @@ const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let charts = {};
+let charts = { bar: null, donut: null }; 
 let cachedData = []; 
 
 // Formatter Mata Uang & Angka
@@ -81,29 +81,23 @@ function updateDashboard(data) {
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
 
-    // Container data terisolasi untuk TAFS dan ACC secara adil
     let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
     let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
 
     data.forEach(d => {
-        // Tarik data angka nominal uang & breakdown aging dari database
         const os = Number(getProp(d, 'O/S Balance') || getProp(d, 'os_balance') || 0);
         const b1_30 = Number(getProp(d, 'Hari 1-30') || getProp(d, 'hari_1_30') || 0);
         const b31_60 = Number(getProp(d, 'Hari 31-60') || getProp(d, 'hari_31_60') || 0);
         const b60 = Number(getProp(d, 'Lebih 60 Hari') || getProp(d, 'lebih_60_hari') || 0);
         
-        // Akumulasi total overdue per unit
         const ov = (getProp(d, 'Total Overdue') !== undefined) ? Number(getProp(d, 'Total Overdue')) : (b1_30 + b31_60 + b60);
         
-        // Cek nama leasing (kolom 'Chas/Leasing' atau 'Leasing Name')
         const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
         const penalti = Number(getProp(d, 'Potensi Penalti') || getProp(d, 'penalty_amount') || 0);
         const statusTagih = String(getProp(d, 'status_tagih') || getProp(d, 'Status Tagih') || '').toUpperCase().trim();
         
-        // Kalkulasi nominal lancar (Belum Jatuh Tempo / Belum TM)
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
-        // Akumulasi summary dashboard
         s.os += os; 
         s.ov += ov; 
         s.pen += penalti; 
@@ -115,20 +109,17 @@ function updateDashboard(data) {
         }
         if (penalti > 0) s.cPen++;
 
-        // Distribusi Grafik Aging (Satuan Juta)
         aging['LANCAR'] += lancarNominal / 1000000;
         aging['1-30 H'] += b1_30 / 1000000;
         aging['31-60 H'] += b31_60 / 1000000;
         aging['>60 H'] += b60 / 1000000;
 
-        // Klasifikasi Cash vs Leasing
         if (["CASH", "CASH TERIMA", "", "-"].includes(l)) { 
             s.cash += os; s.cCash++; 
         } else { 
             s.leas += os; s.cLeas++; 
             mLeas[l] = (mLeas[l] || 0) + os; 
             
-            // Filter Global TVC Astra Group (TAFS & ACC)
             if (l.includes('TAFS') || l.includes('ACC')) {
                 tvc.total++;
                 if (statusTagih === 'SUDAH GI') tvc.gi++;
@@ -136,7 +127,6 @@ function updateDashboard(data) {
             }
         }
 
-        // --- FILTER KARTU DETAIL TAFS ---
         if (l.includes('TAFS')) {
             if (statusTagih === 'SUDAH GI' || os === 0) {
                 tafsMetrics.paid++;
@@ -146,7 +136,6 @@ function updateDashboard(data) {
                 else tafsMetrics.onProses++;
             }
         } 
-        // --- FILTER KARTU DETAIL ACC ---
         else if (l.includes('ACC')) {
             if (statusTagih === 'SUDAH GI' || os === 0) {
                 accMetrics.paid++;
@@ -157,7 +146,6 @@ function updateDashboard(data) {
             }
         }
 
-        // Ambil Data Penjualan (Sales & Supervisor)
         const rawSales = String(getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || "").trim();
         const rawSpv = String(getProp(d, 'Supervisor') || getProp(d, 'supervisor_name') || "").trim();
         const finalSales = rawSales !== "" ? rawSales : (rawSpv !== "" ? rawSpv : "OFFICE");
@@ -167,7 +155,6 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // --- TEMBAK ANGKA KE HTML CARD UTAMA ---
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -175,7 +162,6 @@ function updateDashboard(data) {
     if(document.getElementById('badge-overdue')) document.getElementById('badge-overdue').innerText = `${s.countOv} SPK LEWAT TOP`;
     if(document.getElementById('spk-penalty')) document.getElementById('spk-penalty').innerText = `${s.cPen} SPK`;
     
-    // Progress Bar Persentase Pembayaran
     if(s.os > 0) {
         if(document.getElementById('bar-cash')) document.getElementById('bar-cash').style.width = `${(s.cash/s.os)*100}%`;
         if(document.getElementById('bar-leasing')) document.getElementById('bar-leasing').style.width = `${(s.leas/s.os)*100}%`;
@@ -186,12 +172,10 @@ function updateDashboard(data) {
     if(document.getElementById('val-total-leas')) document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
     if(document.getElementById('unit-total-leas')) document.getElementById('unit-total-leas').innerText = `${s.cLeas} Unit`;
 
-    // Tvc Mini-Card
     if(document.getElementById('total-unit-tvc')) document.getElementById('total-unit-tvc').innerText = `${tvc.total} Unit`;
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
-    // --- TEMBAK ANGKA KE CARD INDIKATOR TAFS & ACC CO-BRANDING ---
     if(document.getElementById('tafs-outstanding')) document.getElementById('tafs-outstanding').innerText = fmtIDR(tafsMetrics.os);
     if(document.getElementById('tafs-paid')) document.getElementById('tafs-paid').innerText = `${tafsMetrics.paid} Unit`;
     if(document.getElementById('tafs-on-proses')) document.getElementById('tafs-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
@@ -202,7 +186,6 @@ function updateDashboard(data) {
     if(document.getElementById('acc-on-proses')) document.getElementById('acc-on-proses').innerText = `${accMetrics.onProses} Unit`;
     if(document.getElementById('acc-overdue')) document.getElementById('acc-overdue').innerText = `${accMetrics.overdue} Unit`;
 
-    // Panggil Semua Fungsi Render Visual UI & Tabel
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
@@ -237,7 +220,6 @@ function renderAgingChart(agingData) {
     else { charts.bar = new ApexCharts(el, options); charts.bar.render(); }
 }
 
-// (Fungsi renderDonutLeasing, renderLeasingList, renderTopList, renderOverdueTop dipertahankan utuh seperti milik Anda)
 function renderDonutLeasing(mLeas) {
     const el = document.querySelector("#chart-donut-leasing");
     if (!el) return;
@@ -296,7 +278,6 @@ function renderOverdueTop(data) {
 
 function borderTrClass(i) { return 'hover:bg-slate-50/80 transition-all font-bold uppercase'; }
 
-// (Fungsi renderTabLeasingFull & renderTabOverdueFull dipertahankan utuh)
 function renderTabLeasingFull(data) {
     const el = document.getElementById('tab-leasing-full-list'); if (!el) return;
     const leasingData = data.filter(d => {
@@ -372,7 +353,7 @@ function renderTabOverdueFull(data) {
 }
 
 // ========================================================
-// 6. PERBAIKAN UTAMA: SINKRONISASI INTERAKTIF HAK AKSES INPUT
+// 6. SINKRONISASI INTERAKTIF HAK AKSES INPUT
 // ========================================================
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
@@ -385,7 +366,6 @@ function renderDataArUnitFull(data) {
 
     if(filterAR.length === 0) { el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing TAFS / ACC</td></tr>'; return; }
 
-    // DETEKSI OTOMATIS: Apakah user membuka web dari tafs.html / acc.html?
     const isLeasingView = window.location.pathname.includes('tafs') || window.location.pathname.includes('acc');
 
     el.innerHTML = filterAR.map((d, i) => {
@@ -428,7 +408,6 @@ function renderDataArUnitFull(data) {
     }).join('');
 }
 
-// (Fungsi renderTabDatabaseFull dipertahankan utuh)
 function renderTabDatabaseFull(data) {
     const el = document.getElementById('tab-database-body'); if (!el) return;
     el.innerHTML = data.map((d, i) => {
@@ -469,7 +448,7 @@ window.simpanCatatan = async function(noId, indexFallback) {
         if (error) throw error;
         
         alert("Keterangan cabang berhasil disimpan! 👍");
-        fetchData(); 
+        // Catatan: fetchData() sengaja tidak dipanggil manual di sini karena fitur Realtime Channel di bawah akan otomatis mendeteksi perubahan data.
         
     } catch (err) {
         console.error(err);
@@ -478,14 +457,13 @@ window.simpanCatatan = async function(noId, indexFallback) {
 }
 
 // ========================================================
-// REVISI UTAMA: FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML)
+// 8. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML)
 // ========================================================
 window.simpanCatatanLeasing = async function(noId, indexFallback) {
     try {
         const valPlan = document.getElementById(`plan-${noId}`).value;
         const valKetLeas = document.getElementById(`ket-${noId}`).value;
 
-        // Kunci Update Terisolasi: Hanya memperbarui data isian milik leasing saja, ket_cabang tidak tersentuh
         let queryBuilder = supabase.from('ar_unit').update({ 
             plan_bayar_leasing: valPlan, 
             ket_leasing: valKetLeas 
@@ -502,7 +480,7 @@ window.simpanCatatanLeasing = async function(noId, indexFallback) {
         if (error) throw error;
         
         alert("Respon Leasing Berhasil Diperbarui! ✔️");
-        fetchData(); 
+        // Catatan: Realtime Channel di bawah otomatis mendeteksi pembaruan data ini.
         
     } catch (err) {
         console.error(err);
@@ -510,7 +488,6 @@ window.simpanCatatanLeasing = async function(noId, indexFallback) {
     }
 }
 
-// (Fungsi downloadExcel & DOMContentLoaded dipertahankan utuh)
 function downloadExcel() {
     if (!cachedData || cachedData.length === 0) { alert("Data belum siap."); return; }
     try {
@@ -532,8 +509,31 @@ function downloadExcel() {
     } catch (error) { console.error(error); }
 }
 
+// ========================================================
+// 9. INISIALISASI REALTIME LISTENER (SINKRONISASI OTOMATIS)
+// ========================================================
 document.addEventListener('DOMContentLoaded', () => {
-    fetchData();
     const btnDownload = document.getElementById('btn-download-excel');
     if (btnDownload) { btnDownload.addEventListener('click', downloadExcel); }
+    
+    // Muat data awal secara langsung saat halaman dibuka
+    fetchData();
+
+    // AKTIFKAN LIVE UPDATE: Memantau database secara real-time. 
+    // Begitu dashboard.html menyimpan data, tafs.html akan otomatis ter-refresh datanya di latar belakang.
+    supabase
+        .channel('schema-db-changes')
+        .on(
+            'postgres_changes',
+            {
+                event: '*', // Menangkap event INSERT, UPDATE, maupun DELETE
+                schema: 'public',
+                table: 'ar_unit'
+            },
+            (payload) => {
+                console.log('Database Berubah Real-time! Memperbarui tampilan...', payload);
+                fetchData(); // Menarik data terbaru otomatis tanpa memuat ulang browser (no hard reload)
+            }
+        )
+        .subscribe();
 });
