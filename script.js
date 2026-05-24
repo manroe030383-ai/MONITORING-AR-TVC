@@ -353,7 +353,7 @@ function renderTabOverdueFull(data) {
 }
 
 // ========================================================
-// 5. FUNGSI RENDER UTAMA INPUT CONTROL DATA (FIXED FOR LEASING & NO SPK = 1)
+// 5. FUNGSI RENDER INPUT DATA (MENGGUNAKAN NAMA CUSTOMER SEBAGAI JANGKAR DOM)
 // ========================================================
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
@@ -373,10 +373,11 @@ function renderDataArUnitFull(data) {
     const isLeasingView = currentPath.includes('tafs') || currentPath.includes('acc');
 
     el.innerHTML = filterAR.map((d, i) => {
-        // AMANKAN JANGKAR: Ambil ID unik baris database Supabase (bukan dari No SPK yang isinya 1 semua)
-        const idRowSistem = d['id'] || i;
-        const spkAsli = String(d['No SPK'] || d['no_spk'] || getProp(d, 'No SPK') || '1').trim();
+        // Ambil Nama Customer asli untuk parameter fungsi simpan & ID komponen DOM
+        const namaCustAsli = String(getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '').trim();
+        const idSistemDOM = namaCustAsli.replace(/[^a-zA-Z0-9]/g, '_');
         
+        const spkAsli = String(d['No SPK'] || d['no_spk'] || getProp(d, 'No SPK') || '1').trim();
         const nilaiKetCabang = d['ket_cabang'] || '';
         const nilaiPlanLeasing = d['plan_bayar_leasing'] || '';
         const nilaiKetLeasing = d['ket_leasing'] || '';
@@ -384,7 +385,7 @@ function renderDataArUnitFull(data) {
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
-            <td class="p-4 text-slate-800 font-black">${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</td>
+            <td class="p-4 text-slate-800 font-black">${namaCustAsli}</td>
             <td class="p-4">
                 <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '-'}</span>
                 <p class="text-[7px] text-slate-400 mt-1">SPK: ${spkAsli}</p>
@@ -392,27 +393,27 @@ function renderDataArUnitFull(data) {
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
             
             <td class="p-4 w-48">
-                <input type="text" id="cabang-${idRowSistem}" value="${nilaiKetCabang}" placeholder="Ket cabang..." 
+                <input type="text" id="cabang-${idSistemDOM}" value="${nilaiKetCabang}" placeholder="Ket cabang..." 
                 class="input-custom ${isLeasingView ? 'bg-slate-100 text-slate-600 cursor-not-allowed font-semibold' : 'bg-white'}" 
                 ${isLeasingView ? 'readonly' : ''}>
             </td>
             
             <td class="p-4 w-48">
-                <input type="text" id="plan-${idRowSistem}" value="${nilaiPlanLeasing}" placeholder="${isLeasingView ? 'Isi plan bayar...' : 'Menunggu isian leasing...'}" 
+                <input type="text" id="plan-${idSistemDOM}" value="${nilaiPlanLeasing}" placeholder="${isLeasingView ? 'Isi plan bayar...' : 'Menunggu isian leasing...'}" 
                 class="input-custom ${isLeasingView ? 'bg-white border-emerald-300' : 'bg-slate-50 text-slate-500 cursor-not-allowed'}" 
                 ${isLeasingView ? '' : 'readonly'}>
             </td>
             
             <td class="p-4 w-48">
-                <input type="text" id="ket-${idRowSistem}" value="${nilaiKetLeasing}" placeholder="${isLeasingView ? 'Isi ket leasing...' : 'Menunggu keterangan leasing...'}" 
+                <input type="text" id="ket-${idSistemDOM}" value="${nilaiKetLeasing}" placeholder="${isLeasingView ? 'Isi ket leasing...' : 'Menunggu keterangan leasing...'}" 
                 class="input-custom ${isLeasingView ? 'bg-white border-emerald-300' : 'bg-slate-50 text-slate-500 cursor-not-allowed'}" 
                 ${isLeasingView ? '' : 'readonly'}>
             </td>
             
             <td class="p-4 text-center w-16">
                 ${isLeasingView ? 
-                    `<button onclick="simpanCatatanLeasing('${idRowSistem}')" class="text-emerald-600 hover:bg-emerald-600 hover:text-white bg-emerald-50 p-2 rounded-lg transition-all" title="Simpan Respon Leasing">💾</button>` :
-                    `<button onclick="simpanCatatan('${idRowSistem}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan Cabang">💾</button>`
+                    `<button onclick="simpanCatatanLeasing(\`${namaCustAsli}\`)" class="text-emerald-600 hover:bg-emerald-600 hover:text-white bg-emerald-50 p-2 rounded-lg transition-all" title="Simpan Respon Leasing">💾</button>` :
+                    `<button onclick="simpanCatatan(\`${namaCustAsli}\`)" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan Cabang">💾</button>`
                 }
             </td>
         </tr>`;
@@ -441,20 +442,34 @@ function renderTabDatabaseFull(data) {
 }
 
 // ========================================================
-// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (BERDASARKAN ID PRIMARY KEY)
+// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (BERDASARKAN NAMA CUSTOMER)
 // ========================================================
-window.simpanCatatan = async function(idRowSistem) {
+window.simpanCatatan = async function(namaCustomer) {
     try {
-        const inputEl = document.getElementById(`cabang-${idRowSistem}`);
+        const idSistemDOM = namaCustomer.replace(/[^a-zA-Z0-9]/g, '_');
+        const inputEl = document.getElementById(`cabang-${idSistemDOM}`);
         if (!inputEl) return;
         
         const valCabang = inputEl.value;
 
-        // Tembak data update langsung mendasarkan ID unik bawaan Supabase
+        // Deteksi dinamis nama kolom customer di cache local data
+        const dataRow = cachedData.find(d => {
+            const namaData = String(getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '').trim();
+            return namaData === String(namaCustomer).trim();
+        });
+
+        if (!dataRow) {
+            alert("Data customer tidak ditemukan di cache lokal.");
+            return;
+        }
+
+        const kolomKunciCustomer = (dataRow['Customer Name'] !== undefined) ? 'Customer Name' : 'customer_name';
+
+        // Lakukan update ke Supabase berdasarkan Nama Customer
         const { error } = await supabase
             .from('ar_unit')
             .update({ ket_cabang: valCabang })
-            .eq('id', idRowSistem);
+            .eq(kolomKunciCustomer, namaCustomer.trim());
 
         if (error) throw error;
         alert("Keterangan cabang berhasil disimpan ke database! 👍");
@@ -466,25 +481,38 @@ window.simpanCatatan = async function(idRowSistem) {
 }
 
 // ========================================================
-// 7. FUNGSI SIMPAN KHUSUS LEASING (BERDASARKAN ID PRIMARY KEY)
+// 7. FUNGSI SIMPAN KHUSUS LEASING (BERDASARKAN NAMA CUSTOMER)
 // ========================================================
-window.simpanCatatanLeasing = async function(idRowSistem) {
+window.simpanCatatanLeasing = async function(namaCustomer) {
     try {
-        const planEl = document.getElementById(`plan-${idRowSistem}`);
-        const ketEl = document.getElementById(`ket-${idRowSistem}`);
+        const idSistemDOM = namaCustomer.replace(/[^a-zA-Z0-9]/g, '_');
+        const planEl = document.getElementById(`plan-${idSistemDOM}`);
+        const ketEl = document.getElementById(`ket-${idSistemDOM}`);
         if (!planEl || !ketEl) return;
 
         const valPlan = planEl.value;
         const valKetLeas = ketEl.value;
 
-        // Tembak data update langsung mendasarkan ID unik bawaan Supabase
+        const dataRow = cachedData.find(d => {
+            const namaData = String(getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '').trim();
+            return namaData === String(namaCustomer).trim();
+        });
+
+        if (!dataRow) {
+            alert("Data customer tidak ditemukan di cache lokal.");
+            return;
+        }
+
+        const kolomKunciCustomer = (dataRow['Customer Name'] !== undefined) ? 'Customer Name' : 'customer_name';
+
+        // Lakukan update ke Supabase berdasarkan Nama Customer
         const { error } = await supabase
             .from('ar_unit')
             .update({ 
                 plan_bayar_leasing: valPlan, 
                 ket_leasing: valKetLeas 
             })
-            .eq('id', idRowSistem);
+            .eq(kolomKunciCustomer, namaCustomer.trim());
 
         if (error) throw error;
         alert("Respon Leasing Berhasil Diperbarui ke Database! ✔️");
