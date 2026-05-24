@@ -210,8 +210,8 @@ function renderAgingChart(agingData) {
         chart: { type: 'bar', height: 250, toolbar: { show: false } },
         colors: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
         plotOptions: { bar: { borderRadius: 4, distributed: true, dataLabels: { position: 'top' } } },
-        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontWeight: 800 }, offsetY: -20 },
-        xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontWeight: 700 } } },
+        dataLabels: { enabled: true, formatter: (v) => v + " Jt", style: { fontSize: '9px', fontfont: 800 }, offsetY: -20 },
+        xaxis: { categories: Object.keys(agingData), labels: { style: { fontSize: '9px', fontfont: 700 } } },
         yaxis: { show: false },
         grid: { show: false },
         legend: { show: false }
@@ -353,7 +353,7 @@ function renderTabOverdueFull(data) {
 }
 
 // ========================================================
-// 5. SINKRONISASI INTERAKTIF JANGKAR ID INPUT BERBASIS SPK
+// 5. FUNGSI RENDER UTAMA INPUT CONTROL DATA (FIXED FOR LEASING)
 // ========================================================
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
@@ -366,12 +366,16 @@ function renderDataArUnitFull(data) {
 
     if(filterAR.length === 0) { el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing TAFS / ACC</td></tr>'; return; }
 
-    const isLeasingView = window.location.pathname.includes('tafs') || window.location.pathname.includes('acc');
+    // DETEKSI YANG DI-FIX: Mengubah ke lowercase agar pembacaan nama file di Vercel selalu cocok
+    const currentPath = window.location.pathname.toLowerCase();
+    const isLeasingView = currentPath.includes('tafs') || currentPath.includes('acc');
 
     el.innerHTML = filterAR.map((d, i) => {
-        // AMBIL JANGKAR UNIK ALFANUMERIK DARI NOMOR SPK DATA
         const spkAsli = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
         const idSistem = spkAsli.replace(/[^a-zA-Z0-9]/g, '_');
+        
+        // MEMASUKKAN NILAI DARI DATABASE SECARA ABSOLUT KE INPUT
+        const nilaiKetCabang = getProp(d, 'ket_cabang') || '';
         
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
@@ -384,8 +388,8 @@ function renderDataArUnitFull(data) {
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
             
             <td class="p-4 w-48">
-                <input type="text" id="cabang-${idSistem}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." 
-                class="input-custom ${isLeasingView ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white'}" 
+                <input type="text" id="cabang-${idSistem}" value="${nilaiKetCabang}" placeholder="Ket cabang..." 
+                class="input-custom ${isLeasingView ? 'bg-slate-100 text-slate-600 cursor-not-allowed font-semibold' : 'bg-white'}" 
                 ${isLeasingView ? 'readonly' : ''}>
             </td>
             
@@ -416,161 +420,3 @@ function renderTabDatabaseFull(data) {
     el.innerHTML = data.map((d, i) => {
         const os = Number(getProp(d, 'O/S Balance') || 0);
         const b1 = Number(getProp(d, 'Hari 1-30') || 0); const b2 = Number(getProp(d, 'Hari 31-60') || 0); const b3 = Number(getProp(d, 'Lebih 60 Hari') || 0);
-        const totalOv = b1 + b2 + b3; const lancar = totalOv === 0 ? os : (os - totalOv > 0 ? os - totalOv : 0);
-        return `
-        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
-            <td class="p-4 text-center text-slate-400">${i + 1}</td>
-            <td class="p-4 text-slate-800 font-black">${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</td>
-            <td class="p-4"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || 'CASH'}</span></td>
-            <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(os)}</td>
-            <td class="p-4 text-right text-emerald-600">${fmtIDR(lancar)}</td>
-            <td class="p-4 text-right text-amber-500">${fmtIDR(b1)}</td>
-            <td class="p-4 text-right text-orange-500">${fmtIDR(b2)}</td>
-            <td class="p-4 text-right text-red-500">${fmtIDR(b3)}</td>
-            <td class="p-4 text-right text-red-600 font-black bg-red-50/30">${fmtIDR(totalOv)}</td>
-        </tr>`;
-    }).join('');
-}
-
-// ========================================================
-// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML)
-// ========================================================
-window.simpanCatatan = async function(nomorSPK) {
-    try {
-        const idSistem = nomorSPK.replace(/[^a-zA-Z0-9]/g, '_');
-        const inputEl = document.getElementById(`cabang-${idSistem}`);
-        if (!inputEl) return;
-        
-        const valCabang = inputEl.value;
-
-        // 1. Ambil data baris dari cache berdasarkan Nomor SPK asli
-        const dataRow = cachedData.find(d => {
-            const spkData = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
-            return spkData === String(nomorSPK).trim();
-        });
-
-        if (!dataRow) {
-            alert("Data SPK tidak ditemukan di cache untuk disimpan.");
-            return;
-        }
-
-        // 2. Deteksi nama kolom SPK asli di tabel Supabase (antisipasi spasi)
-        let kolomSPK = 'no_spk';
-        if (dataRow['No SPK'] !== undefined) kolomSPK = 'No SPK';
-        else if (dataRow['no_spk'] !== undefined) kolomSPK = 'no_spk';
-
-        // 3. Update data ke tabel target Supabase
-        const { error } = await supabase
-            .from('ar_unit')
-            .update({ ket_cabang: valCabang })
-            .eq(kolomSPK, nomorSPK);
-
-        if (error) throw error;
-        
-        alert("Keterangan cabang berhasil disimpan ke database! 👍");
-        
-    } catch (err) {
-        console.error(err);
-        alert("Gagal menyimpan data: " + err.message);
-    }
-}
-
-// ========================================================
-// 7. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML)
-// ========================================================
-window.simpanCatatanLeasing = async function(nomorSPK) {
-    try {
-        const idSistem = nomorSPK.replace(/[^a-zA-Z0-9]/g, '_');
-        const planEl = document.getElementById(`plan-${idSistem}`);
-        const ketEl = document.getElementById(`ket-${idSistem}`);
-        if (!planEl || !ketEl) return;
-
-        const valPlan = planEl.value;
-        const valKetLeas = ketEl.value;
-
-        // 1. Ambil data baris dari cache berdasarkan Nomor SPK asli
-        const dataRow = cachedData.find(d => {
-            const spkData = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
-            return spkData === String(nomorSPK).trim();
-        });
-
-        if (!dataRow) {
-            alert("Data SPK tidak ditemukan di cache untuk disimpan.");
-            return;
-        }
-
-        // 2. Deteksi nama kolom SPK asli di tabel Supabase
-        let kolomSPK = 'no_spk';
-        if (dataRow['No SPK'] !== undefined) kolomSPK = 'No SPK';
-        else if (dataRow['no_spk'] !== undefined) kolomSPK = 'no_spk';
-
-        // 3. Update respon leasing ke tabel Supabase
-        const { error } = await supabase
-            .from('ar_unit')
-            .update({ 
-                plan_bayar_leasing: valPlan, 
-                ket_leasing: valKetLeas 
-            })
-            .eq(kolomSPK, nomorSPK);
-
-        if (error) throw error;
-        
-        alert("Respon Leasing Berhasil Diperbarui ke Database! ✔️");
-        
-    } catch (err) {
-        console.error(err);
-        alert("Leasing gagal menyimpan data: " + err.message);
-    }
-}
-
-// ========================================================
-// 8. FUNGSI DOWNLOAD DATA KE EXCEL
-// ========================================================
-function downloadExcel() {
-    if (!cachedData || cachedData.length === 0) { alert("Data belum siap."); return; }
-    try {
-        const dataUntukExcel = cachedData.map((d, index) => {
-            const os = Number(getProp(d, 'O/S Balance') || 0);
-            const b1 = Number(getProp(d, 'Hari 1-30') || 0); const b2 = Number(getProp(d, 'Hari 31-60') || 0); const b3 = Number(getProp(d, 'Lebih 60 Hari') || 0);
-            const totalOv = b1 + b2 + b3; const lancar = totalOv === 0 ? os : (os - totalOv > 0 ? os - totalOv : 0);
-            return {
-                "No": index + 1, "Nama Customer": getProp(d, 'Customer Name') || "-", "No SPK": getProp(d, 'No SPK') || "-",
-                "Leasing": getProp(d, 'Chas/Leasing') || "CASH", "O/S Balance": os, "Hari 1-30 (Lancar)": lancar,
-                "Hari 31-60": b1, "Lebih 60 Hari": b2, "Total Overdue": totalOv, "Potensi Penalti": getProp(d, 'Potensi Penalti') || 0,
-                "Salesman": getProp(d, 'Salesman Name') || "-", "Supervisor": getProp(d, 'Supervisor') || "-",
-                "Keterangan Cabang": getProp(d, 'ket_cabang') || "", "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || "", "Keterangan Leasing": getProp(d, 'ket_leasing') || ""
-            };
-        });
-        const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel); const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Data AR Unit");
-        XLSX.writeFile(workbook, `Report_AR_Unit_Auto2000_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    } catch (error) { console.error(error); }
-}
-
-// ========================================================
-// 9. INISIALISASI REALTIME LISTENER (SINKRONISASI OTOMATIS)
-// ========================================================
-document.addEventListener('DOMContentLoaded', () => {
-    const btnDownload = document.getElementById('btn-download-excel');
-    if (btnDownload) { btnDownload.addEventListener('click', downloadExcel); }
-    
-    // Ambil data pertama kali saat dashboard dibuka
-    fetchData();
-
-    // AKTIFKAN LIVE SYNC REAL-TIME
-    supabase
-        .channel('schema-db-changes')
-        .on(
-            'postgres_changes',
-            {
-                event: '*', 
-                schema: 'public',
-                table: 'ar_unit'
-            },
-            (payload) => {
-                console.log('Database Berubah Real-time! Memperbarui tampilan...', payload);
-                fetchData(); 
-            }
-        )
-        .subscribe();
-});
