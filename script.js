@@ -458,7 +458,7 @@ function renderTabDatabaseFull(data) {
 }
 
 // ========================================================
-// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (BERDASARKAN NAMA CUSTOMER)
+// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (FIXED & PACKED)
 // ========================================================
 window.simpanCatatan = async function(namaCustomer) {
     try {
@@ -468,34 +468,34 @@ window.simpanCatatan = async function(namaCustomer) {
         
         const valCabang = inputEl.value;
 
-        const dataRow = cachedData.find(d => {
-            const namaData = String(getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '').trim();
-            return namaData === String(namaCustomer).trim();
-        });
+        // Cetak ke console untuk mempermudah tracking proses data
+        console.log(`Mengirim data Cabang untuk: ${namaCustomer}, Isi: ${valCabang}`);
 
-        if (!dataRow) {
-            alert("Data customer tidak ditemukan di cache lokal.");
+        // Eksekusi update langsung dengan mengunci kolom 'customer_name' secara tegas
+        const { data, error, status } = await supabase
+            .from('ar_unit')
+            .update({ ket_cabang: valCabang })
+            .eq('customer_name', namaCustomer.trim())
+            .select(); // Memaksa Supabase mengembalikan data yang berhasil diubah
+
+        if (error) throw error;
+
+        // Validasi apakah ada baris data yang benar-benar terpengaruh di database
+        if (!data || data.length === 0) {
+            alert(`⚠️ Peringatan: Data terkirim, tetapi nama customer "${namaCustomer}" tidak cocok dengan kolom 'customer_name' di Supabase.`);
             return;
         }
 
-        const kolomKunciCustomer = (dataRow['Customer Name'] !== undefined) ? 'Customer Name' : 'customer_name';
-
-        const { error } = await supabase
-            .from('ar_unit')
-            .update({ ket_cabang: valCabang })
-            .eq(kolomKunciCustomer, namaCustomer.trim());
-
-        if (error) throw error;
         alert("Keterangan cabang berhasil disimpan ke database! 👍");
         
     } catch (err) {
-        console.error(err);
-        alert("Gagal menyimpan data: " + err.message);
+        console.error("❌ Detail Error Supabase:", err);
+        alert("Gagal menyimpan data: " + (err.message || "Periksa struktur kolom customer_name"));
     }
 }
 
 // ========================================================
-// 7. FUNGSI SIMPAN KHUSUS LEASING (BERDASARKAN NAMA CUSTOMER)
+// 7. FUNGSI SIMPAN KHUSUS LEASING (FIXED & PACKED)
 // ========================================================
 window.simpanCatatanLeasing = async function(namaCustomer) {
     try {
@@ -507,32 +507,30 @@ window.simpanCatatanLeasing = async function(namaCustomer) {
         const valPlan = planEl.value;
         const valKetLeas = ketEl.value;
 
-        const dataRow = cachedData.find(d => {
-            const namaData = String(getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '').trim();
-            return namaData === String(namaCustomer).trim();
-        });
+        console.log(`Mengirim data Leasing untuk: ${namaCustomer}, Plan: ${valPlan}, Ket: ${valKetLeas}`);
 
-        if (!dataRow) {
-            alert("Data customer tidak ditemukan di cache lokal.");
-            return;
-        }
-
-        const kolomKunciCustomer = (dataRow['Customer Name'] !== undefined) ? 'Customer Name' : 'customer_name';
-
-        const { error } = await supabase
+        // Eksekusi update langsung dengan mengunci kolom 'customer_name' secara tegas
+        const { data, error } = await supabase
             .from('ar_unit')
             .update({ 
                 plan_bayar_leasing: valPlan, 
                 ket_leasing: valKetLeas 
             })
-            .eq(kolomKunciCustomer, namaCustomer.trim());
+            .eq('customer_name', namaCustomer.trim())
+            .select();
 
         if (error) throw error;
+
+        if (!data || data.length === 0) {
+            alert(`⚠️ Peringatan: Data terkirim, tetapi nama customer "${namaCustomer}" tidak cocok dengan kolom 'customer_name' di Supabase.`);
+            return;
+        }
+
         alert("Respon Leasing Berhasil Diperbarui ke Database! ✔️");
         
     } catch (err) {
-        console.error(err);
-        alert("Leasing gagal menyimpan data: " + err.message);
+        console.error("❌ Detail Error Supabase:", err);
+        alert("Leasing gagal menyimpan data: " + (err.message || "Periksa struktur kolom customer_name"));
     }
 }
 
