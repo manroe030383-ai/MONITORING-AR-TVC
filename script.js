@@ -458,121 +458,172 @@ function renderTabDatabaseFull(data) {
 }
 
 // ========================================================
-// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (KUNCI VIA CUSTOMER NO)
+// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (FIX FINAL)
 // ========================================================
 window.simpanCatatan = async function(namaCustomer) {
     try {
+
         const idSistemDOM = namaCustomer.replace(/[^a-zA-Z0-9]/g, '_');
+
         const inputEl = document.getElementById(`cabang-${idSistemDOM}`);
-        if (!inputEl) return;
-        
+
+        if (!inputEl) {
+            alert("Input cabang tidak ditemukan");
+            return;
+        }
+
         const valCabang = inputEl.value;
 
-        // 1. Cari data di cache aplikasi untuk mengambil Customer No aslinya
+        // Cari data customer di cache
         const dataRow = cachedData.find(d => {
-            const namaLokal = String(d['customer_name'] || d['Customer Name'] || '').trim().toUpperCase();
+
+            const namaLokal =
+                String(
+                    d['customer_name'] ||
+                    d['Customer Name'] ||
+                    ''
+                ).trim().toUpperCase();
+
             return namaLokal === String(namaCustomer).trim().toUpperCase();
+
         });
 
         if (!dataRow) {
-            alert(`Gagal: Customer "${namaCustomer}" tidak ditemukan di cache.`);
+            alert(`Customer "${namaCustomer}" tidak ditemukan`);
             return;
         }
 
-        // 2. Deteksi otomatis penulisan nama kolom Customer No di database Anda
-        const CustNoValue = dataRow['customer_no'] || dataRow['Customer No'] || dataRow['cust_no'] || getProp(dataRow, 'Customer No');
-        const CustNoColumn = dataRow['customer_no'] !== undefined ? 'customer_no' : 
-                             dataRow['Customer No'] !== undefined ? 'Customer No' : 'cust_no';
+        // Ambil no_customer
+        const nilaiNoCustomer =
+            dataRow['no_customer'] ||
+            dataRow['No Customer'] ||
+            dataRow['no_cust'];
 
-        if (!CustNoValue) {
-            alert("Gagal: Kolom Customer No tidak ditemukan di baris data ini.");
+        if (!nilaiNoCustomer) {
+            alert("Kolom no_customer kosong");
             return;
         }
 
-        console.log(`Mengunci database via Kolom [${CustNoColumn}]: ${CustNoValue} untuk ${namaCustomer}`);
+        console.log("UPDATE CABANG:", nilaiNoCustomer);
 
-        // 3. Eksekusi Update ke Supabase menggunakan Customer No
+        // UPDATE SUPABASE
         const { data, error } = await supabase
             .from('ar_unit')
-            .update({ ket_cabang: valCabang })
-            .eq(CustNoColumn, CustNoValue)
+            .update({
+                ket_cabang: valCabang
+            })
+            .eq('no_customer', nilaiNoCustomer)
             .select();
 
-        if (error) throw error;
-
-        if (!data || data.length === 0) {
-            alert(`⚠️ Gagal: Nomor customer [${CustNoValue}] tidak ditemukan saat update di database.`);
+        if (error) {
+            console.error(error);
+            alert(error.message);
             return;
         }
 
-        alert("Keterangan cabang berhasil disimpan ke database! 👍");
-        
+        if (!data || data.length === 0) {
+            alert("Data tidak berhasil diupdate");
+            return;
+        }
+
+        alert("Keterangan cabang berhasil disimpan 👍");
+
+        fetchData();
+
     } catch (err) {
-        console.error("❌ Detail Error:", err);
-        alert("Gagal menyimpan data: " + err.message);
+
+        console.error(err);
+        alert("Gagal menyimpan : " + err.message);
+
     }
-}
+};
+
+
 
 // ========================================================
-// 7. FUNGSI SIMPAN KHUSUS LEASING (KUNCI VIA CUSTOMER NO)
+// 7. FUNGSI SIMPAN KHUSUS LEASING (FIX FINAL)
 // ========================================================
 window.simpanCatatanLeasing = async function(namaCustomer) {
+
     try {
+
         const idSistemDOM = namaCustomer.replace(/[^a-zA-Z0-9]/g, '_');
+
         const planEl = document.getElementById(`plan-${idSistemDOM}`);
         const ketEl = document.getElementById(`ket-${idSistemDOM}`);
-        if (!planEl || !ketEl) return;
+
+        if (!planEl || !ketEl) {
+            alert("Input leasing tidak ditemukan");
+            return;
+        }
 
         const valPlan = planEl.value;
         const valKetLeas = ketEl.value;
 
-        // 1. Cari data di cache aplikasi
+        // Cari customer di cache
         const dataRow = cachedData.find(d => {
-            const namaLokal = String(d['customer_name'] || d['Customer Name'] || '').trim().toUpperCase();
+
+            const namaLokal =
+                String(
+                    d['customer_name'] ||
+                    d['Customer Name'] ||
+                    ''
+                ).trim().toUpperCase();
+
             return namaLokal === String(namaCustomer).trim().toUpperCase();
+
         });
 
         if (!dataRow) {
-            alert(`Gagal: Customer "${namaCustomer}" tidak ditemukan di cache.`);
+            alert(`Customer "${namaCustomer}" tidak ditemukan`);
             return;
         }
 
-        // 2. Deteksi otomatis penulisan nama kolom Customer No
-        const CustNoValue = dataRow['customer_no'] || dataRow['Customer No'] || dataRow['cust_no'] || getProp(dataRow, 'Customer No');
-        const CustNoColumn = dataRow['customer_no'] !== undefined ? 'customer_no' : 
-                             dataRow['Customer No'] !== undefined ? 'Customer No' : 'cust_no';
+        // Ambil no_customer
+        const nilaiNoCustomer =
+            dataRow['no_customer'] ||
+            dataRow['No Customer'] ||
+            dataRow['no_cust'];
 
-        if (!CustNoValue) {
-            alert("Gagal: Kolom Customer No tidak ditemukan di baris data ini.");
+        if (!nilaiNoCustomer) {
+            alert("Kolom no_customer kosong");
             return;
         }
 
-        console.log(`Mengunci database via Leasing Kolom [${CustNoColumn}]: ${CustNoValue} untuk ${namaCustomer}`);
+        console.log("UPDATE LEASING:", nilaiNoCustomer);
 
-        // 3. Eksekusi Update ke Supabase menggunakan Customer No
+        // UPDATE DATABASE
         const { data, error } = await supabase
             .from('ar_unit')
-            .update({ 
-                plan_bayar_leasing: valPlan, 
-                ket_leasing: valKetLeas 
+            .update({
+                plan_bayar_leasing: valPlan,
+                ket_leasing: valKetLeas
             })
-            .eq(CustNoColumn, CustNoValue)
+            .eq('no_customer', nilaiNoCustomer)
             .select();
 
-        if (error) throw error;
-
-        if (!data || data.length === 0) {
-            alert(`⚠️ Gagal: Nomor customer [${CustNoValue}] tidak ditemukan saat update di database.`);
+        if (error) {
+            console.error(error);
+            alert(error.message);
             return;
         }
 
-        alert("Respon Leasing Berhasil Diperbarui ke Database! ✔️");
-        
+        if (!data || data.length === 0) {
+            alert("Data leasing gagal diupdate");
+            return;
+        }
+
+        alert("Respon leasing berhasil disimpan ✔️");
+
+        fetchData();
+
     } catch (err) {
-        console.error("❌ Detail Error:", err);
-        alert("Leasing gagal menyimpan data: " + err.message);
+
+        console.error(err);
+        alert("Gagal menyimpan leasing : " + err.message);
+
     }
-}
+};
 
 // ========================================================
 // 8. FUNGSI DOWNLOAD DATA KE EXCEL
