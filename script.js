@@ -2,37 +2,50 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm'
 
 // ========================================================
-// 1. KONFIGURASI SUPABASE
+// SUPABASE CONFIG
 // ========================================================
 const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
+
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-
-let charts = { bar: null, donut: null };
-let cachedData = [];
+const supabase = createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
 
 // ========================================================
-// 2. FORMATTER
+// GLOBAL VARIABLE
+// ========================================================
+let cachedData = [];
+
+let charts = {
+    bar: null,
+    donut: null
+};
+
+// ========================================================
+// FORMATTER
 // ========================================================
 const fmtIDR = (v) =>
     new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
         maximumFractionDigits: 0
-    }).format(v || 0);
+    }).format(Number(v || 0));
 
 const fmtJuta = (v) =>
-    (Number(v || 0) / 1000000).toFixed(1) + " Jt";
+    (Number(v || 0) / 1000000).toFixed(1) + ' Jt';
 
 // ========================================================
-// 3. HELPER AMBIL KOLOM
+// AMBIL KOLOM DINAMIS
 // ========================================================
 function getProp(obj, key) {
 
     if (!obj) return undefined;
 
-    if (obj[key] !== undefined) return obj[key];
+    if (obj[key] !== undefined) {
+        return obj[key];
+    }
 
     const cleanKey = key
         .toLowerCase()
@@ -53,44 +66,155 @@ function getProp(obj, key) {
 }
 
 // ========================================================
-// 4. FETCH DATA
+// FETCH DATA
 // ========================================================
 async function fetchData() {
 
     try {
 
+        console.log('Mengambil data dari Supabase...');
+
         const { data, error } = await supabase
             .from('ar_unit')
             .select('*');
 
-        if (error) throw error;
+        if (error) {
+            throw error;
+        }
+
+        console.log('DATA SUPABASE:', data);
 
         cachedData = data || [];
 
-        console.log("DATA SUPABASE:", cachedData);
+        if (!cachedData.length) {
+
+            console.log('Data kosong');
+
+            if (document.getElementById('status-update')) {
+
+                document.getElementById('status-update').innerHTML =
+                    'DATA SUPABASE KOSONG';
+            }
+
+            return;
+        }
 
         updateDashboard(cachedData);
 
+        if (document.getElementById('status-update')) {
+
+            document.getElementById('status-update').innerHTML =
+                'DATA BERHASIL DIMUAT';
+        }
+
     } catch (err) {
 
-        console.error(err);
+        console.error('ERROR FETCH:', err);
 
-        alert("Gagal mengambil data: " + err.message);
+        if (document.getElementById('status-update')) {
+
+            document.getElementById('status-update').innerHTML =
+                'GAGAL KONEK SUPABASE';
+        }
+
+        alert('Error fetch data : ' + err.message);
     }
 }
 
 // ========================================================
-// 5. UPDATE DASHBOARD
+// UPDATE DASHBOARD
 // ========================================================
 function updateDashboard(data) {
 
+    let totalOS = 0;
+
+    let totalOverdue = 0;
+
+    let totalLancar = 0;
+
+    let totalPenalty = 0;
+
+    data.forEach(d => {
+
+        const os = Number(
+            getProp(d, 'os_balance') ||
+            getProp(d, 'O/S Balance') ||
+            0
+        );
+
+        const h1 = Number(
+            getProp(d, 'hari_1_30') ||
+            getProp(d, 'Hari 1-30') ||
+            0
+        );
+
+        const h2 = Number(
+            getProp(d, 'hari_31_60') ||
+            getProp(d, 'Hari 31-60') ||
+            0
+        );
+
+        const h3 = Number(
+            getProp(d, 'lebih_60_hari') ||
+            getProp(d, 'Lebih 60 Hari') ||
+            0
+        );
+
+        const penalty = Number(
+            getProp(d, 'potensi_penalti') ||
+            getProp(d, 'Potensi Penalti') ||
+            0
+        );
+
+        const overdue = h1 + h2 + h3;
+
+        const lancar =
+            overdue === 0
+                ? os
+                : Math.max(os - overdue, 0);
+
+        totalOS += os;
+
+        totalOverdue += overdue;
+
+        totalLancar += lancar;
+
+        totalPenalty += penalty;
+    });
+
+    // ====================================================
+    // UPDATE CARD
+    // ====================================================
+    if (document.getElementById('total-os')) {
+        document.getElementById('total-os').innerHTML =
+            fmtIDR(totalOS);
+    }
+
+    if (document.getElementById('total-overdue')) {
+        document.getElementById('total-overdue').innerHTML =
+            fmtIDR(totalOverdue);
+    }
+
+    if (document.getElementById('total-lancar')) {
+        document.getElementById('total-lancar').innerHTML =
+            fmtIDR(totalLancar);
+    }
+
+    if (document.getElementById('total-penalty')) {
+        document.getElementById('total-penalty').innerHTML =
+            fmtIDR(totalPenalty);
+    }
+
+    // ====================================================
+    // RENDER TABLE
+    // ====================================================
     renderDataArUnitFull(data);
 
     renderTabDatabaseFull(data);
 }
 
 // ========================================================
-// 6. RENDER INPUT AR UNIT
+// RENDER TABLE AR UNIT
 // ========================================================
 function renderDataArUnitFull(data) {
 
@@ -98,19 +222,23 @@ function renderDataArUnitFull(data) {
 
     if (!el) return;
 
-    const currentPath = window.location.pathname.toLowerCase();
+    const currentPath =
+        window.location.pathname.toLowerCase();
 
-    const isTafsPage = currentPath.includes('tafs');
+    const isTafsPage =
+        currentPath.includes('tafs');
 
-    const isAccPage = currentPath.includes('acc');
+    const isAccPage =
+        currentPath.includes('acc');
 
-    const isLeasingView = isTafsPage || isAccPage;
+    const isLeasingView =
+        isTafsPage || isAccPage;
 
-    const filterAR = data.filter(d => {
+    const filtered = data.filter(d => {
 
         const leasing = String(
-            getProp(d, 'chas_leasing') ||
             getProp(d, 'leasing_name') ||
+            getProp(d, 'chas_leasing') ||
             ''
         ).toUpperCase();
 
@@ -122,10 +250,13 @@ function renderDataArUnitFull(data) {
             return leasing.includes('ACC');
         }
 
-        return leasing.includes('TAFS') || leasing.includes('ACC');
+        return (
+            leasing.includes('TAFS') ||
+            leasing.includes('ACC')
+        );
     });
 
-    if (filterAR.length === 0) {
+    if (!filtered.length) {
 
         el.innerHTML = `
         <tr>
@@ -138,7 +269,7 @@ function renderDataArUnitFull(data) {
         return;
     }
 
-    el.innerHTML = filterAR.map((d, i) => {
+    el.innerHTML = filtered.map((d, i) => {
 
         const namaCustomer = String(
             getProp(d, 'customer_name') ||
@@ -153,12 +284,12 @@ function renderDataArUnitFull(data) {
         );
 
         const leasing = String(
-            getProp(d, 'chas_leasing') ||
             getProp(d, 'leasing_name') ||
+            getProp(d, 'chas_leasing') ||
             '-'
         );
 
-        const osBalance = Number(
+        const os = Number(
             getProp(d, 'os_balance') ||
             getProp(d, 'O/S Balance') ||
             0
@@ -176,22 +307,22 @@ function renderDataArUnitFull(data) {
             getProp(d, 'ket_leasing') || ''
         );
 
-        const idDOM = noCustomer.replace(/[^a-zA-Z0-9]/g, '_');
+        const domID = noCustomer.replace(/[^a-zA-Z0-9]/g, '_');
 
         return `
-        <tr class="hover:bg-slate-50">
+        <tr class="hover:bg-slate-50 uppercase font-bold">
 
             <td class="p-3 text-center">
                 ${i + 1}
             </td>
 
             <td class="p-3">
-                <div class="font-bold">
+                <div class="font-black">
                     ${namaCustomer}
                 </div>
 
                 <div class="text-[10px] text-slate-400">
-                    NO CUSTOMER : ${noCustomer}
+                    ${noCustomer}
                 </div>
             </td>
 
@@ -199,14 +330,14 @@ function renderDataArUnitFull(data) {
                 ${leasing}
             </td>
 
-            <td class="p-3 text-right">
-                ${fmtIDR(osBalance)}
+            <td class="p-3 text-right text-blue-600">
+                ${fmtIDR(os)}
             </td>
 
             <td class="p-3">
                 <input
                     type="text"
-                    id="cabang-${idDOM}"
+                    id="cabang-${domID}"
                     value="${ketCabang}"
                     class="border rounded px-2 py-1 w-full"
                     ${isLeasingView ? 'readonly' : ''}
@@ -216,7 +347,7 @@ function renderDataArUnitFull(data) {
             <td class="p-3">
                 <input
                     type="text"
-                    id="plan-${idDOM}"
+                    id="plan-${domID}"
                     value="${planBayar}"
                     class="border rounded px-2 py-1 w-full"
                     ${!isLeasingView ? 'readonly' : ''}
@@ -226,7 +357,7 @@ function renderDataArUnitFull(data) {
             <td class="p-3">
                 <input
                     type="text"
-                    id="ket-${idDOM}"
+                    id="ket-${domID}"
                     value="${ketLeasing}"
                     class="border rounded px-2 py-1 w-full"
                     ${!isLeasingView ? 'readonly' : ''}
@@ -266,7 +397,7 @@ function renderDataArUnitFull(data) {
 }
 
 // ========================================================
-// 7. RENDER DATABASE
+// RENDER DATABASE TABLE
 // ========================================================
 function renderTabDatabaseFull(data) {
 
@@ -276,13 +407,13 @@ function renderTabDatabaseFull(data) {
 
     el.innerHTML = data.map((d, i) => {
 
-        const namaCustomer = getProp(d, 'customer_name') || '-';
+        const customer = getProp(d, 'customer_name') || '-';
 
         const noCustomer = getProp(d, 'no_customer') || '-';
 
         const leasing = getProp(d, 'leasing_name') || '-';
 
-        const osBalance = Number(
+        const os = Number(
             getProp(d, 'os_balance') || 0
         );
 
@@ -294,7 +425,7 @@ function renderTabDatabaseFull(data) {
             </td>
 
             <td class="p-3">
-                ${namaCustomer}
+                ${customer}
             </td>
 
             <td class="p-3">
@@ -306,7 +437,7 @@ function renderTabDatabaseFull(data) {
             </td>
 
             <td class="p-3 text-right">
-                ${fmtIDR(osBalance)}
+                ${fmtIDR(os)}
             </td>
 
         </tr>
@@ -316,93 +447,86 @@ function renderTabDatabaseFull(data) {
 }
 
 // ========================================================
-// 8. SIMPAN CABANG
+// SIMPAN CABANG
 // ========================================================
 window.simpanCatatan = async function(noCustomer) {
 
     try {
 
-        const idDOM = String(noCustomer)
+        const domID =
+            String(noCustomer)
             .replace(/[^a-zA-Z0-9]/g, '_');
 
-        const inputCabang =
-            document.getElementById(`cabang-${idDOM}`);
+        const input =
+            document.getElementById(`cabang-${domID}`);
 
-        if (!inputCabang) {
+        if (!input) {
 
-            alert("Input cabang tidak ditemukan");
+            alert('Input cabang tidak ditemukan');
 
             return;
         }
 
-        const valCabang = inputCabang.value;
-
-        console.log("UPDATE CABANG:", noCustomer);
+        const value = input.value;
 
         const { data, error } = await supabase
             .from('ar_unit')
             .update({
-                ket_cabang: valCabang
+                ket_cabang: value
             })
             .eq('no_customer', noCustomer)
             .select();
 
         if (error) {
+            throw error;
+        }
 
-            console.log(error);
+        if (!data || !data.length) {
 
-            alert(error.message);
+            alert('Data tidak berhasil diupdate');
 
             return;
         }
 
-        if (!data || data.length === 0) {
-
-            alert("Data tidak berhasil diupdate");
-
-            return;
-        }
-
-        alert("Keterangan cabang berhasil disimpan");
+        alert('Keterangan cabang berhasil disimpan');
 
         fetchData();
 
     } catch (err) {
 
-        console.log(err);
+        console.error(err);
 
-        alert("Error : " + err.message);
+        alert('Error simpan : ' + err.message);
     }
 }
 
 // ========================================================
-// 9. SIMPAN LEASING
+// SIMPAN LEASING
 // ========================================================
 window.simpanCatatanLeasing = async function(noCustomer) {
 
     try {
 
-        const idDOM = String(noCustomer)
+        const domID =
+            String(noCustomer)
             .replace(/[^a-zA-Z0-9]/g, '_');
 
-        const inputPlan =
-            document.getElementById(`plan-${idDOM}`);
+        const plan =
+            document.getElementById(`plan-${domID}`);
 
-        const inputKet =
-            document.getElementById(`ket-${idDOM}`);
+        const ket =
+            document.getElementById(`ket-${domID}`);
 
-        if (!inputPlan || !inputKet) {
+        if (!plan || !ket) {
 
-            alert("Input leasing tidak ditemukan");
+            alert('Input leasing tidak ditemukan');
 
             return;
         }
 
-        const valPlan = inputPlan.value;
+        const valPlan = plan.value;
 
-        const valKet = inputKet.value;
-
-        console.log("UPDATE LEASING:", noCustomer);
+        const valKet = ket.value;
 
         const { data, error } = await supabase
             .from('ar_unit')
@@ -414,41 +538,36 @@ window.simpanCatatanLeasing = async function(noCustomer) {
             .select();
 
         if (error) {
+            throw error;
+        }
 
-            console.log(error);
+        if (!data || !data.length) {
 
-            alert(error.message);
+            alert('Data leasing tidak berhasil diupdate');
 
             return;
         }
 
-        if (!data || data.length === 0) {
-
-            alert("Data leasing tidak berhasil diupdate");
-
-            return;
-        }
-
-        alert("Data leasing berhasil disimpan");
+        alert('Data leasing berhasil disimpan');
 
         fetchData();
 
     } catch (err) {
 
-        console.log(err);
+        console.error(err);
 
-        alert("Error : " + err.message);
+        alert('Error leasing : ' + err.message);
     }
 }
 
 // ========================================================
-// 10. DOWNLOAD EXCEL
+// DOWNLOAD EXCEL
 // ========================================================
 function downloadExcel() {
 
-    if (!cachedData || cachedData.length === 0) {
+    if (!cachedData.length) {
 
-        alert("Data kosong");
+        alert('Data kosong');
 
         return;
     }
@@ -459,36 +578,49 @@ function downloadExcel() {
 
             No: i + 1,
 
-            Customer: getProp(d, 'customer_name'),
+            Customer:
+                getProp(d, 'customer_name'),
 
-            NoCustomer: getProp(d, 'no_customer'),
+            NoCustomer:
+                getProp(d, 'no_customer'),
 
-            Leasing: getProp(d, 'leasing_name'),
+            Leasing:
+                getProp(d, 'leasing_name'),
 
-            OSBalance: getProp(d, 'os_balance'),
+            OSBalance:
+                getProp(d, 'os_balance'),
 
-            KetCabang: getProp(d, 'ket_cabang'),
+            KetCabang:
+                getProp(d, 'ket_cabang'),
 
-            PlanBayar: getProp(d, 'plan_bayar_leasing'),
+            PlanBayar:
+                getProp(d, 'plan_bayar_leasing'),
 
-            KetLeasing: getProp(d, 'ket_leasing')
+            KetLeasing:
+                getProp(d, 'ket_leasing')
         };
     });
 
-    const ws = XLSX.utils.json_to_sheet(rows);
+    const ws =
+        XLSX.utils.json_to_sheet(rows);
 
-    const wb = XLSX.utils.book_new();
+    const wb =
+        XLSX.utils.book_new();
 
-    XLSX.utils.book_append_sheet(wb, ws, 'AR UNIT');
+    XLSX.utils.book_append_sheet(
+        wb,
+        ws,
+        'AR UNIT'
+    );
 
     XLSX.writeFile(
         wb,
-        'AR_UNIT.xlsx'
+        'REPORT_AR_UNIT.xlsx'
     );
 }
 
 // ========================================================
-// 11. INIT
+// INIT
 // ========================================================
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -516,7 +648,7 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             () => {
 
-                console.log("Realtime Update");
+                console.log('Realtime update');
 
                 fetchData();
             }
