@@ -220,7 +220,6 @@ function renderAgingChart(agingData) {
     else { charts.bar = new ApexCharts(el, options); charts.bar.render(); }
 }
 
-// Fixed: cachedData context bound inside Donut
 function renderDonutLeasing(mLeas) {
     const el = document.querySelector("#chart-donut-leasing");
     if (!el) return;
@@ -354,7 +353,7 @@ function renderTabOverdueFull(data) {
 }
 
 // ========================================================
-// 5. SINKRONISASI INTERAKTIF HAK AKSES INPUT & PERBAIKAN ID
+// 5. SINKRONISASI INTERAKTIF JANGKAR ID INPUT BERBASIS SPK
 // ========================================================
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
@@ -370,8 +369,9 @@ function renderDataArUnitFull(data) {
     const isLeasingView = window.location.pathname.includes('tafs') || window.location.pathname.includes('acc');
 
     el.innerHTML = filterAR.map((d, i) => {
-        // PERBAIKAN TOTAL: Ambil ID primary key asli milik database Supabase
-        const idUtama = d.id !== undefined ? d.id : (getProp(d, 'id') || i);
+        // AMBIL JANGKAR UNIK ALFANUMERIK DARI NOMOR SPK DATA
+        const spkAsli = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
+        const idSistem = spkAsli.replace(/[^a-zA-Z0-9]/g, '_');
         
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
@@ -379,32 +379,32 @@ function renderDataArUnitFull(data) {
             <td class="p-4 text-slate-800 font-black">${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</td>
             <td class="p-4">
                 <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '-'}</span>
-                <p class="text-[7px] text-slate-300 mt-1">SPK: ${getProp(d, 'No SPK') || getProp(d, 'no_spk') || '-'}</p>
+                <p class="text-[7px] text-slate-400 mt-1">SPK: ${spkAsli}</p>
             </td>
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
             
             <td class="p-4 w-48">
-                <input type="text" id="cabang-${idUtama}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." 
+                <input type="text" id="cabang-${idSistem}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." 
                 class="input-custom ${isLeasingView ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white'}" 
                 ${isLeasingView ? 'readonly' : ''}>
             </td>
             
             <td class="p-4 w-48">
-                <input type="text" id="plan-${idUtama}" value="${getProp(d, 'plan_bayar_leasing') || ''}" placeholder="${isLeasingView ? 'Isi plan bayar...' : 'Menunggu isian leasing...'}" 
+                <input type="text" id="plan-${idSistem}" value="${getProp(d, 'plan_bayar_leasing') || ''}" placeholder="${isLeasingView ? 'Isi plan bayar...' : 'Menunggu isian leasing...'}" 
                 class="input-custom ${isLeasingView ? 'bg-white border-emerald-300' : 'bg-slate-50 text-slate-500 cursor-not-allowed'}" 
                 ${isLeasingView ? '' : 'readonly'}>
             </td>
             
             <td class="p-4 w-48">
-                <input type="text" id="ket-${idUtama}" value="${getProp(d, 'ket_leasing') || ''}" placeholder="${isLeasingView ? 'Isi ket leasing...' : 'Menunggu keterangan leasing...'}" 
+                <input type="text" id="ket-${idSistem}" value="${getProp(d, 'ket_leasing') || ''}" placeholder="${isLeasingView ? 'Isi ket leasing...' : 'Menunggu keterangan leasing...'}" 
                 class="input-custom ${isLeasingView ? 'bg-white border-emerald-300' : 'bg-slate-50 text-slate-500 cursor-not-allowed'}" 
                 ${isLeasingView ? '' : 'readonly'}>
             </td>
             
             <td class="p-4 text-center w-16">
                 ${isLeasingView ? 
-                    `<button onclick="simpanCatatanLeasing('${idUtama}')" class="text-emerald-600 hover:bg-emerald-600 hover:text-white bg-emerald-50 p-2 rounded-lg transition-all" title="Simpan Respon Leasing">💾</button>` :
-                    `<button onclick="simpanCatatan('${idUtama}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan Cabang">💾</button>`
+                    `<button onclick="simpanCatatanLeasing('${spkAsli}')" class="text-emerald-600 hover:bg-emerald-600 hover:text-white bg-emerald-50 p-2 rounded-lg transition-all" title="Simpan Respon Leasing">💾</button>` :
+                    `<button onclick="simpanCatatan('${spkAsli}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan Cabang">💾</button>`
                 }
             </td>
         </tr>`;
@@ -435,39 +435,35 @@ function renderTabDatabaseFull(data) {
 // ========================================================
 // 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML)
 // ========================================================
-window.simpanCatatan = async function(noId) {
+window.simpanCatatan = async function(nomorSPK) {
     try {
-        const inputEl = document.getElementById(`cabang-${noId}`);
+        const idSistem = nomorSPK.replace(/[^a-zA-Z0-9]/g, '_');
+        const inputEl = document.getElementById(`cabang-${idSistem}`);
         if (!inputEl) return;
         
         const valCabang = inputEl.value;
 
-        // 1. Cari data asli di cachedData untuk mencocokkan ID/SPK yang benar
+        // 1. Ambil data baris dari cache berdasarkan Nomor SPK asli
         const dataRow = cachedData.find(d => {
-            const currentId = d.id !== undefined ? d.id : (getProp(d, 'id') || getProp(d, 'no_spk') || getProp(d, 'No SPK'));
-            return String(currentId) === String(noId);
+            const spkData = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
+            return spkData === String(nomorSPK).trim();
         });
 
         if (!dataRow) {
-            alert("Data tidak ditemukan di cache untuk disimpan.");
+            alert("Data SPK tidak ditemukan di cache untuk disimpan.");
             return;
         }
 
-        // 2. Deteksi otomatis nama kolom primary key yang eksis di database Anda
-        let pkColumn = 'id'; // default fallback
-        if (dataRow.id !== undefined) pkColumn = 'id';
-        else if (dataRow['ID'] !== undefined) pkColumn = 'ID';
-        else if (dataRow['no_spk'] !== undefined) pkColumn = 'no_spk';
-        else if (dataRow['No SPK'] !== undefined) pkColumn = 'No SPK';
+        // 2. Deteksi nama kolom SPK asli di tabel Supabase (antisipasi spasi)
+        let kolomSPK = 'no_spk';
+        if (dataRow['No SPK'] !== undefined) kolomSPK = 'No SPK';
+        else if (dataRow['no_spk'] !== undefined) kolomSPK = 'no_spk';
 
-        // 3. Ambil nilai key aslinya (misal nomor SPK atau ID numerik)
-        const pkValue = dataRow[pkColumn];
-
-        // 4. Eksekusi update menggunakan kolom primary key hasil deteksi otomatis
+        // 3. Update data ke tabel target Supabase
         const { error } = await supabase
             .from('ar_unit')
             .update({ ket_cabang: valCabang })
-            .eq(pkColumn, pkValue);
+            .eq(kolomSPK, nomorSPK);
 
         if (error) throw error;
         
@@ -482,43 +478,40 @@ window.simpanCatatan = async function(noId) {
 // ========================================================
 // 7. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML)
 // ========================================================
-window.simpanCatatanLeasing = async function(noId) {
+window.simpanCatatanLeasing = async function(nomorSPK) {
     try {
-        const planEl = document.getElementById(`plan-${noId}`);
-        const ketEl = document.getElementById(`ket-${noId}`);
+        const idSistem = nomorSPK.replace(/[^a-zA-Z0-9]/g, '_');
+        const planEl = document.getElementById(`plan-${idSistem}`);
+        const ketEl = document.getElementById(`ket-${idSistem}`);
         if (!planEl || !ketEl) return;
 
         const valPlan = planEl.value;
         const valKetLeas = ketEl.value;
 
-        // 1. Cari data asli di cachedData untuk mencocokkan ID/SPK yang benar
+        // 1. Ambil data baris dari cache berdasarkan Nomor SPK asli
         const dataRow = cachedData.find(d => {
-            const currentId = d.id !== undefined ? d.id : (getProp(d, 'id') || getProp(d, 'no_spk') || getProp(d, 'No SPK'));
-            return String(currentId) === String(noId);
+            const spkData = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
+            return spkData === String(nomorSPK).trim();
         });
 
         if (!dataRow) {
-            alert("Data tidak ditemukan di cache untuk disimpan.");
+            alert("Data SPK tidak ditemukan di cache untuk disimpan.");
             return;
         }
 
-        // 2. Deteksi otomatis nama kolom primary key yang eksis di database Anda
-        let pkColumn = 'id';
-        if (dataRow.id !== undefined) pkColumn = 'id';
-        else if (dataRow['ID'] !== undefined) pkColumn = 'ID';
-        else if (dataRow['no_spk'] !== undefined) pkColumn = 'no_spk';
-        else if (dataRow['No SPK'] !== undefined) pkColumn = 'No SPK';
+        // 2. Deteksi nama kolom SPK asli di tabel Supabase
+        let kolomSPK = 'no_spk';
+        if (dataRow['No SPK'] !== undefined) kolomSPK = 'No SPK';
+        else if (dataRow['no_spk'] !== undefined) kolomSPK = 'no_spk';
 
-        const pkValue = dataRow[pkColumn];
-
-        // 3. Eksekusi update menggunakan kolom primary key hasil deteksi otomatis
+        // 3. Update respon leasing ke tabel Supabase
         const { error } = await supabase
             .from('ar_unit')
             .update({ 
                 plan_bayar_leasing: valPlan, 
                 ket_leasing: valKetLeas 
             })
-            .eq(pkColumn, pkValue);
+            .eq(kolomSPK, nomorSPK);
 
         if (error) throw error;
         
