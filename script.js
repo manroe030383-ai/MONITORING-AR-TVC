@@ -458,7 +458,7 @@ function renderTabDatabaseFull(data) {
 }
 
 // ========================================================
-// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (FIXED & PACKED)
+// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (KUNCI VIA CUSTOMER NO)
 // ========================================================
 window.simpanCatatan = async function(namaCustomer) {
     try {
@@ -468,34 +468,53 @@ window.simpanCatatan = async function(namaCustomer) {
         
         const valCabang = inputEl.value;
 
-        // Cetak ke console untuk mempermudah tracking proses data
-        console.log(`Mengirim data Cabang untuk: ${namaCustomer}, Isi: ${valCabang}`);
+        // 1. Cari data di cache aplikasi untuk mengambil Customer No aslinya
+        const dataRow = cachedData.find(d => {
+            const namaLokal = String(d['customer_name'] || d['Customer Name'] || '').trim().toUpperCase();
+            return namaLokal === String(namaCustomer).trim().toUpperCase();
+        });
 
-        // Eksekusi update langsung dengan mengunci kolom 'customer_name' secara tegas
-        const { data, error, status } = await supabase
+        if (!dataRow) {
+            alert(`Gagal: Customer "${namaCustomer}" tidak ditemukan di cache.`);
+            return;
+        }
+
+        // 2. Deteksi otomatis penulisan nama kolom Customer No di database Anda
+        const CustNoValue = dataRow['customer_no'] || dataRow['Customer No'] || dataRow['cust_no'] || getProp(dataRow, 'Customer No');
+        const CustNoColumn = dataRow['customer_no'] !== undefined ? 'customer_no' : 
+                             dataRow['Customer No'] !== undefined ? 'Customer No' : 'cust_no';
+
+        if (!CustNoValue) {
+            alert("Gagal: Kolom Customer No tidak ditemukan di baris data ini.");
+            return;
+        }
+
+        console.log(`Mengunci database via Kolom [${CustNoColumn}]: ${CustNoValue} untuk ${namaCustomer}`);
+
+        // 3. Eksekusi Update ke Supabase menggunakan Customer No
+        const { data, error } = await supabase
             .from('ar_unit')
             .update({ ket_cabang: valCabang })
-            .eq('customer_name', namaCustomer.trim())
-            .select(); // Memaksa Supabase mengembalikan data yang berhasil diubah
+            .eq(CustNoColumn, CustNoValue)
+            .select();
 
         if (error) throw error;
 
-        // Validasi apakah ada baris data yang benar-benar terpengaruh di database
         if (!data || data.length === 0) {
-            alert(`⚠️ Peringatan: Data terkirim, tetapi nama customer "${namaCustomer}" tidak cocok dengan kolom 'customer_name' di Supabase.`);
+            alert(`⚠️ Gagal: Nomor customer [${CustNoValue}] tidak ditemukan saat update di database.`);
             return;
         }
 
         alert("Keterangan cabang berhasil disimpan ke database! 👍");
         
     } catch (err) {
-        console.error("❌ Detail Error Supabase:", err);
-        alert("Gagal menyimpan data: " + (err.message || "Periksa struktur kolom customer_name"));
+        console.error("❌ Detail Error:", err);
+        alert("Gagal menyimpan data: " + err.message);
     }
 }
 
 // ========================================================
-// 7. FUNGSI SIMPAN KHUSUS LEASING (FIXED & PACKED)
+// 7. FUNGSI SIMPAN KHUSUS LEASING (KUNCI VIA CUSTOMER NO)
 // ========================================================
 window.simpanCatatanLeasing = async function(namaCustomer) {
     try {
@@ -507,30 +526,51 @@ window.simpanCatatanLeasing = async function(namaCustomer) {
         const valPlan = planEl.value;
         const valKetLeas = ketEl.value;
 
-        console.log(`Mengirim data Leasing untuk: ${namaCustomer}, Plan: ${valPlan}, Ket: ${valKetLeas}`);
+        // 1. Cari data di cache aplikasi
+        const dataRow = cachedData.find(d => {
+            const namaLokal = String(d['customer_name'] || d['Customer Name'] || '').trim().toUpperCase();
+            return namaLokal === String(namaCustomer).trim().toUpperCase();
+        });
 
-        // Eksekusi update langsung dengan mengunci kolom 'customer_name' secara tegas
+        if (!dataRow) {
+            alert(`Gagal: Customer "${namaCustomer}" tidak ditemukan di cache.`);
+            return;
+        }
+
+        // 2. Deteksi otomatis penulisan nama kolom Customer No
+        const CustNoValue = dataRow['customer_no'] || dataRow['Customer No'] || dataRow['cust_no'] || getProp(dataRow, 'Customer No');
+        const CustNoColumn = dataRow['customer_no'] !== undefined ? 'customer_no' : 
+                             dataRow['Customer No'] !== undefined ? 'Customer No' : 'cust_no';
+
+        if (!CustNoValue) {
+            alert("Gagal: Kolom Customer No tidak ditemukan di baris data ini.");
+            return;
+        }
+
+        console.log(`Mengunci database via Leasing Kolom [${CustNoColumn}]: ${CustNoValue} untuk ${namaCustomer}`);
+
+        // 3. Eksekusi Update ke Supabase menggunakan Customer No
         const { data, error } = await supabase
             .from('ar_unit')
             .update({ 
                 plan_bayar_leasing: valPlan, 
                 ket_leasing: valKetLeas 
             })
-            .eq('customer_name', namaCustomer.trim())
+            .eq(CustNoColumn, CustNoValue)
             .select();
 
         if (error) throw error;
 
         if (!data || data.length === 0) {
-            alert(`⚠️ Peringatan: Data terkirim, tetapi nama customer "${namaCustomer}" tidak cocok dengan kolom 'customer_name' di Supabase.`);
+            alert(`⚠️ Gagal: Nomor customer [${CustNoValue}] tidak ditemukan saat update di database.`);
             return;
         }
 
         alert("Respon Leasing Berhasil Diperbarui ke Database! ✔️");
         
     } catch (err) {
-        console.error("❌ Detail Error Supabase:", err);
-        alert("Leasing gagal menyimpan data: " + (err.message || "Periksa struktur kolom customer_name"));
+        console.error("❌ Detail Error:", err);
+        alert("Leasing gagal menyimpan data: " + err.message);
     }
 }
 
