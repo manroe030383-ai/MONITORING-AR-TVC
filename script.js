@@ -54,7 +54,7 @@ async function fetchData() {
             
             // Render Status Berhasil di UI
             if (document.getElementById('status-update')) {
-                document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
+                document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB (REALTIME ACTIVE)`;
                 document.getElementById('status-update').className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic";
             }
 
@@ -241,7 +241,6 @@ function renderDataArUnitFull(data) {
         const idSistem = spkAsli.replace(/[^a-zA-Z0-9]/g, '_');
         const noCustomer = getProp(d, 'no_customer') || '-';
         
-        // SINKRONISASI NILAI VALUE INPUT DENGAN KOLOM ASLI DATABASE SUPABASE HURUFKECIL
         const valKetCabang = d['ket_cabang'] || '';
         const valPlanBayar = d['plan_bayar_leasing'] || '';
         const valKetLeasing = d['ket_leasing'] || '';
@@ -332,9 +331,9 @@ function renderOverdueTop(data) {
     const el = document.getElementById('list-overdue'); if (!el) return;
     if (data.length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">Tidak ada data overdue</p>'; return; }
     const sortedData = [...data].sort((a, b) => {
-        const ovA = Number(getProp(a, 'Hari 1-30') || 0) + Number(getProp(a, 'Hari 31-60') || 0) + Number(getProp(a, 'Lebih 60 Hari') || 0);
-        const ovB = Number(getProp(b, 'Hari 1-30') || 0) + Number(getProp(b, 'Hari 31-60') || 0) + Number(getProp(b, 'Lebih 60 Hari') || 0);
-        return ovB - ovA;
+        const osA = Number(getProp(a, 'Hari 1-30') || 0) + Number(getProp(a, 'Hari 31-60') || 0) + Number(getProp(a, 'Lebih 60 Hari') || 0);
+        const osB = Number(getProp(b, 'Hari 1-30') || 0) + Number(getProp(b, 'Hari 31-60') || 0) + Number(getProp(b, 'Lebih 60 Hari') || 0);
+        return osB - osA;
     });
     el.innerHTML = sortedData.slice(0,5).map((d,i) => {
         const totalOverdueItem = Number(getProp(d, 'Hari 1-30') || 0) + Number(getProp(d, 'Hari 31-60') || 0) + Number(getProp(d, 'Lebih 60 Hari') || 0);
@@ -458,7 +457,7 @@ window.simpanCatatan = async function(nomorSPK) {
         
         const valCabang = inputEl.value;
 
-        // PERBAIKAN UTAMA: Paksa nomorSPK menjadi Integer murni (int8) untuk database Supabase
+        // Paksa nomorSPK menjadi Integer murni (int8) untuk database Supabase
         const spkAngka = parseInt(nomorSPK, 10);
         if (isNaN(spkAngka)) {
             alert("Gagal menyimpan: Format Nomor SPK harus berupa angka murni.");
@@ -468,12 +467,12 @@ window.simpanCatatan = async function(nomorSPK) {
         const { error } = await supabase
             .from('ar_unit')
             .update({ ket_cabang: valCabang })
-            .eq('no_spk', spkAngka); // Menembak target kolom integer 'no_spk'
+            .eq('no_spk', spkAngka); // Menembak target kolom 'no_spk'
 
         if (error) throw error;
-        alert("Keterangan cabang berhasil disimpan ke database! 👍");
+        alert("Keterangan cabang berhasil disimpan! 👍");
         
-        // MODIFIKASI: Panggil ulang fungsi fetch data agar UI langsung ter-refresh seketika
+        // Panggil ulang fungsi fetch data agar UI langsung ter-refresh seketika
         fetchData();
         
     } catch (err) {
@@ -491,12 +490,12 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
         const idSistem = nomorSPK.replace(/[^a-zA-Z0-9]/g, '_');
         const planEl = document.getElementById(`plan-${idSistem}`);
         const ketEl = document.getElementById(`ket-${idSistem}`);
-        if (!planEl || !getProp || !ketEl) return;
+        if (!planEl || !ketEl) return;
 
         const valPlan = planEl.value;
         const valKetLeas = ketEl.value;
 
-        // PERBAIKAN UTAMA: Paksa nomorSPK menjadi Integer murni (int8) untuk database Supabase
+        // Paksa nomorSPK menjadi Integer murni (int8) untuk database Supabase
         const spkAngka = parseInt(nomorSPK, 10);
         if (isNaN(spkAngka)) {
             alert("Leasing gagal menyimpan: Format Nomor SPK harus berupa angka murni.");
@@ -509,12 +508,12 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
                 plan_bayar_leasing: valPlan, 
                 ket_leasing: valKetLeas 
             })
-            .eq('no_spk', spkAngka); // Menembak target kolom integer 'no_spk'
+            .eq('no_spk', spkAngka); // Menembak target kolom 'no_spk'
 
         if (error) throw error;
-        alert("Respon Leasing Berhasil Diperbarui ke Database! ✔️");
+        alert("Respon Leasing Berhasil Diperbarui! ✔️");
         
-        // MODIFIKASI: Panggil ulang fungsi fetch data agar UI langsung ter-refresh seketika
+        // Panggil ulang fungsi fetch data agar UI langsung ter-refresh seketika
         fetchData();
         
     } catch (err) {
