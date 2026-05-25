@@ -227,16 +227,29 @@ function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
     if (!el) return;
 
+    // 1. Deteksi nama file URL aktif (apakah sedang buka halaman tafs atau acc atau dashboard)
+    const pathLower = window.location.pathname.toLowerCase();
+    const isTafsPage = pathLower.includes('tafs');
+    const isAccPage = pathLower.includes('acc');
+    const isLeasingView = isTafsPage || isAccPage;
+
+    // 2. Filter data secara ketat berdasarkan halaman masing-masing (Menjawab Masalah 2)
     const filterAR = data.filter(d => {
         const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
-        return l.includes('TAFS') || l.includes('ACC');
+        
+        if (isTafsPage) {
+            return l.includes('TAFS'); // Halaman TAFS hanya memuat data TAFS
+        } else if (isAccPage) {
+            return l.includes('ACC');  // Halaman ACC hanya memuat data ACC
+        } else {
+            return l.includes('TAFS') || l.includes('ACC'); // Dashboard utama memuat keduanya
+        }
     });
 
-    if(filterAR.length === 0) { el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing TAFS / ACC</td></tr>'; return; }
-
-    // PERBAIKAN LOGIKA: Deteksi huruf kecil/besar dan ekstening routing secara akurat
-    const pathLower = window.location.pathname.toLowerCase();
-    const isLeasingView = pathLower.includes('tafs') || pathLower.includes('acc');
+    if(filterAR.length === 0) { 
+        el.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing ${isTafsPage ? 'TAFS' : isAccPage ? 'ACC' : 'TAFS / ACC'}</td></tr>`; 
+        return; 
+    }
 
     el.innerHTML = filterAR.map((d, i) => {
         // AMBIL JANGKAR UNIK ALFANUMERIK DARI NOMOR SPK DATA
@@ -246,7 +259,7 @@ function renderDataArUnitFull(data) {
         // AMBIL NO CUSTOMER LANGSUNG DARI KOLOM SUPABASE
         const noCustomer = getProp(d, 'no_customer') || '-';
 
-        // AMBIL VALUE KETERANGAN CABANG LANGSUNG DARI DATABASE
+        // AMBIL VALUE KETERANGAN CABANG LANGSUNG DARI DATABASE (Menjawab Masalah 1)
         const ketCabangVal = getProp(d, 'ket_cabang') || '';
 
         return `
@@ -321,6 +334,9 @@ function renderLeasingList(map, total) {
         </div>`).join('');
 }
 
+// ========================================================
+// BONUS OPTIMASI: AGAR DATA FILTER DI KARTU LIST LEASING JELAS
+// ========================================================
 function renderTopList(map, id, colorClass) {
     const el = document.getElementById(id); if (!el) return;
     if (Object.keys(map).length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">Tidak ada data</p>'; return; }
@@ -349,7 +365,7 @@ function renderOverdueTop(data) {
     }).join('');
 }
 
-function borderTrClass(i) { return 'hover:bg-slate-50/80 transition-all font-bold uppercase'; }
+define: function borderTrClass(i) { return 'hover:bg-slate-50/80 transition-all font-bold uppercase'; }
 
 function renderTabLeasingFull(data) {
     const el = document.getElementById('tab-leasing-full-list'); if (!el) return;
@@ -371,7 +387,7 @@ function renderTabLeasingFull(data) {
                 </thead>
                 <tbody class="divide-y divide-slate-50">
                     ${leasingData.map((d, i) => `
-                        <tr class="${borderTrClass(i)}">
+                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase">
                             <td class="p-3 text-center text-slate-400">${i+1}</td>
                             <td class="p-3">
                                 <p class="text-slate-800 text-[11px] font-black">${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</p>
@@ -407,7 +423,7 @@ function renderTabOverdueFull(data) {
                     ${overdueData.map((d, i) => {
                         const totalOvItem = Number(getProp(d, 'Hari 1-30') || 0) + Number(getProp(d, 'Hari 31-60') || 0) + Number(getProp(d, 'Lebih 60 Hari') || 0);
                         return `
-                        <tr class="${borderTrClass(i)}">
+                        <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase">
                             <td class="p-3 text-center text-slate-400">${i+1}</td>
                             <td class="p-3">
                                 <p class="text-slate-800 text-[11px] font-black">${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</p>
