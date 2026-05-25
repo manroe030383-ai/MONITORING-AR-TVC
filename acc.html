@@ -5,50 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ACC Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.mini.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans antialiased">
 
-    <div class="bg-gradient-to-r from-red-900 to-red-700 bg-[#991b1b] text-white px-6 py-4 flex justify-between items-center shadow-lg">
-        <h1 class="text-2xl font-bold tracking-wide">ACC Dashboard</h1>
-        <button class="bg-white text-red-600 px-4 py-2 rounded-md font-medium text-sm hover:bg-gray-100 transition-all shadow-sm">
-            Logout
-        </button>
+    <div class="bg-[#991b1b] text-white px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-md">
+        <div>
+            <div class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1 mb-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                DATA UPDATE: <span id="realtime-clock">25/5/2026, --.--.-- WIB (REALTIME ACTIVE)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-bold tracking-tight uppercase">ACC Dashboard</h1>
+                <span class="bg-white text-red-900 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Leasing System</span>
+            </div>
+            <p class="text-[11px] text-red-200 font-medium tracking-wide mt-0.5">AUTO2000 CO-BRANDING • ASTRA CREDIT COMPANIES (ACC)</p>
+        </div>
+        
+        <div class="flex items-center gap-3 w-full sm:w-auto self-stretch sm:self-auto justify-end">
+            <button id="btn-download-excel" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5">
+                💾 Download Excel Report
+            </button>
+            <button class="bg-white hover:bg-gray-100 text-red-900 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-sm">
+                Logout
+            </button>
+        </div>
     </div>
 
     <div class="p-6 space-y-6">
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 min-h-[140px] flex flex-col justify-between">
                 <span class="text-sm font-bold text-gray-800 tracking-tight">Total Outstanding</span>
-                <span class="text-4xl font-extrabold text-black mt-4" id="total-outstanding">Rp 0</span>
+                <span class="text-4xl font-extrabold text-black mt-4 tracking-tight" id="total-outstanding">Rp 0</span>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 min-h-[140px] flex flex-col justify-between">
                 <span class="text-sm font-bold text-gray-800 tracking-tight">PAID</span>
-                <span class="text-4xl font-extrabold text-black mt-4" id="total-paid">0 Unit</span>
+                <span class="text-4xl font-extrabold text-black mt-4 tracking-tight" id="total-paid">0 Unit</span>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 min-h-[140px] flex flex-col justify-between">
                 <span class="text-sm font-bold text-gray-800 tracking-tight">On Proses</span>
-                <span class="text-4xl font-extrabold text-black mt-4" id="total-on-proses">0 Unit</span>
+                <span class="text-4xl font-extrabold text-black mt-4 tracking-tight" id="total-on-proses">0 Unit</span>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between min-h-[140px]">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 min-h-[140px] flex flex-col justify-between">
                 <span class="text-sm font-bold text-gray-800 tracking-tight">Overdue</span>
-                <span class="text-4xl font-extrabold text-red-600 mt-4" id="total-overdue">0 Unit</span>
+                <span class="text-4xl font-extrabold text-[#dc2626] mt-4 tracking-tight" id="total-overdue">0 Unit</span>
             </div>
 
         </div>
 
-        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex items-center">
-            <p class="text-xs font-bold uppercase tracking-wider text-amber-500 italic" id="status-update">Memuat data penagihan dari Supabase...</p>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3.5">
+            <p class="text-xs font-bold uppercase tracking-wider text-emerald-600 italic" id="status-update">
+                Memuat data penagihan dari Supabase...
+            </p>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-4 overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 overflow-hidden">
             
-            <div class="grid grid-cols-8 bg-[#dc2626] text-white rounded-lg text-center font-semibold text-xs shadow-sm overflow-hidden py-3">
-                <div class="px-1">Customer Name</div>
+            <div class="grid grid-cols-8 bg-[#dc2626] text-white rounded-xl text-center font-bold text-xs tracking-wide py-3 px-2 shadow-sm overflow-hidden items-center">
+                <div class="px-1 text-left pl-4">Customer Name</div>
                 <div class="px-1">Salesman Name</div>
                 <div class="px-1">O/S Balance</div>
                 <div class="px-1">Material Code</div>
@@ -59,7 +78,7 @@
             </div>
             
             <div id="acc-table-body" class="divide-y divide-gray-100 max-h-[500px] overflow-y-auto mt-2">
-            </div>
+                </div>
 
         </div>
 
@@ -74,9 +93,8 @@
 
         window.cachedData = [];
 
-        const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
+        const fmtIDR = (v) => 'RP ' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(v || 0);
 
-        // FUNGSI PENYELAMAT SINKRONISASI KOLOM BESAR KECIL
         function getProp(obj, key) {
             if (!obj) return undefined;
             if (obj[key.toLowerCase()] !== undefined) return obj[key.toLowerCase()];
@@ -90,7 +108,6 @@
             return undefined;
         }
 
-        // AMBIL DATA DARI SUPABASE DAN FILTER KHUSUS ACC
         async function fetchAccData() {
             try {
                 const { data, error } = await supabase.from('ar_unit').select('*');
@@ -105,7 +122,6 @@
                     data.forEach((d, i) => {
                         const leasing = String(getProp(d, 'leasing_name') || getProp(d, 'leasing') || '').toUpperCase().trim();
                         
-                        // Validasi filter data hanya untuk leasing ACC
                         if (leasing.includes('ACC')) {
                             const os = Number(getProp(d, 'os_balance') || getProp(d, 'balance') || 0);
                             
@@ -121,15 +137,12 @@
                             const salesmanName = getProp(d, 'salesman_name') || getProp(d, 'supervisor_name') || 'OFFICE';
                             const materialCode = getProp(d, 'material_code') || '-';
                             
-                            // Ambil data catatan dengan fungsi getProp anti-meleset
                             const valKetCabang = getProp(d, 'ket_cabang') !== null && getProp(d, 'ket_cabang') !== undefined ? String(getProp(d, 'ket_cabang')) : '';
                             const valPlanBayar = getProp(d, 'plan_bayar_leasing') !== null && getProp(d, 'plan_bayar_leasing') !== undefined ? String(getProp(d, 'plan_bayar_leasing')) : '';
                             const valKetLeasing = getProp(d, 'ket_leasing') !== null && getProp(d, 'ket_leasing') !== undefined ? String(getProp(d, 'ket_leasing')) : '';
 
                             const uiId = i;
-                            const idUtama = getProp(d, 'No') || getProp(d, 'id') || i;
 
-                            // Kalkulasi ringkasan metrik status unit
                             if (statusTagih === 'SUDAH GI' || statusTagih === 'PAID' || os === 0) {
                                 accMetrics.paid++;
                             } else {
@@ -141,30 +154,28 @@
                                 }
                             }
 
-                            // Render baris data ke dalam struktur HTML
                             htmlRows += `
-                            <div class="grid grid-cols-8 text-center py-3 text-xs font-bold uppercase text-gray-700 hover:bg-gray-50 items-center border-b border-gray-100">
-                                <div class="truncate px-2 text-left font-black text-slate-800">${customerName}</div>
-                                <div class="truncate px-1 text-slate-600">${salesmanName}</div>
+                            <div class="grid grid-cols-8 text-center py-3.5 text-[11px] font-bold uppercase text-gray-700 hover:bg-gray-50 items-center border-b border-gray-100">
+                                <div class="truncate px-2 text-left font-black text-slate-800 pl-4">${customerName}</div>
+                                <div class="truncate px-1 text-gray-500 font-semibold">${salesmanName}</div>
                                 <div class="text-blue-600 font-black">${fmtIDR(os)}</div>
-                                <div class="text-gray-500 font-mono text-[11px]">${materialCode}</div>
+                                <div class="text-gray-400 font-mono text-[10px]">${materialCode}</div>
                                 <div class="px-1">
-                                    <input type="text" id="cabang-${uiId}" data-customer="${customerName}" data-no="${getProp(d, 'No') || ''}" data-id="${getProp(d, 'id') || ''}" value="${valKetCabang}" placeholder="Belum ada catatan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-gray-50 text-gray-500 font-medium cursor-not-allowed focus:outline-none" readonly>
+                                    <input type="text" id="cabang-${uiId}" data-customer="${customerName}" data-no="${getProp(d, 'No') || ''}" data-id="${getProp(d, 'id') || ''}" value="${valKetCabang}" placeholder="-" class="w-full text-[11px] p-1.5 border border-gray-100 rounded-lg bg-gray-50 text-gray-400 font-medium cursor-not-allowed focus:outline-none" readonly>
                                 </div>
                                 <div class="px-1">
-                                    <input type="text" id="plan-${uiId}" value="${valPlanBayar}" placeholder="Isi plan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-red-500">
+                                    <input type="text" id="plan-${uiId}" value="${valPlanBayar}" placeholder="Isi plan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-lg bg-white font-medium text-gray-700 focus:outline-none focus:border-red-500 shadow-sm">
                                 </div>
                                 <div class="px-1">
-                                    <input type="text" id="ket-${uiId}" value="${valKetLeasing}" placeholder="Isi keterangan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-md bg-white font-medium focus:outline-none focus:border-red-500">
+                                    <input type="text" id="ket-${uiId}" value="${valKetLeasing}" placeholder="Isi keterangan..." class="w-full text-[11px] p-1.5 border border-gray-200 rounded-lg bg-white font-medium text-gray-700 focus:outline-none focus:border-red-500 shadow-sm">
                                 </div>
                                 <div class="text-center">
-                                    <button onclick="simpanCatatanAcc('${uiId}')" class="text-red-600 hover:bg-red-600 hover:text-white bg-red-50 p-2 rounded-lg transition-all" title="Simpan Catatan">💾</button>
+                                    <button onclick="simpanCatatanAcc('${uiId}')" class="text-purple-700 hover:bg-purple-100 bg-purple-50 p-1.5 rounded-lg transition-all shadow-sm" title="Simpan Catatan">💾</button>
                                 </div>
                             </div>`;
                         }
                     });
 
-                    // Update komponen angka di dashboard screen
                     if(document.getElementById('total-outstanding')) document.getElementById('total-outstanding').innerText = fmtIDR(accMetrics.os);
                     if(document.getElementById('total-paid')) document.getElementById('total-paid').innerText = `${accMetrics.paid} Unit`;
                     if(document.getElementById('total-on-proses')) document.getElementById('total-on-proses').innerText = `${accMetrics.onProses} Unit`;
@@ -175,9 +186,10 @@
                         tableBody.innerHTML = htmlRows ? htmlRows : '<div class="text-center py-8 text-gray-400 text-xs font-bold">TIDAK ADA DATA PIUTANG ACC</div>';
                     }
 
+                    updateClock();
+
                     if (document.getElementById('status-update')) {
-                        document.getElementById('status-update').innerText = `KONEKSI BERHASIL - DATA ACC TERKONEKSI SINKRON: ${new Date().toLocaleString('id-ID')} WIB`;
-                        document.getElementById('status-update').className = "text-xs font-bold uppercase tracking-wider text-emerald-600 italic";
+                        document.getElementById('status-update').innerText = `KONEKSI BERHASIL - DATA ACC TERKONEKSI SINKRON: ${getWibString()}`;
                     }
                 }
             } catch (err) {
@@ -189,7 +201,52 @@
             }
         }
 
-        // PROSES UPDATE: MENETAPKAN TARGET BARIS BERDASARKAN NAMA CUSTOMER SECARA PRESISI
+        function getWibString() {
+            const skrg = new Date();
+            return skrg.getDate() + '/' + (skrg.getMonth()+1) + '/' + skrg.getFullYear() + ', ' + skrg.toLocaleTimeString('id-ID') + ' WIB';
+        }
+
+        function updateClock() {
+            if (document.getElementById('realtime-clock')) {
+                document.getElementById('realtime-clock').innerText = `${getWibString()} (REALTIME ACTIVE)`;
+            }
+        }
+
+        // DOWNLOAD REPORT
+        function downloadExcelReport() {
+            if (!window.cachedData || window.cachedData.length === 0) {
+                alert("Data kosong atau belum dimuat sepenuhnya.");
+                return;
+            }
+
+            const filteredRows = [];
+            window.cachedData.forEach(d => {
+                const leasing = String(getProp(d, 'leasing_name') || getProp(d, 'leasing') || '').toUpperCase().trim();
+                if (leasing.includes('ACC')) {
+                    filteredRows.push({
+                        "No": getProp(d, 'No') || getProp(d, 'id') || '',
+                        "Customer Name": getProp(d, 'customer_name') || '-',
+                        "Salesman Name": getProp(d, 'salesman_name') || getProp(d, 'supervisor_name') || 'OFFICE',
+                        "O/S Balance": Number(getProp(d, 'os_balance') || getProp(d, 'balance') || 0),
+                        "Material Code": getProp(d, 'material_code') || '-',
+                        "Ket Cabang (Read Only)": getProp(d, 'ket_cabang') || '',
+                        "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || '',
+                        "Keterangan Leasing": getProp(d, 'ket_leasing') || ''
+                    });
+                }
+            });
+
+            if (filteredRows.length === 0) {
+                alert("Tidak ada data ACC yang bisa diunduh.");
+                return;
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(filteredRows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "ACC Report");
+            XLSX.writeFile(workbook, `Report_Monitoring_ACC_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
         window.simpanCatatanAcc = async function(uiId) {
             const inputCabang = document.getElementById(`cabang-${uiId}`);
             const inputPlan = document.getElementById(`plan-${uiId}`);
@@ -203,12 +260,7 @@
             const valKet = inputKet.value;
 
             try {
-                inputPlan.setAttribute('value', valPlan);
-                inputKet.setAttribute('value', valKet);
-
                 let payload = {};
-                
-                // Cek nama kolom asli server secara dinamis untuk menghindari salah ketik besar/kecil
                 if (window.cachedData && window.cachedData.length > 0) {
                     const sample = window.cachedData[0];
                     const kPlan = sample['Plan_Bayar_Leasing'] !== undefined ? 'Plan_Bayar_Leasing' : 
@@ -225,7 +277,6 @@
 
                 let queryBuilder = supabase.from('ar_unit').update(payload);
 
-                // STRATEGI PENCARIAN BERLAPIS ANTI-MELESET (ID -> NO -> CUSTOMER NAME OR MULTI-QUERY)
                 if (dataId && dataId !== "") {
                     queryBuilder = queryBuilder.eq('id', dataId);
                 } else if (dataNo && dataNo !== "") {
@@ -242,8 +293,6 @@
                 if (error) throw error;
                 
                 alert("Catatan ACC Berhasil Disimpan Langsung ke Admin Pusat! 👍");
-                
-                // Tarik ulang data segar dari server tanpa me-reload penuh browser pengguna
                 fetchAccData();
 
             } catch (err) {
@@ -252,7 +301,11 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', fetchAccData);
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAccData();
+            document.getElementById('btn-download-excel').addEventListener('click', downloadExcelReport);
+            setInterval(updateClock, 1000);
+        });
     </script>
 </body>
 </html>
