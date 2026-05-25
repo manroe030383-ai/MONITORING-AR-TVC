@@ -221,7 +221,7 @@ function renderAgingChart(agingData) {
 }
 
 // ========================================================
-// 5. SINKRONISASI INTERAKTIF JANGKAR ID INPUT BERBASIS SPK
+// 5. SINKRONISASI INTERAKTIF JANGKAR ID INPUT BERBASIS SPK (FIXED!)
 // ========================================================
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
@@ -240,7 +240,9 @@ function renderDataArUnitFull(data) {
         const spkAsli = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
         const idSistem = spkAsli.replace(/[^a-zA-Z0-9]/g, '_');
         const noCustomer = getProp(d, 'no_customer') || '-';
-        const ketCabangVal = getProp(d, 'ket_cabang') || '';
+        
+        // PERBAIKAN: Tembak langsung nama properti asli Supabase tanpa melewati getProp
+        const ketCabangVal = d['ket_cabang'] || d['Ket Cabang'] || '';
 
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
@@ -257,9 +259,9 @@ function renderDataArUnitFull(data) {
             
             <td class="p-4 w-48">
                 ${isLeasingView ? 
-                    `<input type="text" value="${ketCabangVal}" placeholder="Ket cabang..." 
+                    `<input type="text" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." 
                      class="input-custom bg-slate-100 text-slate-500 cursor-not-allowed border-none shadow-none" readonly>` : 
-                    `<input type="text" id="cabang-${idSistem}" value="${ketCabangVal}" placeholder="Ket cabang..." 
+                    `<input type="text" id="cabang-${idSistem}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." 
                      class="input-custom bg-white">`
                 }
             </td>
@@ -440,7 +442,7 @@ function renderTabDatabaseFull(data) {
 }
 
 // ========================================================
-// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML)
+// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML) - FIXED TARGET COLUMN
 // ========================================================
 window.simpanCatatan = async function(nomorSPK) {
     try {
@@ -450,24 +452,11 @@ window.simpanCatatan = async function(nomorSPK) {
         
         const valCabang = inputEl.value;
 
-        const dataRow = cachedData.find(d => {
-            const spkData = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
-            return spkData === String(nomorSPK).trim();
-        });
-
-        if (!dataRow) {
-            alert("Data SPK tidak ditemukan di cache untuk disimpan.");
-            return;
-        }
-
-        let kolomSPK = 'no_spk';
-        if (dataRow['No SPK'] !== undefined) kolomSPK = 'No SPK';
-        else if (dataRow['no_spk'] !== undefined) kolomSPK = 'no_spk';
-
+        // Kunci penargetan langsung ke nama kolom asli tabel Supabase yaitu 'no_spk'
         const { error } = await supabase
             .from('ar_unit')
             .update({ ket_cabang: valCabang })
-            .eq(kolomSPK, nomorSPK);
+            .eq('no_spk', String(nomorSPK).trim());
 
         if (error) throw error;
         alert("Keterangan cabang berhasil disimpan ke database! 👍");
@@ -479,7 +468,7 @@ window.simpanCatatan = async function(nomorSPK) {
 }
 
 // ========================================================
-// 7. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML)
+// 7. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML) - FIXED TARGET COLUMN
 // ========================================================
 window.simpanCatatanLeasing = async function(nomorSPK) {
     try {
@@ -491,27 +480,14 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
         const valPlan = planEl.value;
         const valKetLeas = ketEl.value;
 
-        const dataRow = cachedData.find(d => {
-            const spkData = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
-            return spkData === String(nomorSPK).trim();
-        });
-
-        if (!dataRow) {
-            alert("Data SPK tidak ditemukan di cache untuk disimpan.");
-            return;
-        }
-
-        let kolomSPK = 'no_spk';
-        if (dataRow['No SPK'] !== undefined) kolomSPK = 'No SPK';
-        else if (dataRow['no_spk'] !== undefined) kolomSPK = 'no_spk';
-
+        // Kunci penargetan langsung ke nama kolom asli tabel Supabase yaitu 'no_spk'
         const { error } = await supabase
             .from('ar_unit')
             .update({ 
                 plan_bayar_leasing: valPlan, 
                 ket_leasing: valKetLeas 
             })
-            .eq(kolomSPK, nomorSPK);
+            .eq('no_spk', String(nomorSPK).trim());
 
         if (error) throw error;
         alert("Respon Leasing Berhasil Diperbarui ke Database! ✔️");
@@ -523,7 +499,7 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
 }
 
 // ========================================================
-// 8. FUNGSI DOWNLOAD DATA KE EXCEL
+// 8. FUNGSI DOWNLOAD DATA KE EXCEL (FIXED FOR COMPATIBILITY)
 // ========================================================
 function downloadExcel() {
     if (!cachedData || cachedData.length === 0) { alert("Data belum siap."); return; }
@@ -537,7 +513,8 @@ function downloadExcel() {
                 "Leasing": getProp(d, 'Chas/Leasing') || "CASH", "O/S Balance": os, "Hari 1-30 (Lancar)": lancar,
                 "Hari 31-60": b1, "Lebih 60 Hari": b2, "Total Overdue": totalOv, "Potensi Penalti": getProp(d, 'Potensi Penalti') || 0,
                 "Salesman": getProp(d, 'Salesman Name') || "-", "Supervisor": getProp(d, 'Supervisor') || "-",
-                "Keterangan Cabang": getProp(d, 'ket_cabang') || "", "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || "", "Keterangan Leasing": getProp(d, 'ket_leasing') || ""
+                "Keterangan Cabang": d['ket_cabang'] || d['Ket Cabang'] || "", 
+                "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || "", "Keterangan Leasing": getProp(d, 'ket_leasing') || ""
             };
         });
         const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel); const workbook = XLSX.utils.book_new();
