@@ -220,6 +220,24 @@ function renderAgingChart(agingData) {
     else { charts.bar = new ApexCharts(el, options); charts.bar.render(); }
 }
 
+function renderDonutLeasing(mLeas) {
+    const el = document.querySelector("#chart-donut-leasing");
+    if (!el) return;
+    let totalCash = 0; let totalLeasing = 0;
+    cachedData.forEach(d => {
+        const os = Number(getProp(d, 'O/S Balance') || getProp(d, 'os_balance') || 0);
+        const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
+        if (["CASH", "CASH TERIMA", "", "-"].includes(l)) { totalCash += os; } else { totalLeasing += os; }
+    });
+    const seriesDonut = [totalCash, totalLeasing]; const labelsDonut = ['TOTAL CASH', 'TOTAL LEASING'];
+    const options = {
+        series: (totalCash === 0 && totalLeasing === 0) ? [1, 1] : seriesDonut, labels: labelsDonut,
+        chart: { type: 'donut', height: 180 }, legend: { show: false }, dataLabels: { enabled: false },
+        colors: ['#10B981', '#3B82F6'], plotOptions: { pie: { donut: { labels: { show: false } } } }
+    };
+    if (charts.donut) charts.donut.updateOptions(options); else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
+}
+
 // ========================================================
 // 5. SINKRONISASI INTERAKTIF JANGKAR ID INPUT BERBASIS SPK
 // ========================================================
@@ -233,7 +251,7 @@ function renderDataArUnitFull(data) {
     const isAccPage = pathLower.includes('acc');
     const isLeasingView = isTafsPage || isAccPage;
 
-    // Filter data ketat berdasarkan halaman masing-masing
+    // Filter data ketat berdasarkan halaman masing-masing (TAFS hanya TAFS, ACC hanya ACC)
     const filterAR = data.filter(d => {
         const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
         
@@ -255,7 +273,9 @@ function renderDataArUnitFull(data) {
         const spkAsli = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
         const idSistem = spkAsli.replace(/[^a-zA-Z0-9]/g, '_');
         const noCustomer = getProp(d, 'no_customer') || '-';
-        const ketCabangVal = getProp(d, 'ket_cabang') || '';
+        
+        // PENGAMAN DATA: Mengambil teks ket_cabang dari database secara fleksibel
+        const ketCabangVal = d.ket_cabang || getProp(d, 'ket_cabang') || getProp(d, 'Keterangan Cabang') || '';
 
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
@@ -271,12 +291,9 @@ function renderDataArUnitFull(data) {
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
             
             <td class="p-4 w-48">
-                ${isLeasingView ? 
-                    `<input type="text" value="${ketCabangVal}" placeholder="Ket cabang..." 
-                     class="input-custom bg-slate-100 text-slate-500 cursor-not-allowed border-none shadow-none" readonly>` : 
-                    `<input type="text" id="cabang-${idSistem}" value="${ketCabangVal}" placeholder="Ket cabang..." 
-                     class="input-custom bg-white">`
-                }
+                <input type="text" id="cabang-${idSistem}" value="${ketCabangVal}" placeholder="Ket cabang..." 
+                 class="input-custom ${isLeasingView ? 'bg-slate-100 text-slate-600 cursor-not-allowed border-none shadow-none' : 'bg-white'}" 
+                 ${isLeasingView ? 'readonly' : ''}>
             </td>
             
             <td class="p-4 w-48">
@@ -301,24 +318,9 @@ function renderDataArUnitFull(data) {
     }).join('');
 }
 
-function renderDonutLeasing(mLeas) {
-    const el = document.querySelector("#chart-donut-leasing");
-    if (!el) return;
-    let totalCash = 0; let totalLeasing = 0;
-    cachedData.forEach(d => {
-        const os = Number(getProp(d, 'O/S Balance') || getProp(d, 'os_balance') || 0);
-        const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
-        if (["CASH", "CASH TERIMA", "", "-"].includes(l)) { totalCash += os; } else { totalLeasing += os; }
-    });
-    const seriesDonut = [totalCash, totalLeasing]; const labelsDonut = ['TOTAL CASH', 'TOTAL LEASING'];
-    const options = {
-        series: (totalCash === 0 && totalLeasing === 0) ? [1, 1] : seriesDonut, labels: labelsDonut,
-        chart: { type: 'donut', height: 180 }, legend: { show: false }, dataLabels: { enabled: false },
-        colors: ['#10B981', '#3B82F6'], plotOptions: { pie: { donut: { labels: { show: false } } } }
-    };
-    if (charts.donut) charts.donut.updateOptions(options); else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
-}
-
+// ========================================================
+// 6. RENDER DATA PENDUKUNG WIDGET & LIST CARD
+// ========================================================
 function renderLeasingList(map, total) {
     const el = document.getElementById('leasing-list'); if (!el) return;
     if (Object.keys(map).length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400">Tidak ada data leasing</p>'; return; }
@@ -453,7 +455,7 @@ function renderTabDatabaseFull(data) {
 }
 
 // ========================================================
-// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML)
+// 7. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML)
 // ========================================================
 window.simpanCatatan = async function(nomorSPK) {
     try {
@@ -492,7 +494,7 @@ window.simpanCatatan = async function(nomorSPK) {
 }
 
 // ========================================================
-// 7. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML)
+// 8. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML)
 // ========================================================
 window.simpanCatatanLeasing = async function(nomorSPK) {
     try {
@@ -536,7 +538,7 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
 }
 
 // ========================================================
-// 8. FUNGSI DOWNLOAD DATA KE EXCEL
+// 9. FUNGSI DOWNLOAD DATA KE EXCEL
 // ========================================================
 function downloadExcel() {
     if (!cachedData || cachedData.length === 0) { alert("Data belum siap."); return; }
@@ -560,7 +562,7 @@ function downloadExcel() {
 }
 
 // ========================================================
-// 9. INISIALISASI REALTIME LISTENER (SINKRONISASI OTOMATIS)
+// 10. INISIALISASI REALTIME LISTENER (SINKRONISASI OTOMATIS)
 // ========================================================
 document.addEventListener('DOMContentLoaded', () => {
     const btnDownload = document.getElementById('btn-download-excel');
