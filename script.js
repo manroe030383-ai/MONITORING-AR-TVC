@@ -470,6 +470,9 @@ window.simpanCatatan = async function(nomorSPK) {
         if (error) throw error;
         alert("Keterangan cabang berhasil disimpan ke database! 👍");
         
+        // MODIFIKASI: Panggil ulang fungsi fetch data agar UI langsung ter-refresh seketika
+        fetchData();
+        
     } catch (err) {
         console.error(err);
         alert("Gagal menyimpan data: " + err.message);
@@ -508,6 +511,9 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
         if (error) throw error;
         alert("Respon Leasing Berhasil Diperbarui ke Database! ✔️");
         
+        // MODIFIKASI: Panggil ulang fungsi fetch data agar UI langsung ter-refresh seketika
+        fetchData();
+        
     } catch (err) {
         console.error(err);
         alert("Leasing gagal menyimpan data: " + err.message);
@@ -544,7 +550,7 @@ function downloadExcel() {
 // ========================================================
 document.addEventListener('DOMContentLoaded', () => {
     const btnDownload = document.getElementById('btn-download-excel');
-    if (btnDownload) { btnDownload.addEventListener('click', downloadExcel); }   
+    if (btnDownload) { btnDownload.addEventListener('click', downloadExcel); }    
     
     // Ambil data pertama kali saat dashboard dibuka
     fetchData();
