@@ -2,7 +2,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm'
 
 // ========================================================
-// 1. KONFIGURASI DATABASE SUPABASE (TETAP UTUH)
+// 1. KONFIGURASI DATABASE SUPABASE
 // ========================================================
 const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
@@ -25,7 +25,7 @@ function getProp(obj, key) {
 }
 
 // ========================================================
-// 2. AMBIL DATA LIVE DARI SUPABASE (DIPERBAIKI AGAR DETEKSI URL AKURAT)
+// 2. AMBIL DATA LIVE DARI SUPABASE & DETEKSI HALAMAN
 // ========================================================
 async function fetchData() {
     try {
@@ -35,7 +35,7 @@ async function fetchData() {
         if (data) {
             cachedData = data;
             
-            // Deteksi URL yang jauh lebih aman (Membaca file lokal maupun web server)
+            // Deteksi URL aman agar data langsung muncul di file lokal maupun server web
             const currentURL = window.location.href.toLowerCase();
             
             if (currentURL.includes('tafs')) {
@@ -43,11 +43,11 @@ async function fetchData() {
             } else if (currentURL.includes('acc')) {
                 renderHalamanLeasing(data, 'ACC');
             } else {
-                // Default jika membuka dashboard.html, index.html atau root domain
+                // Default jika membuka dashboard.html atau index.html
                 updateDashboard(data);
             }
             
-            // Update status text jika ada elemennya di HTML
+            // Update status teks waktu pembacaan data
             const statusEl = document.getElementById('status-update');
             if (statusEl) {
                 statusEl.innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB`;
@@ -60,15 +60,16 @@ async function fetchData() {
 }
 
 // ========================================================
-// 3. LOGIKA RENDER KHUSUS HALAMAN TAFS.HTML & ACC.HTML (TETAP UTUH)
+// 3. LOGIKA RENDER TABEL HALAMAN TAFS.HTML & ACC.HTML
 // ========================================================
 function renderHalamanLeasing(data, tipeLeasing) {
     let el = document.getElementById('tab-ar-unit-body') || document.querySelector('tbody');
     if (!el) {
-        console.error("Elemen tbody tabel tidak ditemukan di HTML Anda!");
+        console.error("Elemen tbody tabel tidak ditemukan!");
         return;
     }
 
+    // Filter data berdasarkan leasing terkait
     const dataFilter = data.filter(d => {
         const namaLeasing = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || '').toUpperCase();
         return namaLeasing.includes(tipeLeasing);
@@ -120,7 +121,7 @@ function renderHalamanLeasing(data, tipeLeasing) {
 }
 
 // ========================================================
-// 4. FUNGSI UPDATE UTAMA HALAMAN DASHBOARD.HTML (TETAP UTUH)
+// 4. FUNGSI UPDATE UTAMA HALAMAN DASHBOARD.HTML
 // ========================================================
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
@@ -146,10 +147,12 @@ function updateDashboard(data) {
 
         aging['LANCAR'] += lancarNominal; aging['1-30 H'] += b1_30; aging['31-60 H'] += b31_60; aging['>60 H'] += b60;
 
-        if (["CASH", "CASH TERIMA", "", "-"].includes(l)) { 
-            s.cash += os; s.cCash++; 
+        if (["CASH", "CASH TERIMA", "", "-", "NON LEASING"].includes(l)) { 
+            s.cash += os; 
+            s.cCash++; 
         } else { 
-            s.leas += os; s.cLeas++; 
+            s.leas += os; 
+            s.cLeas++; 
             mLeas[l] = (mLeas[l] || 0) + os; 
             if (l.includes('TAFS') || l.includes('ACC')) {
                 tvc.total++;
@@ -163,18 +166,33 @@ function updateDashboard(data) {
         mSpv[rawSpv || "OFFICE"] = (mSpv[rawSpv || "OFFICE"] || 0) + os;
     });
 
+    // Render Nilai Utama ke Atas Dashboard Card
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
     if(document.getElementById('total-penalty')) document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
     
+    // Sinkronisasi teks nominal dan jumlah unit agar tidak kembali ke Rp 0
+    const txtCashEl = document.querySelector(".font-black.text-emerald-600") || document.evaluate("//div[contains(text(),'TOTAL CASH')]/following-sibling::div", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+    if (txtCashEl) txtCashEl.innerText = fmtIDR(s.cash);
+    
+    const txtCashUnit = document.querySelector(".text-emerald-600.font-medium") || document.evaluate("//div[contains(text(),'TOTAL CASH')]/following-sibling::div[2]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+    if (txtCashUnit) txtCashUnit.innerText = `${s.cCash} Unit`;
+
+    const txtLeasEl = document.querySelector(".font-black.text-blue-600") || document.evaluate("//div[contains(text(),'TOTAL LEASING')]/following-sibling::div", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+    if (txtLeasEl) txtLeasEl.innerText = fmtIDR(s.leas);
+
+    const txtLeasUnit = document.querySelector(".text-blue-600.font-medium") || document.evaluate("//div[contains(text(),'TOTAL LEASING')]/following-sibling::div[2]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+    if (txtLeasUnit) txtLeasUnit.innerText = `${s.cLeas} Unit`;
+
+    // Render Grafik & Tabel Utama
     renderAgingChart(aging);
-    renderDonutLeasing(mLeas);
+    renderDonutLeasing(s.cash, s.leas);
     renderTabDatabaseFull(data);
 }
 
 // ========================================================
-// 5. GLOBAL FUNCTION: AKSI SIMPAN DATA (TETAP UTUH)
+// 5. GLOBAL FUNCTION: AKSI SIMPAN DATA KE SUPABASE
 // ========================================================
 window.simpanSemuaCatatan = async function(nomorSPK) {
     try {
@@ -190,6 +208,7 @@ window.simpanSemuaCatatan = async function(nomorSPK) {
 
         let kolomSPK = dataRow['No SPK'] !== undefined ? 'No SPK' : 'no_spk';
 
+        // Update catatan langsung ke baris SPK terkait di database
         const { error } = await supabase
             .from('ar_unit')
             .update({ 
@@ -209,7 +228,7 @@ window.simpanSemuaCatatan = async function(nomorSPK) {
 }
 
 // ========================================================
-// FUNGSI LOGIKA GRAFIK & DATABASE PEMBANTU (TETAP UTUH)
+// LOGIKA GRAFIK & VISUALISASI DATA PEMBANTU
 // ========================================================
 function renderAgingChart(agingData) {
     const el = document.querySelector("#chart-aging"); if (!el) return;
@@ -222,12 +241,22 @@ function renderAgingChart(agingData) {
     if (charts.bar) charts.bar.updateOptions(options); else { charts.bar = new ApexCharts(el, options); charts.bar.render(); }
 }
 
-function renderDonutLeasing(mLeas) {
+function renderDonutLeasing(nominalCash, nominalLeasing) {
     const el = document.querySelector("#chart-donut-leasing"); if (!el) return;
+
+    const total = nominalCash + nominalLeasing;
+    const s_cash = total > 0 ? Number(((nominalCash / total) * 100).toFixed(1)) : 0;
+    const s_leas = total > 0 ? Number(((nominalLeasing / total) * 100).toFixed(1)) : 0;
+
     const options = {
-        series: [1, 2], labels: ['CASH', 'LEASING'],
-        chart: { type: 'donut', height: 180 }
+        series: [s_cash, s_leas], 
+        labels: ['CASH', 'LEASING'],
+        chart: { type: 'donut', height: 180 },
+        colors: ['#10B981', '#3B82F6'],
+        legend: { position: 'bottom', fontStyle: 'bold' },
+        dataLabels: { formatter: (val) => val.toFixed(1) + "%" }
     };
+
     if (charts.donut) charts.donut.updateOptions(options); else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
 }
 
@@ -244,11 +273,12 @@ function renderTabDatabaseFull(data) {
 }
 
 // ========================================================
-// 6. INITIALIZATION & REALTIME SYNC (TETAP UTUH)
+// 6. INITIALIZATION & REALTIME SYNC
 // ========================================================
 document.addEventListener('DOMContentLoaded', () => {
     fetchData();
 
+    // Mengaktifkan fitur realtime sycronization otomatis tanpa refresh halaman
     supabase.channel('public-ar-unit').on('postgres_changes', { event: '*', schema: 'public', table: 'ar_unit' }, () => {
         fetchData();
     }).subscribe();
