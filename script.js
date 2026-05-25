@@ -11,6 +11,11 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 let charts = { bar: null, donut: null }; 
 let cachedData = []; 
 
+// DETEKSI URL SEJAK AWAL UNTUK FILTER GLOBAL
+const urlPath = window.location.pathname.toLowerCase();
+const isTafsPage = urlPath.includes('tafs');
+const isAccPage = urlPath.includes('acc');
+
 // Formatter Mata Uang & Angka
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
@@ -39,7 +44,7 @@ async function fetchData() {
         if (error) throw error;
         
         if (data) {
-            console.log("DATA DARI SUPABASE:", data); 
+            console.log("DATA DARI SUPABASE (MENTAH):", data); 
             
             if (data.length === 0) {
                 if (document.getElementById('status-update')) {
@@ -49,8 +54,22 @@ async function fetchData() {
                 return;
             }
 
-            cachedData = data; 
-            updateDashboard(data);
+            // FILTER GLOBAL SEBELUM MASUK KE HITUNGAN DASHBOARD
+            let finalFilteredData = data;
+            if (isTafsPage) {
+                finalFilteredData = data.filter(d => {
+                    const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
+                    return l.includes('TAFS');
+                });
+            } else if (isAccPage) {
+                finalFilteredData = data.filter(d => {
+                    const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
+                    return l.includes('ACC');
+                });
+            }
+
+            cachedData = finalFilteredData; 
+            updateDashboard(finalFilteredData);
             
             // Render Status Berhasil di UI
             if (document.getElementById('status-update')) {
@@ -221,22 +240,21 @@ function renderAgingChart(agingData) {
 }
 
 // ========================================================
-// 5. SINKRONISASI INTERAKTIF JANGKAR ID INPUT BERBASIS SPK (FIXED CORRECTION)
+// 5. SINKRONISASI INTERAKTIF JANGKAR ID INPUT BERBASIS SPK
 // ========================================================
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
     if (!el) return;
 
-    const filterAR = data.filter(d => {
-        const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
-        return l.includes('TAFS') || l.includes('ACC');
-    });
+    if(data.length === 0) { 
+        const namaHalaman = isTafsPage ? 'TAFS' : (isAccPage ? 'ACC' : 'TAFS / ACC');
+        el.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing ${namaHalaman}</td></tr>`; 
+        return; 
+    }
 
-    if(filterAR.length === 0) { el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing TAFS / ACC</td></tr>'; return; }
+    const isLeasingView = isTafsPage || isAccPage;
 
-    const isLeasingView = window.location.pathname.includes('tafs') || window.location.pathname.includes('acc');
-
-    el.innerHTML = filterAR.map((d, i) => {
+    el.innerHTML = data.map((d, i) => {
         const spkAsli = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
         const idSistem = spkAsli.replace(/[^a-zA-Z0-9]/g, '_');
         const noCustomer = getProp(d, 'no_customer') || '-';
@@ -352,11 +370,7 @@ function borderTrClass(i) { return 'hover:bg-slate-50/80 transition-all font-bol
 // ========================================================
 function renderTabLeasingFull(data) {
     const el = document.getElementById('tab-leasing-full-list'); if (!el) return;
-    const leasingData = data.filter(d => {
-        const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
-        return !["CASH", "CASH TERIMA", "", "-"].includes(l);
-    });
-    if(leasingData.length === 0) { el.innerHTML = '<p class="text-xs text-center py-4 text-slate-400">Tidak ada data kontribusi leasing</p>'; return; }
+    if(data.length === 0) { el.innerHTML = '<p class="text-xs text-center py-4 text-slate-400">Tidak ada data kontribusi leasing</p>'; return; }
     el.innerHTML = `
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-[10px]">
@@ -369,7 +383,7 @@ function renderTabLeasingFull(data) {
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-50">
-                    ${leasingData.map((d, i) => `
+                    ${data.map((d, i) => `
                         <tr class="${borderTrClass(i)}">
                             <td class="p-3 text-center text-slate-400">${i+1}</td>
                             <td class="p-3">
@@ -457,7 +471,6 @@ window.simpanCatatan = async function(nomorSPK) {
         
         const valCabang = inputEl.value;
 
-        // Paksa nomorSPK menjadi Integer murni (int8) untuk database Supabase
         const spkAngka = parseInt(nomorSPK, 10);
         if (isNaN(spkAngka)) {
             alert("Gagal menyimpan: Format Nomor SPK harus berupa angka murni.");
@@ -467,12 +480,10 @@ window.simpanCatatan = async function(nomorSPK) {
         const { error } = await supabase
             .from('ar_unit')
             .update({ ket_cabang: valCabang })
-            .eq('no_spk', spkAngka); // Menembak target kolom 'no_spk'
+            .eq('no_spk', spkAngka);
 
         if (error) throw error;
         alert("Keterangan cabang berhasil disimpan! 👍");
-        
-        // Panggil ulang fungsi fetch data agar UI langsung ter-refresh seketika
         fetchData();
         
     } catch (err) {
@@ -495,7 +506,6 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
         const valPlan = planEl.value;
         const valKetLeas = ketEl.value;
 
-        // Paksa nomorSPK menjadi Integer murni (int8) untuk database Supabase
         const spkAngka = parseInt(nomorSPK, 10);
         if (isNaN(spkAngka)) {
             alert("Leasing gagal menyimpan: Format Nomor SPK harus berupa angka murni.");
@@ -508,12 +518,10 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
                 plan_bayar_leasing: valPlan, 
                 ket_leasing: valKetLeas 
             })
-            .eq('no_spk', spkAngka); // Menembak target kolom 'no_spk'
+            .eq('no_spk', spkAngka);
 
         if (error) throw error;
         alert("Respon Leasing Berhasil Diperbarui! ✔️");
-        
-        // Panggil ulang fungsi fetch data agar UI langsung ter-refresh seketika
         fetchData();
         
     } catch (err) {
@@ -543,7 +551,9 @@ function downloadExcel() {
         });
         const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel); const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Data AR Unit");
-        XLSX.writeFile(workbook, `Report_AR_Unit_Auto2000_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        
+        const namaFile = isTafsPage ? 'TAFS' : (isAccPage ? 'ACC' : 'All');
+        XLSX.writeFile(workbook, `Report_AR_Unit_${namaFile}_Auto2000_${new Date().toISOString().slice(0, 10)}.xlsx`);
     } catch (error) { console.error(error); }
 }
 
@@ -571,8 +581,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 
             (payload) => {
                 console.log('Perubahan Database Terdeteksi Real-time:', payload);
-                
-                // Memicu refresh halus komponen data tanpa reload halaman penuh
                 fetchData(); 
             }
         )
