@@ -221,7 +221,7 @@ function renderAgingChart(agingData) {
 }
 
 // ========================================================
-// 5. SINKRONISASI INTERAKTIF JANGKAR ID INPUT BERBASIS SPK (FIXED!)
+// 5. SINKRONISASI INTERAKTIF JANGKAR ID INPUT BERBASIS SPK (FIXED CORRECTION)
 // ========================================================
 function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
@@ -241,8 +241,10 @@ function renderDataArUnitFull(data) {
         const idSistem = spkAsli.replace(/[^a-zA-Z0-9]/g, '_');
         const noCustomer = getProp(d, 'no_customer') || '-';
         
-        // PERBAIKAN: Tembak langsung nama properti asli Supabase tanpa melewati getProp
-        const ketCabangVal = d['ket_cabang'] || d['Ket Cabang'] || '';
+        // SINKRONISASI NILAI VALUE INPUT DENGAN KOLOM ASLI DATABASE SUPABASE HURUFKECIL
+        const valKetCabang = d['ket_cabang'] || '';
+        const valPlanBayar = d['plan_bayar_leasing'] || '';
+        const valKetLeasing = d['ket_leasing'] || '';
 
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
@@ -259,21 +261,21 @@ function renderDataArUnitFull(data) {
             
             <td class="p-4 w-48">
                 ${isLeasingView ? 
-                    `<input type="text" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." 
+                    `<input type="text" value="${valKetCabang}" placeholder="Ket cabang..." 
                      class="input-custom bg-slate-100 text-slate-500 cursor-not-allowed border-none shadow-none" readonly>` : 
-                    `<input type="text" id="cabang-${idSistem}" value="${getProp(d, 'ket_cabang') || ''}" placeholder="Ket cabang..." 
+                    `<input type="text" id="cabang-${idSistem}" value="${valKetCabang}" placeholder="Ket cabang..." 
                      class="input-custom bg-white">`
                 }
             </td>
             
             <td class="p-4 w-48">
-                <input type="text" id="plan-${idSistem}" value="${getProp(d, 'plan_bayar_leasing') || ''}" placeholder="${isLeasingView ? 'Isi plan bayar...' : 'Menunggu isian leasing...'}" 
+                <input type="text" id="plan-${idSistem}" value="${valPlanBayar}" placeholder="${isLeasingView ? 'Isi plan bayar...' : 'Menunggu isian leasing...'}" 
                 class="input-custom ${isLeasingView ? 'bg-white border-emerald-300' : 'bg-slate-50 text-slate-500 cursor-not-allowed'}" 
                 ${isLeasingView ? '' : 'readonly'}>
             </td>
             
             <td class="p-4 w-48">
-                <input type="text" id="ket-${idSistem}" value="${getProp(d, 'ket_leasing') || ''}" placeholder="${isLeasingView ? 'Isi ket leasing...' : 'Menunggu keterangan leasing...'}" 
+                <input type="text" id="ket-${idSistem}" value="${valKetLeasing}" placeholder="${isLeasingView ? 'Isi ket leasing...' : 'Menunggu keterangan leasing...'}" 
                 class="input-custom ${isLeasingView ? 'bg-white border-emerald-300' : 'bg-slate-50 text-slate-500 cursor-not-allowed'}" 
                 ${isLeasingView ? '' : 'readonly'}>
             </td>
@@ -442,21 +444,28 @@ function renderTabDatabaseFull(data) {
 }
 
 // ========================================================
-// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML) - FIXED TARGET COLUMN
+// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML) - FIXED DATA SYNC
 // ========================================================
 window.simpanCatatan = async function(nomorSPK) {
     try {
+        if (!nomorSPK) return;
         const idSistem = nomorSPK.replace(/[^a-zA-Z0-9]/g, '_');
         const inputEl = document.getElementById(`cabang-${idSistem}`);
         if (!inputEl) return;
         
         const valCabang = inputEl.value;
 
-        // Kunci penargetan langsung ke nama kolom asli tabel Supabase yaitu 'no_spk'
+        // PERBAIKAN UTAMA: Paksa nomorSPK menjadi Integer murni (int8) untuk database Supabase
+        const spkAngka = parseInt(nomorSPK, 10);
+        if (isNaN(spkAngka)) {
+            alert("Gagal menyimpan: Format Nomor SPK harus berupa angka murni.");
+            return;
+        }
+
         const { error } = await supabase
             .from('ar_unit')
             .update({ ket_cabang: valCabang })
-            .eq('no_spk', String(nomorSPK).trim());
+            .eq('no_spk', spkAngka); // Menembak target kolom integer 'no_spk'
 
         if (error) throw error;
         alert("Keterangan cabang berhasil disimpan ke database! 👍");
@@ -468,26 +477,33 @@ window.simpanCatatan = async function(nomorSPK) {
 }
 
 // ========================================================
-// 7. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML) - FIXED TARGET COLUMN
+// 7. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML) - FIXED DATA SYNC
 // ========================================================
 window.simpanCatatanLeasing = async function(nomorSPK) {
     try {
+        if (!nomorSPK) return;
         const idSistem = nomorSPK.replace(/[^a-zA-Z0-9]/g, '_');
         const planEl = document.getElementById(`plan-${idSistem}`);
         const ketEl = document.getElementById(`ket-${idSistem}`);
-        if (!planEl || !ketEl) return;
+        if (!planEl || !getProp || !ketEl) return;
 
         const valPlan = planEl.value;
         const valKetLeas = ketEl.value;
 
-        // Kunci penargetan langsung ke nama kolom asli tabel Supabase yaitu 'no_spk'
+        // PERBAIKAN UTAMA: Paksa nomorSPK menjadi Integer murni (int8) untuk database Supabase
+        const spkAngka = parseInt(nomorSPK, 10);
+        if (isNaN(spkAngka)) {
+            alert("Leasing gagal menyimpan: Format Nomor SPK harus berupa angka murni.");
+            return;
+        }
+
         const { error } = await supabase
             .from('ar_unit')
             .update({ 
                 plan_bayar_leasing: valPlan, 
                 ket_leasing: valKetLeas 
             })
-            .eq('no_spk', String(nomorSPK).trim());
+            .eq('no_spk', spkAngka); // Menembak target kolom integer 'no_spk'
 
         if (error) throw error;
         alert("Respon Leasing Berhasil Diperbarui ke Database! ✔️");
@@ -513,8 +529,8 @@ function downloadExcel() {
                 "Leasing": getProp(d, 'Chas/Leasing') || "CASH", "O/S Balance": os, "Hari 1-30 (Lancar)": lancar,
                 "Hari 31-60": b1, "Lebih 60 Hari": b2, "Total Overdue": totalOv, "Potensi Penalti": getProp(d, 'Potensi Penalti') || 0,
                 "Salesman": getProp(d, 'Salesman Name') || "-", "Supervisor": getProp(d, 'Supervisor') || "-",
-                "Keterangan Cabang": d['ket_cabang'] || d['Ket Cabang'] || "", 
-                "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || "", "Keterangan Leasing": getProp(d, 'ket_leasing') || ""
+                "Keterangan Cabang": d['ket_cabang'] || "", 
+                "Plan Bayar Leasing": d['plan_bayar_leasing'] || "", "Keterangan Leasing": d['ket_leasing'] || ""
             };
         });
         const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel); const workbook = XLSX.utils.book_new();
