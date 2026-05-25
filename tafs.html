@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Co-Branding Portal - TAFS Respon System</title>
+    <title>Dashboard Monitoring TAFS</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -14,7 +14,8 @@
             border: 1px solid #e2e8f0; border-radius: 0.375rem; outline: none;
             transition: all 0.2s;
         }
-        .input-custom:focus { border-color: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,0.1); }
+        /* Border fokus disesuaikan tipis ke warna Navy Blue TAFS */
+        .input-custom:focus { border-color: #1e3a8a; box-shadow: 0 0 0 2px rgba(30,58,138,0.1); }
     </style>
 </head>
 <body class="p-4 lg:p-6 bg-slate-50 text-slate-900 antialiased">
@@ -22,13 +23,14 @@
     <header class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-200 pb-4 mb-6 gap-4">
         <div>
             <div id="status-update" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 italic">Menghubungkan ke Supabase...</div>
-            <h1 class="text-xl lg:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                PORTAL RESEP AR <span class="bg-emerald-600 text-white text-[10px] px-2 py-0.5 rounded-md font-extrabold tracking-wide">LEASING SYSTEM</span>
+            <h1 class="text-xl lg:text-2xl font-black text-blue-900 tracking-tight flex items-center gap-2 uppercase">
+                Dashboard Monitoring TAFS 
+                <span class="bg-amber-400 text-blue-950 text-[10px] px-2 py-0.5 rounded-md font-extrabold tracking-wide">LEASING SYSTEM</span>
             </h1>
             <p class="text-[11px] text-slate-500 font-semibold mt-0.5">AUTO2000 CO-BRANDING &bull; TOYOTA ASTRA FINANCIAL SERVICES (TAFS)</p>
         </div>
         <div class="flex items-center gap-2">
-            <button id="btn-download-excel" class="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-[11px] px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 cursor-pointer uppercase">
+            <button id="btn-download-excel" class="bg-blue-900 hover:bg-blue-950 text-white font-extrabold text-[11px] px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 cursor-pointer uppercase">
                 <span>💾</span> DOWNLOAD EXCEL REPORT
             </button>
         </div>
@@ -37,7 +39,7 @@
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
             <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">OUTSTANDING DATA (TAFS ONLY)</span>
-            <h2 id="tafs-outstanding" class="text-lg lg:text-xl font-black text-emerald-600 mt-2">Rp 0</h2>
+            <h2 id="tafs-outstanding" class="text-lg lg:text-xl font-black text-blue-900 mt-2">Rp 0</h2>
         </div>
         <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
             <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">UNIT SUDAH CLEAR / GI</span>
@@ -45,7 +47,7 @@
         </div>
         <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
             <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">UNIT PROGRESS LULUS TOP</span>
-            <h2 id="tafs-on-proses" class="text-lg lg:text-xl font-black text-blue-600 mt-2">0 Unit</h2>
+            <h2 id="tafs-on-proses" class="text-lg lg:text-xl font-black text-amber-500 mt-2">0 Unit</h2>
         </div>
         <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
             <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">UNIT RISK ACCUMULATED OVERDUE</span>
@@ -55,10 +57,10 @@
 
     <section class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden mb-6">
         <div class="bg-slate-100 px-4 py-3 border-b border-slate-200/60 flex items-center justify-between">
-            <h3 class="text-xs font-black uppercase text-slate-700 tracking-wide flex items-center gap-2">
+            <h3 class="text-xs font-black uppercase text-blue-900 tracking-wide flex items-center gap-2">
                 <span>📝</span> BINDING ENTRY UPDATE RESPONS REKONSILIASI TAGIHAN LEASING
             </h3>
-            <span class="text-[9px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md font-bold">MODE: LEASING EDITOR</span>
+            <span class="text-[9px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md font-bold">MODE: LEASING EDITOR</span>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-[10px]">
@@ -69,8 +71,8 @@
                         <th class="p-4">Leasing & SPK</th>
                         <th class="p-4 text-right">O/S Balance</th>
                         <th class="p-4 text-slate-400">Keterangan Admin Cabang</th>
-                        <th class="p-4 bg-emerald-50/40 text-emerald-700">Plan Bayar Leasing</th>
-                        <th class="p-4 bg-emerald-50/40 text-emerald-700">Keterangan Leasing</th>
+                        <th class="p-4 bg-blue-50/50 text-blue-900">Plan Bayar Leasing</th>
+                        <th class="p-4 bg-blue-50/50 text-blue-900">Keterangan Leasing</th>
                         <th class="p-4 text-center w-16">Aksi</th>
                     </tr>
                 </thead>

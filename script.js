@@ -234,7 +234,9 @@ function renderDataArUnitFull(data) {
 
     if(filterAR.length === 0) { el.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing TAFS / ACC</td></tr>'; return; }
 
-    const isLeasingView = window.location.pathname.includes('tafs') || window.location.pathname.includes('acc');
+    // PERBAIKAN LOGIKA: Deteksi huruf kecil/besar dan ekstening routing secara akurat
+    const pathLower = window.location.pathname.toLowerCase();
+    const isLeasingView = pathLower.includes('tafs') || pathLower.includes('acc');
 
     el.innerHTML = filterAR.map((d, i) => {
         // AMBIL JANGKAR UNIK ALFANUMERIK DARI NOMOR SPK DATA
@@ -244,7 +246,7 @@ function renderDataArUnitFull(data) {
         // AMBIL NO CUSTOMER LANGSUNG DARI KOLOM SUPABASE
         const noCustomer = getProp(d, 'no_customer') || '-';
 
-        // AMBIL VALUE KETERANGAN CABANG
+        // AMBIL VALUE KETERANGAN CABANG LANGSUNG DARI DATABASE
         const ketCabangVal = getProp(d, 'ket_cabang') || '';
 
         return `
