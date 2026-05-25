@@ -227,22 +227,22 @@ function renderDataArUnitFull(data) {
     const el = document.getElementById('tab-ar-unit-body');
     if (!el) return;
 
-    // 1. Deteksi nama file URL aktif (apakah sedang buka halaman tafs atau acc atau dashboard)
+    // Deteksi nama file URL aktif secara aman
     const pathLower = window.location.pathname.toLowerCase();
     const isTafsPage = pathLower.includes('tafs');
     const isAccPage = pathLower.includes('acc');
     const isLeasingView = isTafsPage || isAccPage;
 
-    // 2. Filter data secara ketat berdasarkan halaman masing-masing (Menjawab Masalah 2)
+    // Filter data ketat berdasarkan halaman masing-masing
     const filterAR = data.filter(d => {
         const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
         
         if (isTafsPage) {
-            return l.includes('TAFS'); // Halaman TAFS hanya memuat data TAFS
+            return l.includes('TAFS');
         } else if (isAccPage) {
-            return l.includes('ACC');  // Halaman ACC hanya memuat data ACC
+            return l.includes('ACC');
         } else {
-            return l.includes('TAFS') || l.includes('ACC'); // Dashboard utama memuat keduanya
+            return l.includes('TAFS') || l.includes('ACC');
         }
     });
 
@@ -252,14 +252,9 @@ function renderDataArUnitFull(data) {
     }
 
     el.innerHTML = filterAR.map((d, i) => {
-        // AMBIL JANGKAR UNIK ALFANUMERIK DARI NOMOR SPK DATA
         const spkAsli = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
         const idSistem = spkAsli.replace(/[^a-zA-Z0-9]/g, '_');
-        
-        // AMBIL NO CUSTOMER LANGSUNG DARI KOLOM SUPABASE
         const noCustomer = getProp(d, 'no_customer') || '-';
-
-        // AMBIL VALUE KETERANGAN CABANG LANGSUNG DARI DATABASE (Menjawab Masalah 1)
         const ketCabangVal = getProp(d, 'ket_cabang') || '';
 
         return `
@@ -334,9 +329,6 @@ function renderLeasingList(map, total) {
         </div>`).join('');
 }
 
-// ========================================================
-// BONUS OPTIMASI: AGAR DATA FILTER DI KARTU LIST LEASING JELAS
-// ========================================================
 function renderTopList(map, id, colorClass) {
     const el = document.getElementById(id); if (!el) return;
     if (Object.keys(map).length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">Tidak ada data</p>'; return; }
@@ -364,8 +356,6 @@ function renderOverdueTop(data) {
         </div>`;
     }).join('');
 }
-
-define: function borderTrClass(i) { return 'hover:bg-slate-50/80 transition-all font-bold uppercase'; }
 
 function renderTabLeasingFull(data) {
     const el = document.getElementById('tab-leasing-full-list'); if (!el) return;
@@ -473,7 +463,6 @@ window.simpanCatatan = async function(nomorSPK) {
         
         const valCabang = inputEl.value;
 
-        // 1. Ambil data baris dari cache berdasarkan Nomor SPK asli
         const dataRow = cachedData.find(d => {
             const spkData = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
             return spkData === String(nomorSPK).trim();
@@ -484,19 +473,16 @@ window.simpanCatatan = async function(nomorSPK) {
             return;
         }
 
-        // 2. Deteksi nama kolom SPK asli di tabel Supabase (antisipasi spasi)
         let kolomSPK = 'no_spk';
         if (dataRow['No SPK'] !== undefined) kolomSPK = 'No SPK';
         else if (dataRow['no_spk'] !== undefined) kolomSPK = 'no_spk';
 
-        // 3. Update data ke tabel target Supabase
         const { error } = await supabase
             .from('ar_unit')
             .update({ ket_cabang: valCabang })
             .eq(kolomSPK, nomorSPK);
 
         if (error) throw error;
-        
         alert("Keterangan cabang berhasil disimpan ke database! 👍");
         
     } catch (err) {
@@ -518,7 +504,6 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
         const valPlan = planEl.value;
         const valKetLeas = ketEl.value;
 
-        // 1. Ambil data baris dari cache berdasarkan Nomor SPK asli
         const dataRow = cachedData.find(d => {
             const spkData = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
             return spkData === String(nomorSPK).trim();
@@ -529,12 +514,10 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
             return;
         }
 
-        // 2. Deteksi nama kolom SPK asli di tabel Supabase
         let kolomSPK = 'no_spk';
         if (dataRow['No SPK'] !== undefined) kolomSPK = 'No SPK';
         else if (dataRow['no_spk'] !== undefined) kolomSPK = 'no_spk';
 
-        // 3. Update respon leasing ke tabel Supabase
         const { error } = await supabase
             .from('ar_unit')
             .update({ 
@@ -544,7 +527,6 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
             .eq(kolomSPK, nomorSPK);
 
         if (error) throw error;
-        
         alert("Respon Leasing Berhasil Diperbarui ke Database! ✔️");
         
     } catch (err) {
