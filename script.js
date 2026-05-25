@@ -348,6 +348,9 @@ function renderOverdueTop(data) {
 
 function borderTrClass(i) { return 'hover:bg-slate-50/80 transition-all font-bold uppercase'; }
 
+// ========================================================
+// RE-RENDER FULL LIST LOGIC
+// ========================================================
 function renderTabLeasingFull(data) {
     const el = document.getElementById('tab-leasing-full-list'); if (!el) return;
     const leasingData = data.filter(d => {
@@ -555,12 +558,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ambil data pertama kali saat dashboard dibuka
     fetchData();
     
-    // AKTIFKAN LIVE SYNC REAL-TIME (DIPERBAIKI SINTAKSISNYA)
+    // ========================================================
+    // AKTIFKAN LIVE SYNC REAL-TIME SUPABASE 
+    // ========================================================
     supabase
         .channel('schema-db-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'ar_unit' }, (payload) => {
-            console.log('Perubahan Database Terdeteksi Real-time:', payload);
-            fetchData(); // Ambil ulang data otomatis setiap ada update di Supabase
-        })
-        .subscribe();
+        .on(
+            'postgres_changes', 
+            { 
+                event: '*', 
+                schema: 'public', 
+                table: 'ar_unit' 
+            }, 
+            (payload) => {
+                console.log('Perubahan Database Terdeteksi Real-time:', payload);
+                
+                // Memicu refresh halus komponen data tanpa reload halaman penuh
+                fetchData(); 
+            }
+        )
+        .subscribe((status) => {
+            console.log('Status Sinkronisasi Live Realtime:', status);
+        });
 });
