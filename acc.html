@@ -9,15 +9,15 @@
 </head>
 <body class="bg-gray-100 font-sans antialiased">
 
-    <div class="bg-[#DC2626] text-white px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-md">
+    <div class="bg-[#8B0000] text-white px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-md">
         <div>
             <div class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1 mb-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                DATA UPDATE: <span id="realtime-clock">25/5/2026, --.--.-- WIB (REALTIME ACTIVE)</span>
+                DATA UPDATE: <span id="realtime-clock">27/5/2026, --.--.-- WIB (REALTIME ACTIVE)</span>
             </div>
             <div class="flex items-center gap-2">
                 <h1 class="text-2xl font-bold tracking-tight uppercase">ACC Dashboard</h1>
-                <span class="bg-white text-[#DC2626] text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Leasing System</span>
+                <span class="bg-white text-[#8B0000] text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Leasing System</span>
             </div>
             <p class="text-[11px] text-red-100 font-medium tracking-wide mt-0.5">AUTO2000 CO-BRANDING • ASTRA CREDIT COMPANIES (ACC)</p>
         </div>
@@ -26,7 +26,7 @@
             <button id="btn-download-excel" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5">
                 💾 Download Excel Report
             </button>
-            <button class="bg-white hover:bg-gray-100 text-[#DC2626] px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-sm">
+            <button class="bg-white hover:bg-gray-100 text-[#8B0000] px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-sm">
                 Logout
             </button>
         </div>
@@ -89,7 +89,6 @@
 
         const fmtIDR = (v) => 'RP ' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(v || 0);
 
-        // [Sisa logika javascript tetap sama persis tanpa perubahan untuk menjaga keutuhan fungsi Anda]
         function getProp(obj, key) {
             if (!obj) return undefined;
             if (obj[key.toLowerCase()] !== undefined) return obj[key.toLowerCase()];
