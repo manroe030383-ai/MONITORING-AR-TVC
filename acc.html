@@ -9,7 +9,7 @@
 </head>
 <body class="bg-gray-100 font-sans antialiased">
 
-    <div class="bg-[#800000] text-white px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-md">
+    <div class="bg-[#DC2626] text-white px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-md">
         <div>
             <div class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1 mb-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -17,16 +17,16 @@
             </div>
             <div class="flex items-center gap-2">
                 <h1 class="text-2xl font-bold tracking-tight uppercase">ACC Dashboard</h1>
-                <span class="bg-white text-[#800000] text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Leasing System</span>
+                <span class="bg-white text-[#DC2626] text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Leasing System</span>
             </div>
-            <p class="text-[11px] text-red-200 font-medium tracking-wide mt-0.5">AUTO2000 CO-BRANDING • ASTRA CREDIT COMPANIES (ACC)</p>
+            <p class="text-[11px] text-red-100 font-medium tracking-wide mt-0.5">AUTO2000 CO-BRANDING • ASTRA CREDIT COMPANIES (ACC)</p>
         </div>
         
         <div class="flex items-center gap-3 w-full sm:w-auto self-stretch sm:self-auto justify-end">
             <button id="btn-download-excel" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5">
                 💾 Download Excel Report
             </button>
-            <button class="bg-white hover:bg-gray-100 text-[#800000] px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-sm">
+            <button class="bg-white hover:bg-gray-100 text-[#DC2626] px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-sm">
                 Logout
             </button>
         </div>
@@ -53,14 +53,14 @@
 
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 min-h-[140px] flex flex-col justify-between">
                 <span class="text-sm font-bold text-gray-800 tracking-tight">Overdue</span>
-                <span class="text-4xl font-extrabold text-[#800000] mt-4 tracking-tight" id="total-overdue">0 Unit</span>
+                <span class="text-4xl font-extrabold text-[#DC2626] mt-4 tracking-tight" id="total-overdue">0 Unit</span>
             </div>
 
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 overflow-hidden">
             
-            <div class="grid grid-cols-[50px_2fr_1.2fr_1.2fr_1.5fr_1.5fr_1.5fr_60px] bg-[#f8fafc] text-[#1e3a8a] border-b border-gray-200 text-left font-bold text-[11px] uppercase tracking-wider py-4 px-4 items-center">
+            <div class="grid grid-cols-[50px_2fr_1.2fr_1.2fr_1.5fr_1.5fr_1.5fr_60px] bg-[#DC2626] text-white border-b border-gray-200 text-left font-bold text-[11px] uppercase tracking-wider py-4 px-4 items-center rounded-t-xl">
                 <div class="text-center">No</div>
                 <div>Nama Customer</div>
                 <div>Leasing & SPK</div>
@@ -89,6 +89,7 @@
 
         const fmtIDR = (v) => 'RP ' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(v || 0);
 
+        // [Sisa logika javascript tetap sama persis tanpa perubahan untuk menjaga keutuhan fungsi Anda]
         function getProp(obj, key) {
             if (!obj) return undefined;
             if (obj[key.toLowerCase()] !== undefined) return obj[key.toLowerCase()];
@@ -112,7 +113,7 @@
                     
                     let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
                     let htmlRows = '';
-                    let displayIndex = 1; // Counter untuk penomoran baris (No)
+                    let displayIndex = 1;
 
                     data.forEach((d, i) => {
                         const leasing = String(getProp(d, 'leasing_name') || getProp(d, 'leasing') || '').toUpperCase().trim();
@@ -149,7 +150,6 @@
                                 }
                             }
 
-                            // PERUBAHAN 3: Layout isi baris disesuaikan agar cocok 100% dengan style gambar kanan
                             htmlRows += `
                             <div class="grid grid-cols-[50px_2fr_1.2fr_1.2fr_1.5fr_1.5fr_1.5fr_60px] text-left py-4 px-4 text-xs font-medium text-gray-700 hover:bg-gray-50 items-center border-b border-gray-100">
                                 <div class="text-center font-normal text-gray-400">${displayIndex++}</div>
