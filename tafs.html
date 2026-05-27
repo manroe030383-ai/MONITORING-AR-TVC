@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Monitoring TAFS</title>
+    <title>TAFS Dashboard </title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -37,19 +37,19 @@
 
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
-            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">OUTSTANDING DATA (TAFS ONLY)</span>
+            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">TOTAL OUTSTANDING (TAFS ONLY)</span>
             <h2 id="tafs-outstanding" class="text-lg lg:text-xl font-black text-[#1E3A8A] mt-2">Rp 0</h2>
         </div>
         <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
-            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">UNIT SUDAH CLEAR / GI</span>
+            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">PAID / GI</span>
             <h2 id="tafs-paid" class="text-lg lg:text-xl font-black text-slate-700 mt-2">0 Unit</h2>
         </div>
         <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
-            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">UNIT PROGRESS LULUS TOP</span>
+            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">ON PROSES </span>
             <h2 id="tafs-on-proses" class="text-lg lg:text-xl font-black text-amber-500 mt-2">0 Unit</h2>
         </div>
         <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
-            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">UNIT RISK ACCUMULATED OVERDUE</span>
+            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">OVERDUE </span>
             <h2 id="tafs-overdue" class="text-lg lg:text-xl font-black text-red-500 mt-2">0 Unit</h2>
         </div>
     </section>
