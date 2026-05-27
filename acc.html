@@ -199,4 +199,110 @@
             const tanggal = String(skrg.getDate()).padStart(2, '0') + '/' + 
                             String(skrg.getMonth() + 1).padStart(2, '0') + '/' + 
                             skrg.getFullYear();
-            const waktu = skrg.toLocaleTimeString('id-ID', { hour12:
+            const waktu = skrg.toLocaleTimeString('id-ID', { hour12: false }).replace(/:/g, '.');
+            return `${tanggal}, ${waktu} WIB`;
+        }
+
+        function updateClock() {
+            if (document.getElementById('realtime-clock')) {
+                document.getElementById('realtime-clock').innerText = `${getWibString()} (REALTIME ACTIVE)`;
+            }
+        }
+
+        function downloadExcelReport() {
+            if (!window.cachedData || window.cachedData.length === 0) {
+                alert("Data kosong atau belum dimuat sepenuhnya.");
+                return;
+            }
+
+            const filteredRows = [];
+            let excelIdx = 1;
+            window.cachedData.forEach(d => {
+                const leasing = String(getProp(d, 'leasing_name') || getProp(d, 'leasing') || '').toUpperCase().trim();
+                if (leasing.includes('ACC')) {
+                    filteredRows.push({
+                        "No": excelIdx++,
+                        "Nama Customer": getProp(d, 'customer_name') || '-',
+                        "Leasing & SPK": 'ACC / SPK: ' + (getProp(d, 'no_spk') || getProp(d, 'spk') || '-'),
+                        "O/S Balance": Number(getProp(d, 'os_balance') || getProp(d, 'balance') || 0),
+                        "Keterangan Admin Cabang": getProp(d, 'ket_cabang') || '',
+                        "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || '',
+                        "Keterangan Leasing": getProp(d, 'ket_leasing') || ''
+                    });
+                }
+            });
+
+            if (filteredRows.length === 0) {
+                alert("Tidak ada data ACC yang bisa diunduh.");
+                return;
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(filteredRows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "ACC Report");
+            XLSX.writeFile(workbook, `Report_Monitoring_ACC_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        window.simpanCatatanAcc = async function(uiId) {
+            const inputCabang = document.getElementById(`cabang-${uiId}`);
+            const inputPlan = document.getElementById(`plan-${uiId}`);
+            const inputKet = document.getElementById(`ket-${uiId}`);
+
+            const customerName = inputCabang.getAttribute('data-customer');
+            const dataNo = inputCabang.getAttribute('data-no');
+            const dataId = inputCabang.getAttribute('data-id');
+
+            const valPlan = inputPlan.value;
+            const valKet = inputKet.value;
+
+            try {
+                let payload = {};
+                if (window.cachedData && window.cachedData.length > 0) {
+                    const sample = window.cachedData[0];
+                    const kPlan = sample['Plan_Bayar_Leasing'] !== undefined ? 'Plan_Bayar_Leasing' : 
+                                  (sample['plan_bayar_leasing'] !== undefined ? 'plan_bayar_leasing' : 'plan_bayar_leasing');
+                    const kKet = sample['Ket_Leasing'] !== undefined ? 'Ket_Leasing' : 
+                                 (sample['ket_leasing'] !== undefined ? 'ket_leasing' : 'ket_leasing');
+                    
+                    payload[kPlan] = valPlan;
+                    payload[kKet] = valKet;
+                } else {
+                    payload['plan_bayar_leasing'] = valPlan;
+                    payload['ket_leasing'] = valKet;
+                }
+
+                let queryBuilder = supabase.from('ar_unit').update(payload);
+
+                if (dataId && dataId !== "") {
+                    queryBuilder = queryBuilder.eq('id', dataId);
+                } else if (dataNo && dataNo !== "") {
+                    if (window.cachedData && window.cachedData.length > 0 && window.cachedData[0]['no'] !== undefined) {
+                        queryBuilder = queryBuilder.eq('no', Number(dataNo));
+                    } else {
+                        queryBuilder = queryBuilder.eq('No', Number(dataNo));
+                    }
+                } else {
+                    queryBuilder = queryBuilder.or(`customer_name.eq."${customerName}","Customer name".eq."${customerName}","CUSTOMER_NAME".eq."${customerName}"`);
+                }
+
+                const { error } = await queryBuilder;
+                if (error) throw error;
+                
+                alert("Catatan ACC Berhasil Disimpan Langsung! 👍");
+                fetchAccData();
+
+            } catch (err) {
+                console.error(err);
+                alert("Gagal sinkronisasi: " + err.message);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAccData();
+            document.getElementById('btn-download-excel').addEventListener('click', downloadExcelReport);
+            // Sinkronisasi pembaruan jam aktif setiap 1 detik berkelanjutan
+            setInterval(updateClock, 1000);
+        });
+    </script>
+</body>
+</html>
