@@ -13,7 +13,7 @@
         <div>
             <div class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1 mb-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                DATA UPDATE: <span id="realtime-clock">MEMUAT LIVE CLOCK...</span>
+                DATA UPDATE: <span id="realtime-clock" class="font-mono">MEMUAT LIVE CLOCK...</span>
             </div>
             <div class="flex items-center gap-2">
                 <h1 class="text-2xl font-bold tracking-tight uppercase">ACC Dashboard</h1>
@@ -186,26 +186,28 @@
                     if(tableBody) {
                         tableBody.innerHTML = htmlRows ? htmlRows : '<div class="text-center py-8 text-gray-400 text-xs font-bold">TIDAK ADA DATA PIUTANG ACC</div>';
                     }
-
-                    updateClock();
+                    
+                    // NOTE: updateClock() di sini dihapus agar tidak menimpa / mematahkan loop setInterval jam realtime yang sedang aktif berjalan.
                 }
             } catch (err) {
                 console.error("Gagal sinkronisasi data ACC:", err);
             }
         }
 
-        function getWibString() {
-            const skrg = new Date();
-            const tanggal = String(skrg.getDate()).padStart(2, '0') + '/' + 
-                            String(skrg.getMonth() + 1).padStart(2, '0') + '/' + 
-                            skrg.getFullYear();
-            const waktu = skrg.toLocaleTimeString('id-ID', { hour12: false }).replace(/:/g, '.');
-            return `${tanggal}, ${waktu} WIB`;
-        }
-
         function updateClock() {
-            if (document.getElementById('realtime-clock')) {
-                document.getElementById('realtime-clock').innerText = `${getWibString()} (REALTIME ACTIVE)`;
+            const elClock = document.getElementById('realtime-clock');
+            if (elClock) {
+                const skrg = new Date();
+                
+                // Format tanggal 2 digit (DD/MM/YYYY)
+                const tanggal = String(skrg.getDate()).padStart(2, '0') + '/' + 
+                                String(skrg.getMonth() + 1).padStart(2, '0') + '/' + 
+                                skrg.getFullYear();
+                
+                // Format jam lokal Indonesia 24 jam (HH.MM.SS)
+                const waktu = skrg.toLocaleTimeString('id-ID', { hour12: false }).replace(/:/g, '.');
+                
+                elClock.innerText = `${tanggal}, ${waktu} WIB (REALTIME ACTIVE)`;
             }
         }
 
@@ -300,7 +302,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             fetchAccData();
             document.getElementById('btn-download-excel').addEventListener('click', downloadExcelReport);
-            // Sinkronisasi pembaruan jam aktif setiap 1 detik berkelanjutan
+            
+            // Jalankan jam pertama kali saat load selesai
+            updateClock();
+            // Loop interval per detik mandiri, tidak akan terganggu respon fetch database
             setInterval(updateClock, 1000);
         });
     </script>
