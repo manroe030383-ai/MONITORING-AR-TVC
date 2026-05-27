@@ -90,13 +90,13 @@ function handleLogin(e) {
     errorBox.style.display = "none";
 
     // Validasi kredensial dan simpan key 'role' agar sinkron dengan file dashboard masing-masing
-    if (user === "admin" && pass === "admin123") {
+    if (user === "admin" && pass === "admin@2026") {
         localStorage.setItem("role", "admin");
         window.location.href = "dashboard.html"; 
-    } else if (user === "tafs" && pass === "tafs123") {
+    } else if (user === "tafs" && pass === "tafs@456") {
         localStorage.setItem("role", "tafs");
         window.location.href = "tafs.html"; 
-    } else if (user === "acc" && pass === "acc123") {
+    } else if (user === "acc" && pass === "acc@789") {
         localStorage.setItem("role", "acc");
         window.location.href = "acc.html"; 
     } else {
