@@ -2,10 +2,10 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm'
 
 // ========================================================
-// 1. KONFIGURASI UTAMA DATABASE SUPABASE AUTO2000
+// 1. KONFIGURASI UTAMA DATABASE SUPABASE AUTO2000 (NEW CREDENTIALS)
 // ========================================================
-const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
+const SUPABASE_URL = 'https://ozcrikgzsadezarhccvp.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Y3Jpa2d6c2FkZXphcmhjY3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMzQxOTgsImV4cCI6MjA4ODcxMDE5OH0.vSohadwQZV2SU4bjXfh-bPGZ1FV6ivo4e0irF10ITn8';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let charts = { bar: null, donut: null }; 
@@ -58,12 +58,12 @@ async function fetchData() {
             let finalFilteredData = data;
             if (isTafsPage) {
                 finalFilteredData = data.filter(d => {
-                    const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
+                    const l = String(getProp(d, 'Leasing_Name') || getProp(d, 'leasing_name') || '').toUpperCase().trim();
                     return l.includes('TAFS');
                 });
             } else if (isAccPage) {
                 finalFilteredData = data.filter(d => {
-                    const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
+                    const l = String(getProp(d, 'Leasing_Name') || getProp(d, 'leasing_name') || '').toUpperCase().trim();
                     return l.includes('ACC');
                 });
             }
@@ -104,16 +104,16 @@ function updateDashboard(data) {
     let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
 
     data.forEach(d => {
-        const os = Number(getProp(d, 'O/S Balance') || getProp(d, 'os_balance') || 0);
-        const b1_30 = Number(getProp(d, 'Hari 1-30') || getProp(d, 'hari_1_30') || 0);
-        const b31_60 = Number(getProp(d, 'Hari 31-60') || getProp(d, 'hari_31_60') || 0);
-        const b60 = Number(getProp(d, 'Lebih 60 Hari') || getProp(d, 'lebih_60_hari') || 0);
+        const os = Number(getProp(d, 'os_balance') || 0);
+        const b1_30 = Number(getProp(d, 'hari_1_30') || 0);
+        const b31_60 = Number(getProp(d, 'hari_31_60') || 0);
+        const b60 = Number(getProp(d, 'lebih_60_hari') || 0);
         
-        const ov = (getProp(d, 'Total Overdue') !== undefined) ? Number(getProp(d, 'Total Overdue')) : (b1_30 + b31_60 + b60);
+        const ov = (getProp(d, 'total_overdue') !== undefined) ? Number(getProp(d, 'total_overdue')) : (b1_30 + b31_60 + b60);
         
-        const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
-        const penalti = Number(getProp(d, 'Potensi Penalti') || getProp(d, 'penalty_amount') || 0);
-        const statusTagih = String(getProp(d, 'status_tagih') || getProp(d, 'Status Tagih') || '').toUpperCase().trim();
+        const l = String(getProp(d, 'Leasing_Name') || getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
+        const penalti = Number(getProp(d, 'Penalty_Amount') || getProp(d, 'penalty_amount') || 0);
+        const statusTagih = String(getProp(d, 'Status_Aging') || getProp(d, 'status_aging') || '').toUpperCase().trim();
         
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
@@ -141,13 +141,13 @@ function updateDashboard(data) {
             
             if (l.includes('TAFS') || l.includes('ACC')) {
                 tvc.total++;
-                if (statusTagih === 'SUDAH GI') tvc.gi++;
+                if (statusTagih === 'LANCAR') tvc.gi++; 
                 else tvc.deliv++;
             }
         }
 
         if (l.includes('TAFS')) {
-            if (statusTagih === 'SUDAH GI' || os === 0) {
+            if (os === 0) {
                 tafsMetrics.paid++;
             } else {
                 tafsMetrics.os += os;
@@ -156,7 +156,7 @@ function updateDashboard(data) {
             }
         } 
         else if (l.includes('ACC')) {
-            if (statusTagih === 'SUDAH GI' || os === 0) {
+            if (os === 0) {
                 accMetrics.paid++;
             } else {
                 accMetrics.os += os;
@@ -165,8 +165,8 @@ function updateDashboard(data) {
             }
         }
 
-        const rawSales = String(getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || "").trim();
-        const rawSpv = String(getProp(d, 'Supervisor') || getProp(d, 'supervisor_name') || "").trim();
+        const rawSales = String(getProp(d, 'salesman_name') || "").trim();
+        const rawSpv = String(getProp(d, 'Supervisor_Name') || "").trim();
         const finalSales = rawSales !== "" ? rawSales : (rawSpv !== "" ? rawSpv : "OFFICE");
         const finalSpv = rawSpv !== "" ? rawSpv : "OFFICE";
 
@@ -255,9 +255,9 @@ function renderDataArUnitFull(data) {
     const isLeasingView = isTafsPage || isAccPage;
 
     el.innerHTML = data.map((d, i) => {
-        const spkAsli = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
+        const spkAsli = String(getProp(d, 'No_SPK') || '').trim();
         const idSistem = spkAsli.replace(/[^a-zA-Z0-9]/g, '_');
-        const noCustomer = getProp(d, 'no_customer') || '-';
+        const noCustomer = getProp(d, 'No_Customer') || '-';
         
         const valKetCabang = d['ket_cabang'] || '';
         const valPlanBayar = d['plan_bayar_leasing'] || '';
@@ -267,14 +267,14 @@ function renderDataArUnitFull(data) {
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
             <td class="p-4">
-                <p class="text-slate-800 font-black text-[11px]">${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</p>
+                <p class="text-slate-800 font-black text-[11px]">${getProp(d, 'Customer_Name') || '-'}</p>
                 <p class="text-[10px] text-slate-400 font-medium normal-case mt-0.5">${noCustomer}</p>
             </td>
             <td class="p-4">
-                <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '-'}</span>
+                <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'Leasing_Name') || '-'}</span>
                 <p class="text-[7px] text-slate-400 mt-1">SPK: ${spkAsli}</p>
             </td>
-            <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
+            <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'os_balance'))}</td>
             
             <td class="p-4 w-48">
                 ${isLeasingView ? 
@@ -312,8 +312,8 @@ function renderDonutLeasing(mLeas) {
     if (!el) return;
     let totalCash = 0; let totalLeasing = 0;
     cachedData.forEach(d => {
-        const os = Number(getProp(d, 'O/S Balance') || getProp(d, 'os_balance') || 0);
-        const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
+        const os = Number(getProp(d, 'os_balance') || 0);
+        const l = String(getProp(d, 'Leasing_Name') || 'CASH').toUpperCase().trim();
         if (["CASH", "CASH TERIMA", "", "-"].includes(l)) { totalCash += os; } else { totalLeasing += os; }
     });
     const seriesDonut = [totalCash, totalLeasing]; const labelsDonut = ['TOTAL CASH', 'TOTAL LEASING'];
@@ -325,6 +325,9 @@ function renderDonutLeasing(mLeas) {
     if (charts.donut) charts.donut.updateOptions(options); else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
 }
 
+// ========================================================
+// RE-RENDER FULL LIST LOGIC
+// ========================================================
 function renderLeasingList(map, total) {
     const el = document.getElementById('leasing-list'); if (!el) return;
     if (Object.keys(map).length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400">Tidak ada data leasing</p>'; return; }
@@ -349,15 +352,15 @@ function renderOverdueTop(data) {
     const el = document.getElementById('list-overdue'); if (!el) return;
     if (data.length === 0) { el.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">Tidak ada data overdue</p>'; return; }
     const sortedData = [...data].sort((a, b) => {
-        const osA = Number(getProp(a, 'Hari 1-30') || 0) + Number(getProp(a, 'Hari 31-60') || 0) + Number(getProp(a, 'Lebih 60 Hari') || 0);
-        const osB = Number(getProp(b, 'Hari 1-30') || 0) + Number(getProp(b, 'Hari 31-60') || 0) + Number(getProp(b, 'Lebih 60 Hari') || 0);
+        const osA = Number(getProp(a, 'hari_1_30') || 0) + Number(getProp(a, 'hari_31_60') || 0) + Number(getProp(a, 'lebih_60_hari') || 0);
+        const osB = Number(getProp(b, 'hari_1_30') || 0) + Number(getProp(b, 'hari_31_60') || 0) + Number(getProp(b, 'lebih_60_hari') || 0);
         return osB - osA;
     });
     el.innerHTML = sortedData.slice(0,5).map((d,i) => {
-        const totalOverdueItem = Number(getProp(d, 'Hari 1-30') || 0) + Number(getProp(d, 'Hari 31-60') || 0) + Number(getProp(d, 'Lebih 60 Hari') || 0);
+        const totalOverdueItem = Number(getProp(d, 'hari_1_30') || 0) + Number(getProp(d, 'hari_31_60') || 0) + Number(getProp(d, 'lebih_60_hari') || 0);
         return `
         <div class="flex justify-between py-2 border-b border-slate-50 uppercase font-bold">
-            <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</span>
+            <span class="text-[10px] text-slate-600 truncate w-32">${i+1}. ${getProp(d, 'Customer_Name') || '-'}</span>
             <span class="text-[10px] text-red-500">${fmtJuta(totalOverdueItem)}</span>
         </div>`;
     }).join('');
@@ -365,9 +368,6 @@ function renderOverdueTop(data) {
 
 function borderTrClass(i) { return 'hover:bg-slate-50/80 transition-all font-bold uppercase'; }
 
-// ========================================================
-// RE-RENDER FULL LIST LOGIC
-// ========================================================
 function renderTabLeasingFull(data) {
     const el = document.getElementById('tab-leasing-full-list'); if (!el) return;
     if(data.length === 0) { el.innerHTML = '<p class="text-xs text-center py-4 text-slate-400">Tidak ada data kontribusi leasing</p>'; return; }
@@ -387,13 +387,13 @@ function renderTabLeasingFull(data) {
                         <tr class="${borderTrClass(i)}">
                             <td class="p-3 text-center text-slate-400">${i+1}</td>
                             <td class="p-3">
-                                <p class="text-slate-800 text-[11px] font-black">${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</p>
-                                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || 'OFFICE'}</p>
+                                <p class="text-slate-800 text-[11px] font-black">${getProp(d, 'Customer_Name') || '-'}</p>
+                                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${getProp(d, 'salesman_name') || 'OFFICE'}</p>
                             </td>
                             <td class="p-3">
-                                <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '-'}</span>
+                                <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'Leasing_Name') || '-'}</span>
                             </td>
-                            <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
+                            <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-black">${fmtIDR(getProp(d, 'os_balance'))}</td>
                         </tr>`).join('')}
                 </tbody>
             </table>
@@ -402,7 +402,7 @@ function renderTabLeasingFull(data) {
 
 function renderTabOverdueFull(data) {
     const el = document.getElementById('tab-overdue-full-list'); if (!el) return;
-    const overdueData = data.filter(d => (Number(getProp(d, 'Hari 1-30') || 0) + Number(getProp(d, 'Hari 31-60') || 0) + Number(getProp(d, 'Lebih 60 Hari') || 0)) > 0);
+    const overdueData = data.filter(d => (Number(getProp(d, 'hari_1_30') || 0) + Number(getProp(d, 'hari_31_60') || 0) + Number(getProp(d, 'lebih_60_hari') || 0)) > 0);
     if(overdueData.length === 0) { el.innerHTML = '<p class="text-xs text-center py-4 text-slate-400">Semua tagihan lunas / tidak ada overdue</p>'; return; }
     el.innerHTML = `
         <div class="overflow-x-auto">
@@ -418,19 +418,19 @@ function renderTabOverdueFull(data) {
                 </thead>
                 <tbody class="divide-y divide-slate-50">
                     ${overdueData.map((d, i) => {
-                        const totalOvItem = Number(getProp(d, 'Hari 1-30') || 0) + Number(getProp(d, 'Hari 31-60') || 0) + Number(getProp(d, 'Lebih 60 Hari') || 0);
+                        const totalOvItem = Number(getProp(d, 'hari_1_30') || 0) + Number(getProp(d, 'hari_31_60') || 0) + Number(getProp(d, 'lebih_60_hari') || 0);
                         return `
                         <tr class="${borderTrClass(i)}">
                             <td class="p-3 text-center text-slate-400">${i+1}</td>
                             <td class="p-3">
-                                <p class="text-slate-800 text-[11px] font-black">${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</p>
-                                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || 'OFFICE'}</p>
+                                <p class="text-slate-800 text-[11px] font-black">${getProp(d, 'Customer_Name') || '-'}</p>
+                                <p class="text-[8px] text-slate-400 mt-0.5">👤 SALES: ${getProp(d, 'salesman_name') || 'OFFICE'}</p>
                             </td>
                             <td class="p-3">
-                                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || 'CASH'}</span>
+                                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'Leasing_Name') || 'CASH'}</span>
                             </td>
                             <td class="p-3 text-right font-black text-red-600 bg-red-50/20">${fmtIDR(totalOvItem)}</td>
-                            <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-bold">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
+                            <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-bold">${fmtIDR(getProp(d, 'os_balance'))}</td>
                         </tr>`;
                     }).join('')}
                 </tbody>
@@ -441,14 +441,16 @@ function renderTabOverdueFull(data) {
 function renderTabDatabaseFull(data) {
     const el = document.getElementById('tab-database-body'); if (!el) return;
     el.innerHTML = data.map((d, i) => {
-        const os = Number(getProp(d, 'O/S Balance') || 0);
-        const b1 = Number(getProp(d, 'Hari 1-30') || 0); const b2 = Number(getProp(d, 'Hari 31-60') || 0); const b3 = Number(getProp(d, 'Lebih 60 Hari') || 0);
+        const os = Number(getProp(d, 'os_balance') || 0);
+        const b1 = Number(getProp(d, 'hari_1_30') || 0); 
+        const b2 = Number(getProp(d, 'hari_31_60') || 0); 
+        const b3 = Number(getProp(d, 'lebih_60_hari') || 0);
         const totalOv = b1 + b2 + b3; const lancar = totalOv === 0 ? os : (os - totalOv > 0 ? os - totalOv : 0);
         return `
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
-            <td class="p-4 text-slate-800 font-black">${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</td>
-            <td class="p-4"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || 'CASH'}</span></td>
+            <td class="p-4 text-slate-800 font-black">${getProp(d, 'Customer_Name') || '-'}</td>
+            <td class="p-4"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[9px]">${getProp(d, 'Leasing_Name') || 'CASH'}</span></td>
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(os)}</td>
             <td class="p-4 text-right text-emerald-600">${fmtIDR(lancar)}</td>
             <td class="p-4 text-right text-amber-500">${fmtIDR(b1)}</td>
@@ -460,7 +462,7 @@ function renderTabDatabaseFull(data) {
 }
 
 // ========================================================
-// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML) - FIXED DATA SYNC
+// 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG
 // ========================================================
 window.simpanCatatan = async function(nomorSPK) {
     try {
@@ -470,17 +472,12 @@ window.simpanCatatan = async function(nomorSPK) {
         if (!inputEl) return;
         
         const valCabang = inputEl.value;
-
-        const spkAngka = parseInt(nomorSPK, 10);
-        if (isNaN(spkAngka)) {
-            alert("Gagal menyimpan: Format Nomor SPK harus berupa angka murni.");
-            return;
-        }
+        const spkString = String(nomorSPK).trim();
 
         const { error } = await supabase
             .from('ar_unit')
             .update({ ket_cabang: valCabang })
-            .eq('no_spk', spkAngka);
+            .eq('No_SPK', spkString);
 
         if (error) throw error;
         alert("Keterangan cabang berhasil disimpan! 👍");
@@ -493,7 +490,7 @@ window.simpanCatatan = async function(nomorSPK) {
 }
 
 // ========================================================
-// 7. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML) - FIXED DATA SYNC
+// 7. FUNGSI SIMPAN KHUSUS LEASING
 // ========================================================
 window.simpanCatatanLeasing = async function(nomorSPK) {
     try {
@@ -505,12 +502,7 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
 
         const valPlan = planEl.value;
         const valKetLeas = ketEl.value;
-
-        const spkAngka = parseInt(nomorSPK, 10);
-        if (isNaN(spkAngka)) {
-            alert("Leasing gagal menyimpan: Format Nomor SPK harus berupa angka murni.");
-            return;
-        }
+        const spkString = String(nomorSPK).trim();
 
         const { error } = await supabase
             .from('ar_unit')
@@ -518,7 +510,7 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
                 plan_bayar_leasing: valPlan, 
                 ket_leasing: valKetLeas 
             })
-            .eq('no_spk', spkAngka);
+            .eq('No_SPK', spkString);
 
         if (error) throw error;
         alert("Respon Leasing Berhasil Diperbarui! ✔️");
@@ -531,22 +523,33 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
 }
 
 // ========================================================
-// 8. FUNGSI DOWNLOAD DATA KE EXCEL (FIXED FOR COMPATIBILITY)
+// 8. FUNGSI DOWNLOAD DATA KE EXCEL
 // ========================================================
 function downloadExcel() {
     if (!cachedData || cachedData.length === 0) { alert("Data belum siap."); return; }
     try {
         const dataUntukExcel = cachedData.map((d, index) => {
-            const os = Number(getProp(d, 'O/S Balance') || 0);
-            const b1 = Number(getProp(d, 'Hari 1-30') || 0); const b2 = Number(getProp(d, 'Hari 31-60') || 0); const b3 = Number(getProp(d, 'Lebih 60 Hari') || 0);
+            const os = Number(getProp(d, 'os_balance') || 0);
+            const b1 = Number(getProp(d, 'hari_1_30') || 0); 
+            const b2 = Number(getProp(d, 'hari_31_60') || 0); 
+            const b3 = Number(getProp(d, 'lebih_60_hari') || 0);
             const totalOv = b1 + b2 + b3; const lancar = totalOv === 0 ? os : (os - totalOv > 0 ? os - totalOv : 0);
             return {
-                "No": index + 1, "Nama Customer": getProp(d, 'Customer Name') || "-", "No SPK": getProp(d, 'No SPK') || "-",
-                "Leasing": getProp(d, 'Chas/Leasing') || "CASH", "O/S Balance": os, "Hari 1-30 (Lancar)": lancar,
-                "Hari 31-60": b1, "Lebih 60 Hari": b2, "Total Overdue": totalOv, "Potensi Penalti": getProp(d, 'Potensi Penalti') || 0,
-                "Salesman": getProp(d, 'Salesman Name') || "-", "Supervisor": getProp(d, 'Supervisor') || "-",
+                "No": index + 1, 
+                "Nama Customer": getProp(d, 'Customer_Name') || "-", 
+                "No SPK": getProp(d, 'No_SPK') || "-",
+                "Leasing": getProp(d, 'Leasing_Name') || "CASH", 
+                "O/S Balance": os, 
+                "Hari 1-30 (Lancar)": lancar,
+                "Hari 31-60": b1, 
+                "Lebih 60 Hari": b2, 
+                "Total Overdue": totalOv, 
+                "Potensi Penalti": getProp(d, 'Penalty_Amount') || 0,
+                "Salesman": getProp(d, 'salesman_name') || "-", 
+                "Supervisor": getProp(d, 'Supervisor_Name') || "-",
                 "Keterangan Cabang": d['ket_cabang'] || "", 
-                "Plan Bayar Leasing": d['plan_bayar_leasing'] || "", "Keterangan Leasing": d['ket_leasing'] || ""
+                "Plan Bayar Leasing": d['plan_bayar_leasing'] || "", 
+                "Keterangan Leasing": d['ket_leasing'] || ""
             };
         });
         const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel); const workbook = XLSX.utils.book_new();
@@ -564,12 +567,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnDownload = document.getElementById('btn-download-excel');
     if (btnDownload) { btnDownload.addEventListener('click', downloadExcel); }    
     
-    // Ambil data pertama kali saat dashboard dibuka
     fetchData();
     
-    // ========================================================
     // AKTIFKAN LIVE SYNC REAL-TIME SUPABASE 
-    // ========================================================
     supabase
         .channel('schema-db-changes')
         .on(
