@@ -1,70 +1,77 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// Konfigurasi Supabase
+// ========================================================
+// 1. KONFIGURASI SUPABASE (Lengkap)
+// ========================================================
 const SUPABASE_URL = 'https://ozcrikgzsadezarhccvp.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Y3Jpa2d6c2FkZXphcmhjY3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMzQxOTgsImV4cCI6MjA4ODcxMDE5OH0.vSohadwQZV2SU4bjXfh-bPGZ1FV6ivo4e0irF10ITn8';
+const SUPABASE_KEY = 'sb_publishable_GXQkaWA5eu4HuiAjptj9UA_gNWY6Q7u'; 
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Fungsi Utama Tarik Data
-async function initDashboard() {
-    console.log("Memulai penarikan data...");
-    
-    const { data, error } = await supabase
-        .from('ar_unit')
-        .select('*');
+// Helper untuk format mata uang
+const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 
-    if (error) {
-        console.error("Gagal menarik data:", error);
-        return;
-    }
-
-    if (data) {
-        console.log("Data berhasil ditemukan, jumlah:", data.length);
-        renderARUnit(data);
-        renderDatabase(data);
+// ========================================================
+// 2. FUNGSI AMBIL DATA
+// ========================================================
+async function fetchData() {
+    try {
+        const { data, error } = await supabase.from('ar_unit').select('*');
+        if (error) throw error;
+        
+        if (data) {
+            updateDashboard(data);
+            console.log("Data berhasil dimuat:", data.length, "baris.");
+        }
+    } catch (e) {
+        console.error("Error Fetching:", e);
+        const statusEl = document.getElementById('status-update');
+        if (statusEl) statusEl.innerText = `KONEKSI GAGAL: ${e.message}`;
     }
 }
 
-// Fungsi Render untuk Input Control
-function renderARUnit(data) {
-    const tbody = document.getElementById('tab-ar-unit-body');
-    if (!tbody) return;
+// ========================================================
+// 3. FUNGSI RENDER (Update UI)
+// ========================================================
+function updateDashboard(data) {
+    console.log("Dashboard diupdate dengan data:", data);
 
-    tbody.innerHTML = data.map((d, i) => `
-        <tr>
-            <td class="p-4 text-center">${i + 1}</td>
-            <td class="p-4 font-bold">${d.customer_name || '-'}</td>
-            <td class="p-4">${d.leasing_name || '-'}</td>
-            <td class="p-4 text-right">Rp ${Number(d.os_balance).toLocaleString('id-ID')}</td>
-            <td class="p-4"><input class="input-custom" value="${d.ket_cabang || ''}"></td>
-            <td class="p-4"><input class="input-custom" value="${d.plan_bayar_leasing || ''}"></td>
-            <td class="p-4"><input class="input-custom" value="${d.keterangan_leasing || ''}"></td>
-            <td class="p-4 text-center">
-                <button class="bg-blue-600 text-white px-2 py-1 rounded text-[9px]">SAVE</button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-// Fungsi Render untuk Database Lengkap
-function renderDatabase(data) {
+    // Tabel Database
     const tbody = document.getElementById('tab-database-body');
-    if (!tbody) return;
+    if (tbody) {
+        tbody.innerHTML = data.map((d, index) => `
+            <tr>
+                <td class="p-4 text-center">${index + 1}</td>
+                <td class="p-4 font-bold">${d.Customer_Name || '-'}</td>
+                <td class="p-4">${d.Leasing_Name || '-'}</td>
+                <td class="p-4 text-right">${fmtIDR(d.Os_Balance)}</td>
+                <td class="p-4 text-right">${fmtIDR(d.Hari_1_30)}</td>
+                <td class="p-4 text-right">${fmtIDR(d.Hari_31_60)}</td>
+                <td class="p-4 text-right">${fmtIDR(d.Lebih_60_Hari)}</td>
+                <td class="p-4 text-right font-bold text-red-600">${fmtIDR(d.Total_Overdue)}</td>
+            </tr>
+        `).join('');
+    }
 
-    tbody.innerHTML = data.map((d, i) => `
-        <tr>
-            <td class="p-4 text-center">${i + 1}</td>
-            <td class="p-4">${d.customer_name || '-'}</td>
-            <td class="p-4">${d.leasing_name || '-'}</td>
-            <td class="p-4 text-right">Rp ${Number(d.os_balance).toLocaleString('id-ID')}</td>
-            <td class="p-4 text-right">${d.hari_1_30 || 0}</td>
-            <td class="p-4 text-right">${d.hari_31_60 || 0}</td>
-            <td class="p-4 text-right">${d.lebih_60_hari || 0}</td>
-            <td class="p-4 text-right font-bold text-red-600">Rp ${((Number(d.hari_1_30) || 0) + (Number(d.hari_31_60) || 0) + (Number(d.lebih_60_hari) || 0)).toLocaleString('id-ID')}</td>
-        </tr>
-    `).join('');
+    // Card Total O/S
+    const totalOS = data.reduce((sum, item) => sum + (Number(item.Os_Balance) || 0), 0);
+    const elTotalOS = document.getElementById('total-os');
+    if (elTotalOS) elTotalOS.innerText = fmtIDR(totalOS);
+
+    // Card Total Overdue
+    const totalOverdue = data.reduce((sum, item) => sum + (Number(item.Total_Overdue) || 0), 0);
+    const elTotalOverdue = document.getElementById('total-overdue');
+    if (elTotalOverdue) elTotalOverdue.innerText = fmtIDR(totalOverdue);
+    
+    // Status
+    const statusEl = document.getElementById('status-update');
+    if (statusEl) {
+        statusEl.innerText = `DATA TERBARU: ${data.length} UNIT DIMUAT`;
+        statusEl.className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic font-mono";
+    }
 }
 
-// Jalankan saat halaman siap
-document.addEventListener('DOMContentLoaded', initDashboard);
+// ========================================================
+// 4. INISIALISASI
+// ========================================================
+document.addEventListener('DOMContentLoaded', fetchData);
