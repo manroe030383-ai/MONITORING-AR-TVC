@@ -8,37 +8,28 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // FORMATER MATA UANG
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { 
-    style: 'currency', 
-    currency: 'IDR', 
-    maximumFractionDigits: 0 
+    style: 'currency', currency: 'IDR', maximumFractionDigits: 0 
 }).format(v || 0);
 
 // FUNGSI UTAMA AMBIL DATA
 async function fetchData() {
     try {
         const { data, error } = await supabase.from('ar_unit').select('*');
-        
-        if (error) {
-            console.error("Error Fetching:", error);
-            return;
-        }
-        
-        if (data) {
-            processData(data);
-        }
+        if (error) throw error;
+        if (data) processData(data);
     } catch (e) {
-        console.error("Terjadi kesalahan:", e);
+        console.error("Error:", e);
     }
 }
 
-// FUNGSI PENGOLAHAN DATA
+// FUNGSI PENGOLAHAN DAN RENDER SEMUA TAB
 function processData(data) {
-    // 1. Render Tabel Database Lengkap
+    // 1. RENDER DATABASE LENGKAP
     const bodyDb = document.getElementById('tab-database-body');
     if (bodyDb) {
         bodyDb.innerHTML = data.map((d, i) => `
-            <tr class="hover:bg-slate-50 border-b border-slate-50">
-                <td class="p-4 text-center">${i + 1}</td>
+            <tr class="border-b">
+                <td class="p-4">${i + 1}</td>
                 <td class="p-4 font-bold">${d.Customer_Name || '-'}</td>
                 <td class="p-4">${d.Leasing_Name || '-'}</td>
                 <td class="p-4 text-right">${fmtIDR(d.os_balance)}</td>
@@ -50,42 +41,50 @@ function processData(data) {
         `).join('');
     }
 
-    // 2. Render Tabel Overdue
-    const overdueData = data.filter(d => ((d.hari_1_30 || 0) + (d.hari_31_60 || 0) + (d.lebih_60_hari || 0)) > 0);
+    // 2. RENDER OVERDUE
     const bodyOv = document.getElementById('tab-overdue-full-list');
     if (bodyOv) {
-        bodyOv.innerHTML = overdueData.map(d => `
-            <div class="p-3 border border-red-100 bg-red-50/50 rounded-lg flex justify-between items-center mb-2">
-                <span class="font-bold text-xs">${d.Customer_Name || '-'}</span>
-                <span class="text-red-600 font-black text-xs">${fmtIDR((d.hari_1_30 || 0) + (d.hari_31_60 || 0) + (d.lebih_60_hari || 0))}</span>
+        const ovData = data.filter(d => ((d.hari_1_30 || 0) + (d.hari_31_60 || 0) + (d.lebih_60_hari || 0)) > 0);
+        bodyOv.innerHTML = ovData.map(d => `
+            <div class="p-3 border-b flex justify-between">
+                <span class="font-bold">${d.Customer_Name}</span>
+                <span class="text-red-600">${fmtIDR((d.hari_1_30 || 0) + (d.hari_31_60 || 0) + (d.lebih_60_hari || 0))}</span>
             </div>
         `).join('');
     }
 
-    // 3. Render Tabel Input (Data AR Unit)
+    // 3. RENDER TAB LEASING
+    const bodyLeasing = document.getElementById('tab-leasing-content');
+    if (bodyLeasing) {
+        // Mengelompokkan data per leasing
+        const leasingMap = data.reduce((acc, d) => {
+            acc[d.Leasing_Name] = (acc[d.Leasing_Name] || 0) + Number(d.os_balance || 0);
+            return acc;
+        }, {});
+        bodyLeasing.innerHTML = Object.entries(leasingMap).map(([name, total]) => `
+            <div class="p-4 border-b flex justify-between">
+                <span>${name || 'Tanpa Leasing'}</span>
+                <span class="font-bold">${fmtIDR(total)}</span>
+            </div>
+        `).join('');
+    }
+
+    // 4. RENDER INPUT CONTROL (DATA AR UNIT)
     const bodyAr = document.getElementById('tab-ar-unit-body');
     if (bodyAr) {
         bodyAr.innerHTML = data.map((d, i) => `
-            <tr class="border-b border-slate-50">
-                <td class="p-4 text-center">${i + 1}</td>
-                <td class="p-4 font-bold text-xs">${d.Customer_Name || '-'}</td>
-                <td class="p-4 text-xs">${d.Leasing_Name || '-'}</td>
-                <td class="p-4 text-right text-xs">${fmtIDR(d.os_balance)}</td>
-                <td class="p-4"><input type="text" class="input-custom border rounded p-1 w-full" value="${d.ket_cabang || ''}"></td>
-                <td class="p-4"><input type="text" class="input-custom border rounded p-1 w-full" value="${d.plan_bayar_leasing || ''}"></td>
-                <td class="p-4"><input type="text" class="input-custom border rounded p-1 w-full" value="${d.keterangan_leasing || ''}"></td>
-                <td class="p-4 text-center"><button class="bg-blue-600 text-white px-3 py-1 rounded text-[10px] font-bold">SAVE</button></td>
+            <tr class="border-b">
+                <td class="p-4">${i + 1}</td>
+                <td class="p-4">${d.Customer_Name}</td>
+                <td class="p-4"><input class="border p-1 w-full" value="${d.ket_cabang || ''}"></td>
+                <td class="p-4"><button class="bg-blue-500 text-white p-1 rounded">Save</button></td>
             </tr>
         `).join('');
     }
 
-    // 4. Update Header Ringkasan
-    let totalOs = data.reduce((sum, d) => sum + Number(d.os_balance || 0), 0);
-    const elTotalOs = document.getElementById('total-os');
-    if (elTotalOs) {
-        elTotalOs.innerText = fmtIDR(totalOs);
-    }
+    // 5. UPDATE RINGKASAN
+    const elTotal = document.getElementById('total-os');
+    if (elTotal) elTotal.innerText = fmtIDR(data.reduce((s, d) => s + Number(d.os_balance || 0), 0));
 }
 
-// INITIALIZE
 document.addEventListener('DOMContentLoaded', fetchData);
