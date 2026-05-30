@@ -15,38 +15,69 @@ async function fetchData() {
             renderTables(data);
             updateExtraComponents(data);
             initAgingChart(data);
-            // Fungsi ini akan mencari ID yang Anda miliki di HTML tanpa menghapus elemen lain
-            initDashboardCharts(data); 
-            console.log("Dasbor dimuat.");
+            initDashboardCharts(data); // Memastikan fungsi grafik dipanggil
+            console.log("Dasbor berhasil dimuat sepenuhnya.");
         }
     } catch (e) { console.error("Error:", e); }
 }
 
-// FUNGSI INI HANYA MERENDER GRAFIK DI DALAM ID YANG TERSEDIA
 function initDashboardCharts(data) {
-    let cashNominal = 0, leasNominal = 0, cashUnit = 0, leasUnit = 0;
+    let cashUnit = 0, leasUnit = 0;
     data.forEach(d => {
-        const os = cleanNum(d.os_balance);
         const l = String(d.Leasing_Name || '').toUpperCase();
-        if (l.includes('CASH') || l === '') { cashNominal += os; cashUnit++; } 
-        else { leasNominal += os; leasUnit++; }
+        if (l.includes('CASH') || l === '') { cashUnit++; } 
+        else { leasUnit++; }
     });
 
-    // Cari div yang kosong di bawah teks Total Cash/Leasing di HTML Anda
     const elDonat = document.querySelector("#chart-donat-komposisi");
     if (elDonat) { 
+        elDonat.innerHTML = ''; 
         new ApexCharts(elDonat, { 
             series: [cashUnit, leasUnit], 
-            chart: { type: 'donut', height: 150 }, // Ukuran diperkecil agar tidak merusak layout
+            chart: { type: 'donut', height: 200 }, 
             labels: ['Cash', 'Leasing'], 
             colors: ['#10B981', '#3B82F6'] 
         }).render(); 
     }
 }
 
-// FUNGSI LAINNYA TETAP SEPERTI SEMULA (TIDAK ADA PERUBAHAN STRUKTUR)
 function updateDashboard(data) {
-    // ... (logic update text tetap sama)
+    let s = { os: 0, ov: 0, penalti: 0, lancar: 0 };
+    data.forEach(d => {
+        s.os += cleanNum(d.os_balance);
+        s.ov += cleanNum(d.total_overdue);
+        s.penalti += cleanNum(d.Penalty_Amount);
+        s.lancar += cleanNum(d.lancar);
+    });
+    const elOs = document.getElementById('total-os');
+    if(elOs) elOs.innerText = 'Rp ' + s.os.toLocaleString('id-ID');
+    const elOv = document.getElementById('total-overdue');
+    if(elOv) elOv.innerText = 'Rp ' + s.ov.toLocaleString('id-ID');
+    const elPen = document.getElementById('total-penalty');
+    if(elPen) elPen.innerText = 'Rp ' + s.penalti.toLocaleString('id-ID');
+    const elLan = document.getElementById('total-lancar');
+    if(elLan) elLan.innerText = 'Rp ' + s.lancar.toLocaleString('id-ID');
+}
+
+function updateExtraComponents(data) {
+    const topOverdue = [...data].sort((a, b) => cleanNum(b.total_overdue) - cleanNum(a.total_overdue)).slice(0, 5);
+    const elOverdue = document.getElementById('list-overdue');
+    if (elOverdue) elOverdue.innerHTML = topOverdue.map(d => `<div class="flex justify-between text-[10px] border-b border-slate-50 pb-2"><span class="truncate w-1/2 font-bold">${d.Customer_Name}</span><span class="text-red-600 font-bold">Rp ${cleanNum(d.total_overdue).toLocaleString('id-ID')}</span></div>`).join('');
+}
+
+function renderTables(data) {
+    const dbBody = document.getElementById('tab-database-body');
+    if (dbBody) dbBody.innerHTML = data.map((d, i) => `<tr><td class="p-4 text-center">${i + 1}</td><td class="p-4 font-bold">${d.Customer_Name || '-'}</td><td class="p-4">${d.Leasing_Name || '-'}</td><td class="p-4 text-right">${Number(d.os_balance || 0).toLocaleString('id-ID')}</td></tr>`).join('');
+}
+
+function initAgingChart(data) {
+    const aging = { '1-30': 0, '31-60': 0, '>60': 0 };
+    data.forEach(d => { aging['1-30'] += cleanNum(d.hari_1_30); aging['31-60'] += cleanNum(d.hari_31_60); aging['>60'] += cleanNum(d.lebih_60_hari); });
+    const el = document.querySelector("#chart-aging");
+    if (el) { 
+        el.innerHTML = ''; 
+        new ApexCharts(el, { series: [{ name: 'Nominal', data: [aging['1-30'], aging['31-60'], aging['>60']] }], chart: { type: 'bar', height: 250 }, xaxis: { categories: ['1-30 Hari', '31-60 Hari', '> 60 Hari'] } }).render(); 
+    }
 }
 
 document.addEventListener('DOMContentLoaded', fetchData);
