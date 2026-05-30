@@ -64,7 +64,7 @@ function updateExtraComponents(data) {
     if (elSpv) elSpv.innerHTML = topSpv.map(d => `<div class="flex justify-between text-[10px] mb-2"><span class="font-bold truncate w-2/3">${d[0]}</span><span class="text-purple-600 font-bold">Rp ${(d[1]/1000000).toFixed(1)}Jt</span></div>`).join('');
 }
 
-// 2. Fungsi Grafik (Donat & Batang)
+// 2. Fungsi Grafik Komposisi & Breakdown (Donat & Batang Horizontal)
 function initDashboardCharts(data) {
     let cashNominal = 0, leasNominal = 0, cashUnit = 0, leasUnit = 0;
     data.forEach(d => {
@@ -74,16 +74,32 @@ function initDashboardCharts(data) {
         else { leasNominal += os; leasUnit++; }
     });
 
+    // Grafik Donat
     const elDonat = document.querySelector("#chart-donat-komposisi");
-    if (elDonat) { 
-        elDonat.innerHTML = ''; 
-        new ApexCharts(elDonat, { series: [cashUnit, leasUnit], chart: { type: 'donut', height: 250 }, labels: ['Cash', 'Leasing'], colors: ['#10B981', '#3B82F6'] }).render(); 
+    if (elDonat) {
+        elDonat.innerHTML = '';
+        new ApexCharts(elDonat, {
+            series: [cashUnit, leasUnit],
+            chart: { type: 'donut', height: 250 },
+            labels: ['Cash', 'Leasing'],
+            colors: ['#10B981', '#3B82F6']
+        }).render();
     }
     
-    const elBatang = document.querySelector("#chart-batang-nominal");
-    if (elBatang) { 
-        elBatang.innerHTML = ''; 
-        new ApexCharts(elBatang, { series: [{ name: 'Nominal', data: [cashNominal, leasNominal] }], chart: { type: 'bar', height: 250 }, xaxis: { categories: ['Cash', 'Leasing'] }, colors: ['#10B981', '#3B82F6'] }).render(); 
+    // Grafik Batang Horizontal
+    const elBatang = document.querySelector("#chart-batang-horizontal");
+    if (elBatang) {
+        elBatang.innerHTML = '';
+        new ApexCharts(elBatang, {
+            series: [{ name: 'Nominal', data: [cashNominal, leasNominal] }],
+            chart: { type: 'bar', height: 250 },
+            plotOptions: { bar: { horizontal: true } },
+            xaxis: { 
+                categories: ['Cash', 'Leasing'],
+                labels: { formatter: (val) => (val / 1000000000).toFixed(1) + ' M' }
+            },
+            colors: ['#10B981', '#3B82F6']
+        }).render();
     }
 }
 
