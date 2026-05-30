@@ -1,32 +1,39 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// URL diperbaiki agar tidak ada spasi tersembunyi penyebab error
+// Konfigurasi Supabase (URL dibuat sangat bersih tanpa spasi)
 const SUPABASE_URL = 'https://ozcrikgzsadezarhccvp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Y3Jpa2d6c2FkZXphcmhjY3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMzQxOTgsImV4cCI6MjA4ODcxMDE5OH0.vSohadwQZV2SU4bjXfh-bPGZ1FV6ivo4e0irF10ITn8';
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Fungsi Pembersih Angka agar perhitungan tidak error
 const cleanNum = (val) => Number(String(val).replace(/[^0-9.-]+/g, "")) || 0;
 
+// Fungsi Utama Mengambil Data
 async function fetchData() {
     try {
+        console.log("Menghubungkan ke Supabase...");
         const { data, error } = await supabase.from('ar_unit').select('*');
+        
         if (error) throw error;
-        
-        const d = data || [];
-        // Menjalankan semua fungsi dengan data yang sama
-        updateDashboard(d);
-        renderTables(d);
-        updateExtraComponents(d);
-        initAgingChart(d);
-        initDashboardCharts(d); // Memanggil fungsi grafik baru
-        
-        console.log("Dashboard berhasil dimuat.");
+
+        // Pastikan data tersedia sebelum memproses
+        if (data && data.length > 0) {
+            updateDashboard(data);
+            renderTables(data);
+            updateExtraComponents(data);
+            initAgingChart(data);
+            initDashboardCharts(data); // Fungsi grafik donat & batang
+            console.log("Dasbor berhasil dimuat dengan", data.length, "data.");
+        } else {
+            console.warn("Tabel ar_unit kosong.");
+        }
     } catch (e) {
-        console.error("Error data:", e);
+        console.error("Terjadi error saat mengambil data:", e);
     }
 }
 
-// Fungsi Grafik Donat & Batang
+// 1. Grafik Donat & Batang (Baru)
 function initDashboardCharts(data) {
     let cashNominal = 0, leasNominal = 0, cashUnit = 0, leasUnit = 0;
     data.forEach(d => {
@@ -36,29 +43,22 @@ function initDashboardCharts(data) {
         else { leasNominal += os; leasUnit++; }
     });
 
+    // Render Grafik Donat
     const elDonat = document.querySelector("#chart-donat-komposisi");
-    const elBatang = document.querySelector("#chart-batang-nominal");
-
     if (elDonat) {
-        new ApexCharts(elDonat, {
-            series: [cashUnit, leasUnit],
-            chart: { type: 'donut', height: 250 },
-            labels: ['Cash', 'Leasing'],
-            colors: ['#10B981', '#3B82F6']
-        }).render();
+        elDonat.innerHTML = '';
+        new ApexCharts(elDonat, { series: [cashUnit, leasUnit], chart: { type: 'donut', height: 250 }, labels: ['Cash', 'Leasing'], colors: ['#10B981', '#3B82F6'] }).render();
     }
     
+    // Render Grafik Batang
+    const elBatang = document.querySelector("#chart-batang-nominal");
     if (elBatang) {
-        new ApexCharts(elBatang, {
-            series: [{ name: 'Nominal (Rp)', data: [cashNominal, leasNominal] }],
-            chart: { type: 'bar', height: 250 },
-            xaxis: { categories: ['Cash', 'Leasing'] },
-            yaxis: { labels: { formatter: (v) => (v / 1000000000).toFixed(1) + ' M' } },
-            colors: ['#10B981', '#3B82F6']
-        }).render();
+        elBatang.innerHTML = '';
+        new ApexCharts(elBatang, { series: [{ name: 'Nominal', data: [cashNominal, leasNominal] }], chart: { type: 'bar', height: 250 }, xaxis: { categories: ['Cash', 'Leasing'] }, colors: ['#10B981', '#3B82F6'] }).render();
     }
 }
 
+// 2. Fungsi Dashboard lainnya
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, penalti: 0, lancar: 0, cash: 0, leas: 0, countCash: 0, countLeas: 0 };
     data.forEach(d => {
@@ -79,6 +79,7 @@ function updateDashboard(data) {
     document.getElementById('unit-total-cash').innerText = s.countCash + ' Unit';
     document.getElementById('val-total-leas').innerText = 'Rp ' + s.leas.toLocaleString('id-ID');
     document.getElementById('unit-total-leas').innerText = s.countLeas + ' Unit';
+    
     const total = s.os || 1;
     document.getElementById('bar-cash').style.width = ((s.cash / total) * 100) + '%';
     document.getElementById('bar-leasing').style.width = ((s.leas / total) * 100) + '%';
@@ -92,8 +93,7 @@ function renderTables(data) {
 function updateExtraComponents(data) {
     const topOverdue = [...data].sort((a, b) => cleanNum(b.total_overdue) - cleanNum(a.total_overdue)).slice(0, 5);
     document.getElementById('list-overdue').innerHTML = topOverdue.map(d => `<div class="flex justify-between text-[10px] border-b border-slate-50 pb-2"><span class="truncate w-1/2 font-bold">${d.Customer_Name}</span><span class="text-red-600 font-bold">Rp ${cleanNum(d.total_overdue).toLocaleString('id-ID')}</span></div>`).join('');
-    const topSales = [...data].sort((a, b) => cleanNum(b.os_balance) - cleanNum(a.os_balance)).slice(0, 5);
-    document.getElementById('list-sales').innerHTML = topSales.map(d => `<div class="text-[10px] mb-2"><div class="font-bold">${d.Customer_Name}</div><div class="text-slate-400">Rp ${cleanNum(d.os_balance).toLocaleString('id-ID')}</div></div>`).join('');
+    
     const tvc = data.filter(d => ['TAFS', 'ACC'].includes(d.Leasing_Name));
     document.getElementById('total-unit-tvc').innerText = tvc.length + ' Unit';
     document.getElementById('unit-gi-tvc').innerText = tvc.filter(d => d.Status_Aging === 'GI').length + ' Unit';
@@ -104,7 +104,10 @@ function initAgingChart(data) {
     const aging = { '1-30': 0, '31-60': 0, '>60': 0 };
     data.forEach(d => { aging['1-30'] += cleanNum(d.hari_1_30); aging['31-60'] += cleanNum(d.hari_31_60); aging['>60'] += cleanNum(d.lebih_60_hari); });
     const el = document.querySelector("#chart-aging");
-    if (el) new ApexCharts(el, { series: [{ name: 'Nominal', data: [aging['1-30'], aging['31-60'], aging['>60']] }], chart: { type: 'bar', height: 250 }, xaxis: { categories: ['1-30 Hari', '31-60 Hari', '> 60 Hari'] } }).render();
+    if (el) {
+        el.innerHTML = '';
+        new ApexCharts(el, { series: [{ name: 'Nominal', data: [aging['1-30'], aging['31-60'], aging['>60']] }], chart: { type: 'bar', height: 250 }, xaxis: { categories: ['1-30 Hari', '31-60 Hari', '> 60 Hari'] } }).render();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', fetchData);
