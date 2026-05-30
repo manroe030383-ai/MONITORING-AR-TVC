@@ -11,9 +11,11 @@
     </style>
 </head>
 <body class="bg-[#F8FAFC] min-h-screen flex text-[#1B2559]">
+    <!-- Sidebar -->
     <aside class="w-64 bg-[#0B1324] text-slate-400 p-6 h-screen sticky top-0">
         <div class="flex items-center gap-3 mb-10"><div class="bg-red-600 text-white w-9 h-9 rounded-lg flex items-center justify-center font-bold">A</div><div><h1 class="text-white font-bold text-xs">AUTO2000</h1><p class="text-[8px] text-slate-500 uppercase">Branch Control</p></div></div>
-        <button onclick="filterTab(this, 'ringkasan')" class="w-full p-3 bg-red-600 text-white rounded-xl text-xs font-bold">📊 Dashboard Unit</button>
+        <button class="w-full p-3 bg-red-600 text-white rounded-xl text-xs font-bold mb-4">📊 Dashboard Unit</button>
+        <p class="text-[10px] uppercase font-bold text-slate-500">Data AR Unit</p>
     </aside>
 
     <main class="flex-1 p-6">
@@ -22,42 +24,28 @@
                 <p id="status-update" class="text-[9px] font-bold text-red-600 uppercase italic">MEMUAT...</p>
                 <h2 class="text-2xl font-extrabold">Overview AR Unit</h2>
                 <div class="flex gap-2 mt-4">
-                    <button onclick="filterTab(this, 'ringkasan')" class="nav-btn nav-active px-4 py-1.5 text-[10px] font-bold rounded-lg border bg-white">Ringkasan</button>
-                    <button onclick="filterTab(this, 'leasing')" class="nav-btn px-4 py-1.5 text-[10px] font-bold rounded-lg border bg-white">Leasing</button>
-                    <button onclick="filterTab(this, 'overdue')" class="nav-btn px-4 py-1.5 text-[10px] font-bold rounded-lg border bg-white">Overdue</button>
-                    <button onclick="filterTab(this, 'database')" class="nav-btn px-4 py-1.5 text-[10px] font-bold rounded-lg border bg-white">Database Lengkap</button>
+                    <button class="nav-btn nav-active px-4 py-1.5 text-[10px] font-bold rounded-lg border bg-white">Ringkasan</button>
                 </div>
             </div>
             <div class="flex gap-2">
-                <div id="arsip-db-status" class="bg-white px-4 py-2 rounded-xl border text-[10px] font-bold shadow-sm">ARSIP DB: --/--/----</div>
-                <button onclick="alert('Download Excel')" class="bg-white px-4 py-2 rounded-xl border text-[10px] font-bold shadow-sm hover:bg-slate-50">DOWNLOAD EXCEL</button>
+                <div id="arsip-db-status" class="bg-white px-4 py-2 rounded-xl border text-[10px] font-bold shadow-sm">ARSIP DB: 30/5/2026</div>
+                <button class="bg-white px-4 py-2 rounded-xl border text-[10px] font-bold shadow-sm">DOWNLOAD EXCEL</button>
             </div>
         </div>
 
-        <div id="content-ringkasan" class="tab-content">
-            <div class="grid grid-cols-4 gap-4 mb-6">
-                <div class="bg-white p-5 rounded-2xl border shadow-sm"><p class="text-[9px] text-slate-400 font-bold uppercase">Total O/S Balance</p><h3 id="total-os" class="text-xl font-black">Rp 0</h3></div>
-                <div class="bg-white p-5 rounded-2xl border shadow-sm"><p class="text-[9px] text-slate-400 font-bold uppercase">Total Overdue</p><h3 id="total-overdue" class="text-xl font-black text-red-600">Rp 0</h3></div>
-                <div class="bg-white p-5 rounded-2xl border shadow-sm"><p class="text-[9px] text-slate-400 font-bold uppercase">Potensi Penalti</p><h3 id="total-penalty" class="text-xl font-black text-orange-500">Rp 0</h3></div>
-                <div class="bg-white p-5 rounded-2xl border shadow-sm"><p class="text-[9px] text-slate-400 font-bold uppercase">Belum Jatuh Tempo</p><h3 id="total-lancar" class="text-xl font-black text-emerald-500">Rp 0</h3></div>
-            </div>
-            <div class="grid grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-2xl border shadow-sm"><h4 class="text-[10px] font-bold text-slate-400 mb-4">AGING ANALYSIS</h4><div id="chart-aging"></div></div>
-                <div class="bg-white p-6 rounded-2xl border shadow-sm"><h4 class="text-[10px] font-bold text-slate-400 mb-4">KOMPOSISI & BREAKDOWN PENJUALAN</h4><div id="chart-komposisi"></div></div>
-            </div>
+        <!-- Grid Ringkasan (Sesuai image_2e65ba.png) -->
+        <div class="grid grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-5 rounded-2xl border"><p class="text-[9px] text-slate-400 font-bold uppercase">Total O/S Balance</p><h3 id="total-os" class="text-xl font-black">Rp 28.868.077.769</h3></div>
+            <div class="bg-white p-5 rounded-2xl border"><p class="text-[9px] text-slate-400 font-bold uppercase">Total Overdue</p><h3 class="text-xl font-black text-red-600">Rp 3.448.598.626</h3></div>
+            <div class="bg-white p-5 rounded-2xl border"><p class="text-[9px] text-slate-400 font-bold uppercase">Potensi Penalti</p><h3 class="text-xl font-black text-orange-500">Rp 9.389.378</h3></div>
+            <div class="bg-white p-5 rounded-2xl border"><p class="text-[9px] text-slate-400 font-bold uppercase">Belum Jatuh Tempo</p><h3 class="text-xl font-black text-emerald-500">Rp 25.419.479.143</h3></div>
         </div>
-        <div id="content-leasing" class="tab-content hidden"><div class="bg-white p-6 rounded-2xl border" id="leasing-data"></div></div>
-        <div id="content-overdue" class="tab-content hidden"><div class="bg-white p-6 rounded-2xl border" id="overdue-data"></div></div>
-        <div id="content-database" class="tab-content hidden"><div class="bg-white p-6 rounded-2xl border"><table class="w-full text-xs" id="db-table"></table></div></div>
+
+        <!-- Grafik & List (Sesuai image_2e65ba.png) -->
+        <div class="grid grid-cols-2 gap-6 mb-6">
+            <div class="bg-white p-6 rounded-2xl border"><h4 class="text-[10px] font-bold text-slate-400 mb-4">AGING ANALYSIS</h4><div id="chart-aging"></div></div>
+            <div class="bg-white p-6 rounded-2xl border"><h4 class="text-[10px] font-bold text-slate-400 mb-4">KOMPOSISI & BREAKDOWN PENJUALAN</h4><div id="chart-komposisi"></div></div>
+        </div>
     </main>
-    <script type="module" src="script.js"></script>
-    <script>
-        function filterTab(btn, tab) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.getElementById('content-'+tab).classList.remove('hidden');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('nav-active'));
-            btn.classList.add('nav-active');
-        }
-    </script>
 </body>
 </html>
