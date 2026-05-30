@@ -1,24 +1,20 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// Konfigurasi Supabase
 const SUPABASE_URL = 'https://ozcrikgzsadezarhccvp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Y3Jpa2d6c2FkZXphcmhjY3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMzQxOTgsImV4cCI6MjA4ODcxMDE5OH0.vSohadwQZV2SU4bjXfh-bPGZ1FV6ivo4e0irF10ITn8';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Fungsi Pembersih Angka
 const cleanNum = (val) => Number(String(val).replace(/[^0-9.-]+/g, "")) || 0;
 
-// Fungsi Utama Mengambil Data
 async function fetchData() {
     try {
         const { data, error } = await supabase.from('ar_unit').select('*').range(0, 5000);
         if (error) throw error;
 
-        // Jalankan semua proses setelah data didapat
-        updateDashboard(data);
-        renderTables(data);
-        updateExtraComponents(data);
-        initAgingChart(data);
+        updateDashboard(data || []);
+        renderTables(data || []);
+        updateExtraComponents(data || []);
+        initAgingChart(data || []);
         
         console.log("Data dashboard berhasil dimuat sepenuhnya.");
     } catch (e) {
@@ -26,7 +22,6 @@ async function fetchData() {
     }
 }
 
-// 1. Update Kartu Angka Utama
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, penalti: 0, lancar: 0, cash: 0, leas: 0, countCash: 0, countLeas: 0 };
 
@@ -61,23 +56,26 @@ function updateDashboard(data) {
     document.getElementById('bar-leasing').style.width = ((s.leas / total) * 100) + '%';
 }
 
-// 2. Render Tabel Database
 function renderTables(data) {
     const dbBody = document.getElementById('tab-database-body');
-    if (!dbBody) return;
-    dbBody.innerHTML = data.map((d, i) => `
-        <tr>
-            <td class="p-4 text-center">${i + 1}</td>
-            <td class="p-4 font-bold">${d.Customer_Name}</td>
-            <td class="p-4">${d.Leasing_Name}</td>
-            <td class="p-4 text-right">${Number(d.os_balance).toLocaleString('id-ID')}</td>
-            <td class="p-4 text-right font-bold text-red-600">${Number(d.total_overdue).toLocaleString('id-ID')}</td>
-        </tr>
-    `).join('');
+    if (dbBody) {
+        dbBody.innerHTML = data.map((d, i) => `
+            <tr>
+                <td class="p-4 text-center">${i + 1}</td>
+                <td class="p-4 font-bold">${d.Customer_Name || '-'}</td>
+                <td class="p-4">${d.Leasing_Name || '-'}</td>
+                <td class="p-4 text-right">${Number(d.os_balance || 0).toLocaleString('id-ID')}</td>
+                <td class="p-4 text-right">${Number(d.hari_1_30 || 0).toLocaleString('id-ID')}</td>
+                <td class="p-4 text-right">${Number(d.hari_31_60 || 0).toLocaleString('id-ID')}</td>
+                <td class="p-4 text-right">${Number(d.lebih_60_hari || 0).toLocaleString('id-ID')}</td>
+                <td class="p-4 text-right font-bold text-red-600">${Number(d.total_overdue || 0).toLocaleString('id-ID')}</td>
+            </tr>
+        `).join('');
+    }
 }
 
-// 3. Update Komponen List (Top Overdue, Sales, TVC)
 function updateExtraComponents(data) {
+    // 1. Top 5 Overdue
     const topOverdue = [...data].sort((a, b) => cleanNum(b.total_overdue) - cleanNum(a.total_overdue)).slice(0, 5);
     document.getElementById('list-overdue').innerHTML = topOverdue.map(d => `
         <div class="flex justify-between text-[10px] border-b border-slate-50 pb-2">
@@ -86,6 +84,7 @@ function updateExtraComponents(data) {
         </div>
     `).join('');
 
+    // 2. Top Sales
     const topSales = [...data].sort((a, b) => cleanNum(b.os_balance) - cleanNum(a.os_balance)).slice(0, 5);
     document.getElementById('list-sales').innerHTML = topSales.map(d => `
         <div class="text-[10px] mb-2">
@@ -94,11 +93,27 @@ function updateExtraComponents(data) {
         </div>
     `).join('');
 
+    // 3. Breakdown TVC (TAFS & ACC)
     const tvc = data.filter(d => ['TAFS', 'ACC'].includes(d.Leasing_Name));
     document.getElementById('total-unit-tvc').innerText = tvc.length + ' Unit';
+    document.getElementById('unit-gi-tvc').innerText = tvc.filter(d => d.Status_Aging === 'GI').length + ' Unit';
+    document.getElementById('unit-delivery-tvc').innerText = tvc.filter(d => d.Status_Aging !== 'GI').length + ' Unit';
+
+    // 4. Top SPV
+    const spvMap = data.reduce((acc, d) => {
+        const name = d.Supervisor_Name || 'OFFICE';
+        acc[name] = (acc[name] || 0) + cleanNum(d.os_balance);
+        return acc;
+    }, {});
+    const topSpv = Object.entries(spvMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    document.getElementById('list-spv').innerHTML = topSpv.map(d => `
+        <div class="flex justify-between text-[10px] mb-2">
+            <span class="font-bold truncate w-2/3">${d[0]}</span>
+            <span class="text-purple-600">Rp ${(d[1]/1000000).toFixed(1)}Jt</span>
+        </div>
+    `).join('');
 }
 
-// 4. Inisialisasi Grafik
 function initAgingChart(data) {
     const aging = { '1-30': 0, '31-60': 0, '>60': 0 };
     data.forEach(d => {
@@ -108,15 +123,17 @@ function initAgingChart(data) {
     });
 
     const options = {
-        series: [aging['1-30'], aging['31-60'], aging['>60']],
-        chart: { type: 'bar', height: 250 },
+        series: [{ name: 'Nominal', data: [aging['1-30'], aging['31-60'], aging['>60']] }],
+        chart: { type: 'bar', height: 250, toolbar: { show: false } },
         xaxis: { categories: ['1-30 Hari', '31-60 Hari', '> 60 Hari'] },
-        colors: ['#3B82F6', '#F59E0B', '#EF4444']
+        colors: ['#3B82F6']
     };
 
-    const chart = new ApexCharts(document.querySelector("#chart-aging"), options);
-    chart.render();
+    const chartEl = document.querySelector("#chart-aging");
+    if (chartEl) {
+        chartEl.innerHTML = ''; // Reset chart sebelum render ulang
+        new ApexCharts(chartEl, options).render();
+    }
 }
 
-// Jalankan saat halaman dimuat
 document.addEventListener('DOMContentLoaded', fetchData);
