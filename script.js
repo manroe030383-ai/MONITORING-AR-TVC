@@ -57,12 +57,14 @@ function initDashboardCharts(data) {
         else { leasNominal += os; leasUnit++; }
     });
 
+    // ID: chart-donat-komposisi
     const elDonat = document.querySelector("#chart-donat-komposisi");
     if (elDonat) { 
         elDonat.innerHTML = ''; 
         new ApexCharts(elDonat, { series: [cashUnit, leasUnit], chart: { type: 'donut', height: 250 }, labels: ['Cash', 'Leasing'], colors: ['#10B981', '#3B82F6'] }).render(); 
     }
     
+    // ID: chart-batang-horizontal
     const elBatang = document.querySelector("#chart-batang-horizontal");
     if (elBatang) { 
         elBatang.innerHTML = ''; 
