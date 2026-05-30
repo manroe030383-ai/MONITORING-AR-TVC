@@ -11,7 +11,6 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .card-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04); }
         .nav-active { background-color: #1B2559 !important; color: white !important; }
-        .tab-content { display: block; }
         .tab-content.hidden { display: none; }
     </style>
 </head>
@@ -26,12 +25,11 @@
             </div>
         </div>
         <nav class="space-y-1">
-            <button id="side-btn-ringkasan" onclick="filterTab(this, 'ringkasan')" class="w-full flex items-center gap-3 p-3 bg-red-600 text-white rounded-xl text-xs font-bold shadow-lg">📊 Dashboard Unit</button>
-            <button id="side-btn-ar-unit" onclick="filterTab(this, 'ar_unit')" class="w-full flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl text-xs font-medium">📄 Data AR Unit</button>
+            <button onclick="filterTab(this, 'ringkasan')" class="w-full flex items-center gap-3 p-3 bg-red-600 text-white rounded-xl text-xs font-bold shadow-lg">📊 Dashboard Unit</button>
         </nav>
     </aside>
 
-    <main class="flex-1 p-6 overflow-x-hidden">
+    <main class="flex-1 p-6">
         <div class="flex justify-between items-start mb-6">
             <div>
                 <p id="status-update" class="text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic">MEMUAT...</p>
@@ -43,58 +41,22 @@
                     <button onclick="filterTab(this, 'database')" class="nav-btn bg-white text-slate-500 px-4 py-1.5 text-[10px] font-bold rounded-lg border">Database Lengkap</button>
                 </div>
             </div>
-        </div>
-
-        <div id="content-ringkasan" class="tab-content">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white p-5 rounded-2xl border card-shadow">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase">Total O/S Balance</p>
-                    <h3 id="total-os" class="text-xl font-black">Rp 0</h3>
-                    <div class="h-1.5 w-full bg-slate-100 rounded-full flex overflow-hidden my-2">
-                        <div id="bar-cash" class="bg-emerald-400 h-full" style="width: 0%"></div>
-                        <div id="bar-leasing" class="bg-blue-600 h-full" style="width: 0%"></div>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border card-shadow">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase">Total Overdue</p>
-                    <h3 id="total-overdue" class="text-xl font-black text-red-600">Rp 0</h3>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border card-shadow">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase">Potensi Penalti</p>
-                    <h3 id="total-penalty" class="text-xl font-black text-orange-500">Rp 0</h3>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border card-shadow">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase">Belum Jatuh Tempo</p>
-                    <h3 id="total-lancar" class="text-xl font-black text-emerald-500">Rp 0</h3>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <div class="bg-white p-6 rounded-2xl border card-shadow">
-                    <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">Aging Analysis</h4>
-                    <div id="chart-aging"></div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border card-shadow lg:col-span-2">
-                    <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">Komposisi & Breakdown Penjualan</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                        <div id="chart-donat-komposisi" style="min-height: 250px;"></div>
-                        <div id="chart-batang-horizontal" style="min-height: 250px;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-2xl border card-shadow"><h4 class="text-[10px] font-bold text-slate-400 mb-4">🏆 Top Sales O/S</h4><div id="list-sales"></div></div>
-                <div class="bg-white p-5 rounded-2xl border card-shadow"><h4 class="text-[10px] font-bold text-blue-500 mb-4">📊 Breakdown Leasing TVC</h4><div id="total-unit-tvc">0 Unit</div></div>
-                <div class="bg-white p-5 rounded-2xl border card-shadow"><h4 class="text-[10px] font-bold text-red-500 mb-4 italic">⚠️ Top 5 Overdue</h4><div id="list-overdue"></div></div>
-                <div class="bg-white p-5 rounded-2xl border card-shadow"><h4 class="text-[10px] font-bold text-purple-600 mb-4">🏢 Top SPV AR</h4><div id="list-spv"></div></div>
+            <div class="flex gap-2">
+                <div id="arsip-db-status" class="bg-white px-4 py-2 rounded-xl border text-[10px] font-bold shadow-sm border-slate-200">MEMUAT...</div>
+                <button onclick="alert('Download Excel')" class="bg-white px-4 py-2 rounded-xl border text-[10px] font-bold hover:bg-slate-50 shadow-sm border-slate-200">DOWNLOAD EXCEL</button>
             </div>
         </div>
 
-        <div id="content-ar_unit" class="tab-content hidden">...</div>
-        <div id="content-leasing" class="tab-content hidden">...</div>
-        <div id="content-overdue" class="tab-content hidden">...</div>
-        <div id="content-database" class="tab-content hidden"><table class="w-full"><tbody id="tab-database-body"></tbody></table></div>
+        <div id="content-ringkasan" class="tab-content"><div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-5 rounded-2xl border card-shadow"><p class="text-[9px] font-bold text-slate-400 uppercase">Total O/S Balance</p><h3 id="total-os" class="text-xl font-black">Rp 0</h3><div class="h-1.5 w-full bg-slate-100 rounded-full flex overflow-hidden my-2"><div id="bar-cash" class="bg-emerald-400 h-full"></div><div id="bar-leasing" class="bg-blue-600 h-full"></div></div></div>
+            <div class="bg-white p-5 rounded-2xl border card-shadow"><p class="text-[9px] font-bold text-slate-400 uppercase">Total Overdue</p><h3 id="total-overdue" class="text-xl font-black text-red-600">Rp 0</h3></div>
+            <div class="bg-white p-5 rounded-2xl border card-shadow"><p class="text-[9px] font-bold text-slate-400 uppercase">Potensi Penalti</p><h3 id="total-penalty" class="text-xl font-black text-orange-500">Rp 0</h3></div>
+            <div class="bg-white p-5 rounded-2xl border card-shadow"><p class="text-[9px] font-bold text-slate-400 uppercase">Belum Jatuh Tempo</p><h3 id="total-lancar" class="text-xl font-black text-emerald-500">Rp 0</h3></div>
+        </div></div>
+
+        <div id="content-leasing" class="tab-content hidden"></div>
+        <div id="content-overdue" class="tab-content hidden"></div>
+        <div id="content-database" class="tab-content hidden"><div class="bg-white p-6 rounded-2xl border card-shadow"><table class="w-full text-xs"><tbody id="tab-database-body"></tbody></table></div></div>
     </main>
 
     <script type="module" src="script.js"></script>
@@ -102,7 +64,8 @@
         function filterTab(btn, tabName) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.getElementById(`content-${tabName}`).classList.remove('hidden');
-            if (tabName === 'ringkasan') window.dispatchEvent(new Event('resize'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('nav-active'));
+            btn.classList.add('nav-active');
         }
     </script>
 </body>
