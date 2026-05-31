@@ -875,9 +875,9 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
 
             .update({ 
 
-                plan_bayar_leasing: valPlan, 
+                Plan_bayar_leasing: valPlan, 
 
-                ket_leasing: valKetLeas 
+                Ket_Leasing: valKetLeas 
             })
 
             .eq('no_spk', spkAngka);
