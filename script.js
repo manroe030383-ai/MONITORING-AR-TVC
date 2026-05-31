@@ -820,7 +820,7 @@ window.simpanCatatan = async function(nomorSPK) {
 
             .update({ Ket_Cabang: valCabang })
 
-            .eq('no_spk', spkAngka);
+            .eq('No_SPK', spkAngka);
 
         if (error) throw error;
 
