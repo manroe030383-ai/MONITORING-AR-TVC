@@ -1,103 +1,163 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm'
 
-const supabase = createClient(
-    'https://ozcrikgzsadezarhccvp.supabase.co', 
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Y3Jpa2d6c2FkZXphcmhjY3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMzQxOTgsImV4cCI6MjA4ODcxMDE5OH0.vSohadwQZV2SU4bjXfh-bPGZ1FV6ivo4e0irF10ITn8'
-);
+// ========================================================
+// 1. KONFIGURASI UTAMA
+// ========================================================
+const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
 
-// Fungsi pembantu untuk membersihkan format angka
-const cleanNum = (v) => Number(String(v || 0).replace(/[^0-9.-]+/g, "")) || 0;
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-async function fetchData() {
-    const { data, error } = await supabase.from('ar_unit').select('*');
-    if (error) { console.error("Error Fetching:", error); return; }
+let charts = { bar: null, donut: null }; 
+let cachedData = []; 
 
-    if (data) {
-        // --- 1. Kalkulasi Data ---
-        let totals = { 
-            os: 0, ov: 0, cash: 0, leas: 0, 
-            unitCash: 0, unitLeas: 0, 
-            h1_30: 0, h31_60: 0, h60: 0 
-        };
-        
-        data.forEach(d => {
-            let os = cleanNum(d.os_balance);
-            let ov = cleanNum(d.total_overdue);
-            
-            totals.os += os;
-            totals.ov += ov;
-            totals.h1_30 += cleanNum(d.h1_30);
-            totals.h31_60 += cleanNum(d.h31_60);
-            totals.h60 += cleanNum(d.h60_plus);
-            
-            const l = String(d.Leasing_Name || '').toUpperCase();
-            if (l.includes('CASH')) { totals.cash += os; totals.unitCash++; } 
-            else { totals.leas += os; totals.unitLeas++; }
-        });
+const urlPath = window.location.pathname.toLowerCase();
+const isTafsPage = urlPath.includes('tafs');
+const isAccPage = urlPath.includes('acc');
 
-        // --- 2. Update Header & Dashboard Atas ---
-        document.getElementById('status-update').innerText = "TERAKHIR DIPERBARUI: " + new Date().toLocaleTimeString('id-ID');
-        document.getElementById('tgl-arsip').innerText = "31/5/2026";
-        document.getElementById('total-os').innerText = 'Rp ' + totals.os.toLocaleString('id-ID');
-        document.getElementById('total-overdue').innerText = 'Rp ' + totals.ov.toLocaleString('id-ID');
-        document.getElementById('badge-overdue').innerText = data.filter(d => cleanNum(d.total_overdue) > 0).length + " SPK LEWAT TOP";
-        
-        // Progress Bar
-        document.getElementById('bar-cash').style.width = ((totals.cash / (totals.os || 1)) * 100) + '%';
-        document.getElementById('bar-leasing').style.width = ((totals.leas / (totals.os || 1)) * 100) + '%';
+const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
+const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
 
-        // Breakdown Penjualan
-        document.getElementById('val-total-cash').innerText = 'Rp ' + totals.cash.toLocaleString('id-ID');
-        document.getElementById('unit-total-cash').innerText = totals.unitCash + ' Unit';
-        document.getElementById('val-total-leas').innerText = 'Rp ' + totals.leas.toLocaleString('id-ID');
-        document.getElementById('unit-total-leas').innerText = totals.unitLeas + ' Unit';
-
-        // --- 3. Render Grafik (Reset Container Terlebih Dahulu) ---
-        document.querySelector("#chart-aging").innerHTML = "";
-        document.querySelector("#chart-donut-leasing").innerHTML = "";
-
-        new ApexCharts(document.querySelector("#chart-aging"), {
-            series: [{ name: 'Nominal', data: [totals.h1_30, totals.h31_60, totals.h60] }],
-            chart: { type: 'bar', height: 200, toolbar: { show: false } },
-            xaxis: { categories: ['1-30 Hari', '31-60 Hari', '>60 Hari'] },
-            colors: ['#EF4444']
-        }).render();
-
-        new ApexCharts(document.querySelector("#chart-donut-leasing"), {
-            series: [totals.cash, totals.leas],
-            chart: { type: 'donut', height: 180 },
-            labels: ['Cash', 'Leasing'],
-            colors: ['#10B981', '#2563EB'],
-            legend: { show: false }
-        }).render();
-
-        // --- 4. Render Tabel & Lists ---
-        const sortedOverdue = [...data]
-            .filter(d => cleanNum(d.total_overdue) > 0)
-            .sort((a,b) => cleanNum(b.total_overdue) - cleanNum(a.total_overdue))
-            .slice(0, 5);
-
-        document.getElementById('list-overdue').innerHTML = sortedOverdue.map(d => `
-            <div class="flex justify-between text-[10px] mb-2">
-                <span class="font-bold text-slate-700 truncate w-32">${d.Customer_Name}</span>
-                <span class="text-red-600 font-black">Rp ${cleanNum(d.total_overdue).toLocaleString('id-ID')}</span>
-            </div>
-        `).join('');
-
-        document.getElementById('tab-database-body').innerHTML = data.map((d, i) => `
-            <tr class="hover:bg-slate-50 border-b border-slate-50">
-                <td class="p-4 text-center">${i + 1}</td>
-                <td class="p-4 font-bold text-slate-700">${d.Customer_Name}</td>
-                <td class="p-4">${d.Leasing_Name}</td>
-                <td class="p-4 text-right">Rp ${cleanNum(d.os_balance).toLocaleString('id-ID')}</td>
-                <td class="p-4 text-right">${d.h1_30 || 0}</td>
-                <td class="p-4 text-right">${d.h31_60 || 0}</td>
-                <td class="p-4 text-right">${d.h60_plus || 0}</td>
-                <td class="p-4 text-right font-bold text-red-600">Rp ${cleanNum(d.total_overdue).toLocaleString('id-ID')}</td>
-            </tr>
-        `).join('');
+function getProp(obj, key) {
+    if (!obj) return undefined;
+    if (obj[key] !== undefined) return obj[key];
+    const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (let k in obj) {
+        const cleanK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (cleanK === cleanKey) return obj[k];
     }
+    return undefined;
 }
 
-// Inisialisasi saat halaman dimuat
-document.addEventListener('DOMContentLoaded', fetchData);
+// ========================================================
+// 2. FUNGSI UTAMA FETCH & UPDATE
+// ========================================================
+async function fetchData() {
+    try {
+        const { data, error } = await supabase.from('ar_unit').select('*');
+        if (error) throw error;
+        
+        if (data) {
+            let finalFilteredData = data;
+            if (isTafsPage) finalFilteredData = data.filter(d => String(getProp(d, 'Chas/Leasing') || '').toUpperCase().includes('TAFS'));
+            else if (isAccPage) finalFilteredData = data.filter(d => String(getProp(d, 'Chas/Leasing') || '').toUpperCase().includes('ACC'));
+
+            cachedData = finalFilteredData; 
+            updateDashboard(finalFilteredData);
+
+            if (document.getElementById('status-update')) {
+                document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleTimeString('id-ID')} WIB`;
+            }
+        }
+    } catch (e) { console.error("Error Fetching:", e); }
+}
+
+function updateDashboard(data) {
+    let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
+    let tvc = { total: 0, gi: 0, deliv: 0 };
+    let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
+    let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
+
+    data.forEach(d => {
+        const os = Number(getProp(d, 'O/S Balance') || getProp(d, 'os_balance') || 0);
+        const b1 = Number(getProp(d, 'Hari 1-30') || getProp(d, 'hari_1_30') || 0);
+        const b2 = Number(getProp(d, 'Hari 31-60') || getProp(d, 'hari_31_60') || 0);
+        const b3 = Number(getProp(d, 'Lebih 60 Hari') || getProp(d, 'lebih_60_hari') || 0);
+        const ov = b1 + b2 + b3;
+        const l = String(getProp(d, 'Chas/Leasing') || 'CASH').toUpperCase().trim();
+        
+        s.os += os; s.ov += ov;
+        aging['LANCAR'] += (os - ov > 0 ? os - ov : 0) / 1000000;
+        aging['1-30 H'] += b1 / 1000000;
+        aging['31-60 H'] += b2 / 1000000;
+        aging['>60 H'] += b3 / 1000000;
+
+        if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
+        if (l.includes('CASH')) { s.cash += os; s.cCash++; } else { s.leas += os; s.cLeas++; mLeas[l] = (mLeas[l] || 0) + os; }
+    });
+
+    // Update UI elements
+    document.getElementById('total-os').innerText = fmtIDR(s.os);
+    document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
+    document.getElementById('badge-overdue').innerText = `${s.countOv} SPK LEWAT TOP`;
+    document.getElementById('bar-cash').style.width = `${(s.cash/(s.os||1))*100}%`;
+    document.getElementById('bar-leasing').style.width = `${(s.leas/(s.os||1))*100}%`;
+    document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
+    document.getElementById('unit-total-cash').innerText = `${s.cCash} Unit`;
+    document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
+    document.getElementById('unit-total-leas').innerText = `${s.cLeas} Unit`;
+
+    renderAgingChart(aging);
+    renderDonutLeasing(data);
+    renderOverdueTop(mOverdueTop);
+    renderTabDatabaseFull(data);
+}
+
+// ========================================================
+// 3. FUNGSI GRAFIK & LIST
+// ========================================================
+function renderAgingChart(agingData) {
+    const el = document.querySelector("#chart-aging");
+    if (!el) return;
+    const options = {
+        series: [{ data: Object.values(agingData).map(v => Math.round(v)) }],
+        chart: { type: 'bar', height: 200 },
+        xaxis: { categories: ['Lancar', '1-30 H', '31-60 H', '>60 H'] },
+        colors: ['#EF4444']
+    };
+    if (charts.bar) charts.bar.updateOptions(options);
+    else { charts.bar = new ApexCharts(el, options); charts.bar.render(); }
+}
+
+function renderDonutLeasing(data) {
+    const el = document.querySelector("#chart-donut-leasing");
+    if (!el) return;
+    let cash = 0, leas = 0;
+    data.forEach(d => {
+        const os = Number(getProp(d, 'O/S Balance') || 0);
+        if (String(getProp(d, 'Chas/Leasing') || '').toUpperCase().includes('CASH')) cash += os;
+        else leas += os;
+    });
+    const options = { series: [cash, leas], chart: { type: 'donut', height: 180 }, labels: ['Cash', 'Leasing'], colors: ['#10B981', '#3B82F6'] };
+    if (charts.donut) charts.donut.updateOptions(options);
+    else { charts.donut = new ApexCharts(el, options); charts.donut.render(); }
+}
+
+function renderOverdueTop(data) {
+    const el = document.getElementById('list-overdue');
+    if (!el) return;
+    el.innerHTML = data.slice(0, 5).map((d, i) => `
+        <div class="flex justify-between text-[10px] mb-2 font-bold">
+            <span class="truncate w-32 text-slate-700">${i+1}. ${getProp(d, 'Customer Name') || '-'}</span>
+            <span class="text-red-600">${fmtJuta(getProp(d, 'Hari 1-30') + getProp(d, 'Hari 31-60') + getProp(d, 'Lebih 60 Hari'))}</span>
+        </div>`).join('');
+}
+
+function renderTabDatabaseFull(data) {
+    const el = document.getElementById('tab-database-body');
+    if (!el) return;
+    el.innerHTML = data.map((d, i) => `
+        <tr>
+            <td class="p-2">${i+1}</td>
+            <td class="p-2 font-bold">${getProp(d, 'Customer Name') || '-'}</td>
+            <td class="p-2">${fmtIDR(getProp(d, 'O/S Balance') || 0)}</td>
+            <td class="p-2 text-red-600 font-bold">${fmtIDR((getProp(d, 'Hari 1-30')||0) + (getProp(d, 'Hari 31-60')||0) + (getProp(d, 'Lebih 60 Hari')||0))}</td>
+        </tr>`).join('');
+}
+
+// ========================================================
+// 4. INISIALISASI AKHIR
+// ========================================================
+document.addEventListener('DOMContentLoaded', () => {
+    fetchData();
+    // Real-time listener
+    supabase.channel('ar_unit_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'ar_unit' }, () => fetchData())
+        .subscribe();
+});
+
+window.addEventListener('resize', () => {
+    if (charts.bar) charts.bar.updateOptions({});
+    if (charts.donut) charts.donut.updateOptions({});
+});
