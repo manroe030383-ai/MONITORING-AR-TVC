@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,301 +13,107 @@
         <div>
             <div class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1 mb-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                DATA UPDATE: <span id="realtime-clock" class="font-mono">MEMUAT LIVE CLOCK...</span>
+                DATA UPDATE: <span id="realtime-clock" class="font-mono">MEMUAT...</span>
             </div>
-            <div class="flex items-center gap-2">
-                <h1 class="text-2xl font-bold tracking-tight uppercase">ACC Dashboard</h1>
-                <span class="bg-white text-[#8B0000] text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Leasing System</span>
-            </div>
-            <p class="text-[11px] text-red-100 font-medium tracking-wide mt-0.5">AUTO2000 CO-BRANDING • ASTRA CREDIT COMPANIES (ACC)</p>
+            <h1 class="text-2xl font-bold tracking-tight uppercase">ACC Dashboard</h1>
         </div>
-        
-        <div class="flex items-center gap-3 w-full sm:w-auto self-stretch sm:self-auto justify-end">
-            <button id="btn-download-excel" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5">
-                💾 Download Excel Report
-            </button>
-            <button class="bg-white hover:bg-gray-100 text-[#8B0000] px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-sm">
-                Logout
-            </button>
+        <button id="btn-download-excel" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all">
+            💾 DOWNLOAD EXCEL
+        </button>
+    </div>
+
+    <div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <span class="text-xs font-bold text-gray-500 uppercase">Outstanding</span>
+            <div class="text-2xl font-black mt-2" id="total-outstanding">Rp 0</div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <span class="text-xs font-bold text-gray-500 uppercase">Paid</span>
+            <div class="text-2xl font-black mt-2" id="total-paid">0 Unit</div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <span class="text-xs font-bold text-gray-500 uppercase">On Proses</span>
+            <div class="text-2xl font-black mt-2" id="total-on-proses">0 Unit</div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <span class="text-xs font-bold text-red-500 uppercase">Overdue</span>
+            <div class="text-2xl font-black text-red-600 mt-2" id="total-overdue">0 Unit</div>
         </div>
     </div>
 
-    <div class="p-6 space-y-6">
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 min-h-[140px] flex flex-col justify-between">
-                <span class="text-sm font-bold text-gray-800 tracking-tight">Total Outstanding</span>
-                <span class="text-4xl font-extrabold text-black mt-4 tracking-tight" id="total-outstanding">Rp 0</span>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 min-h-[140px] flex flex-col justify-between">
-                <span class="text-sm font-bold text-gray-800 tracking-tight">PAID</span>
-                <span class="text-4xl font-extrabold text-black mt-4 tracking-tight" id="total-paid">0 Unit</span>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 min-h-[140px] flex flex-col justify-between">
-                <span class="text-sm font-bold text-gray-800 tracking-tight">On Proses</span>
-                <span class="text-4xl font-extrabold text-black mt-4 tracking-tight" id="total-on-proses">0 Unit</span>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 min-h-[140px] flex flex-col justify-between">
-                <span class="text-sm font-bold text-gray-800 tracking-tight">Overdue</span>
-                <span class="text-4xl font-extrabold text-[#DC2626] mt-4 tracking-tight" id="total-overdue">0 Unit</span>
-            </div>
-
+    <div class="px-6 pb-10">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-[11px] uppercase">
+                <thead class="bg-[#DC2626] text-white">
+                    <tr>
+                        <th class="p-4 text-center">No</th>
+                        <th class="p-4">Customer</th>
+                        <th class="p-4">SPK</th>
+                        <th class="p-4">Balance</th>
+                        <th class="p-4">Plan Bayar</th>
+                        <th class="p-4">Ket Leasing</th>
+                        <th class="p-4 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="acc-table-body" class="divide-y divide-gray-100"></tbody>
+            </table>
         </div>
-
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 overflow-hidden">
-            
-            <div class="grid grid-cols-[50px_2fr_1.2fr_1.2fr_1.5fr_1.5fr_1.5fr_60px] bg-[#DC2626] text-white border-b border-gray-200 text-left font-bold text-[11px] uppercase tracking-wider py-4 px-4 items-center rounded-t-xl">
-                <div class="text-center">No</div>
-                <div>Nama Customer</div>
-                <div>Leasing & SPK</div>
-                <div>O/S Balance</div>
-                <div>Keterangan Admin Cabang</div>
-                <div>Plan Bayar Leasing</div>
-                <div>Keterangan Leasing</div>
-                <div class="text-center">Aksi</div>
-            </div>
-            
-            <div id="acc-table-body" class="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
-            </div>
-
-        </div>
-
     </div>
 
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-        const SUPABASE_URL = 'https://ahaoznkudusajtzfbnqj.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s';
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = createClient('https://ahaoznkudusajtzfbnqj.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s');
 
-        window.cachedData = [];
+        async function fetchData() {
+            const { data, error } = await supabase.from('ar_unit').select('*');
+            if (error) return console.error(error);
 
-        const fmtIDR = (v) => 'RP ' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(v || 0);
-
-        function getProp(obj, key) {
-            if (!obj) return undefined;
-            if (obj[key.toLowerCase()] !== undefined) return obj[key.toLowerCase()];
-            if (obj[key.toUpperCase()] !== undefined) return obj[key.toUpperCase()];
-            if (obj[key] !== undefined) return obj[key];
+            const tbody = document.getElementById('acc-table-body');
+            tbody.innerHTML = '';
             
-            const lowerKey = key.toLowerCase();
-            for (let k in obj) {
-                if (k.toLowerCase() === lowerKey) return obj[k];
-            }
-            return undefined;
-        }
+            let metrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
 
-        async function fetchAccData() {
-            try {
-                const { data, error } = await supabase.from('ar_unit').select('*');
-                if (error) throw error;
+            data.filter(d => (d.leasing_name || d.leasing || '').toUpperCase().includes('ACC')).forEach((d, i) => {
+                const os = Number(d.os_balance || d.balance || 0);
+                const isOverdue = (Number(d.total_overdue || 0) > 0);
+                const status = (d.status_tagih || d.status || '').toUpperCase();
 
-                if (data) {
-                    window.cachedData = data;
-                    
-                    let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
-                    let htmlRows = '';
-                    let displayIndex = 1;
+                if (status === 'SUDAH GI' || status === 'PAID' || os === 0) metrics.paid++;
+                else { metrics.os += os; isOverdue ? metrics.overdue++ : metrics.onProses++; }
 
-                    data.forEach((d, i) => {
-                        const leasing = String(getProp(d, 'leasing_name') || getProp(d, 'leasing') || '').toUpperCase().trim();
-                        
-                        if (leasing.includes('ACC')) {
-                            const os = Number(getProp(d, 'os_balance') || getProp(d, 'balance') || 0);
-                            
-                            const ov1 = Number(getProp(d, 'hari_1_30') || getProp(d, 'lancar') || 0);
-                            const ov2 = Number(getProp(d, 'hari_31_60') || 0);
-                            const ov3 = Number(getProp(d, 'lebih_60_hari') || 0);
-                            const totalOv = Number(getProp(d, 'total_overdue') || 0);
-                            const isOverdue = (ov1 + ov2 + ov3 + totalOv) > 0;
-
-                            const statusTagih = String(getProp(d, 'status_tagih') || getProp(d, 'status') || '').toUpperCase().trim();
-                            
-                            const customerName = getProp(d, 'customer_name') || '-';
-                            const spkNo = getProp(d, 'no_spk') || getProp(d, 'spk') || '-';
-                            const virtualAccount = getProp(d, 'va_number') || getProp(d, 'nomor_va') || getProp(d, 'va') || '';
-                            
-                            const valKetCabang = getProp(d, 'ket_cabang') !== null && getProp(d, 'ket_cabang') !== undefined ? String(getProp(d, 'ket_cabang')) : '';
-                            const valPlanBayar = getProp(d, 'plan_bayar_leasing') !== null && getProp(d, 'plan_bayar_leasing') !== undefined ? String(getProp(d, 'plan_bayar_leasing')) : '';
-                            const valKetLeasing = getProp(d, 'ket_leasing') !== null && getProp(d, 'ket_leasing') !== undefined ? String(getProp(d, 'ket_leasing')) : '';
-
-                            const uiId = i;
-
-                            if (statusTagih === 'SUDAH GI' || statusTagih === 'PAID' || os === 0) {
-                                accMetrics.paid++;
-                            } else {
-                                accMetrics.os += os;
-                                if (isOverdue) {
-                                    accMetrics.overdue++;
-                                } else {
-                                    accMetrics.onProses++;
-                                }
-                            }
-
-                            htmlRows += `
-                            <div class="grid grid-cols-[50px_2fr_1.2fr_1.2fr_1.5fr_1.5fr_1.5fr_60px] text-left py-4 px-4 text-xs font-medium text-gray-700 hover:bg-gray-50 items-center border-b border-gray-100">
-                                <div class="text-center font-normal text-gray-400">${displayIndex++}</div>
-                                <div class="pr-2">
-                                    <div class="font-bold text-gray-900 uppercase">${customerName}</div>
-                                    ${virtualAccount ? `<div class="text-[10px] text-gray-400 font-mono mt-0.5">${virtualAccount}</div>` : ''}
-                                </div>
-                                <div>
-                                    <span class="bg-blue-50 text-blue-600 font-bold px-2 py-0.5 rounded text-[10px] inline-block tracking-wide">ACC</span>
-                                    <div class="text-[10px] text-gray-400 mt-1 font-semibold">SPK: ${spkNo}</div>
-                                </div>
-                                <div class="text-blue-600 font-bold">${fmtIDR(os)}</div>
-                                <div class="pr-2">
-                                    <input type="text" id="cabang-${uiId}" data-customer="${customerName}" data-no="${getProp(d, 'No') || ''}" data-id="${getProp(d, 'id') || ''}" value="${valKetCabang}" placeholder="-" class="w-full text-xs p-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 font-medium cursor-not-allowed focus:outline-none" readonly>
-                                </div>
-                                <div class="pr-2">
-                                    <input type="text" id="plan-${uiId}" value="${valPlanBayar}" placeholder="Isi plan..." class="w-full text-xs p-2 border border-gray-200 rounded-lg bg-white font-medium text-gray-800 focus:outline-none focus:border-blue-500 shadow-sm">
-                                </div>
-                                <div class="pr-2">
-                                    <input type="text" id="ket-${uiId}" value="${valKetLeasing}" placeholder="Isi keterangan..." class="w-full text-xs p-2 border border-gray-200 rounded-lg bg-white font-medium text-gray-800 focus:outline-none focus:border-blue-500 shadow-sm">
-                                </div>
-                                <div class="text-center">
-                                    <button onclick="simpanCatatanAcc('${uiId}')" class="text-purple-700 hover:bg-purple-100 bg-purple-50 p-2 rounded-lg transition-all shadow-sm" title="Simpan Catatan">💾</button>
-                                </div>
-                            </div>`;
-                        }
-                    });
-
-                    if(document.getElementById('total-outstanding')) document.getElementById('total-outstanding').innerText = fmtIDR(accMetrics.os);
-                    if(document.getElementById('total-paid')) document.getElementById('total-paid').innerText = `${accMetrics.paid} Unit`;
-                    if(document.getElementById('total-on-proses')) document.getElementById('total-on-proses').innerText = `${accMetrics.onProses} Unit`;
-                    if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = `${accMetrics.overdue} Unit`;
-
-                    const tableBody = document.getElementById('acc-table-body');
-                    if(tableBody) {
-                        tableBody.innerHTML = htmlRows ? htmlRows : '<div class="text-center py-8 text-gray-400 text-xs font-bold">TIDAK ADA DATA PIUTANG ACC</div>';
-                    }
-                    
-                    // NOTE: updateClock() di sini dihapus agar tidak menimpa / mematahkan loop setInterval jam realtime yang sedang aktif berjalan.
-                }
-            } catch (err) {
-                console.error("Gagal sinkronisasi data ACC:", err);
-            }
-        }
-
-        function updateClock() {
-            const elClock = document.getElementById('realtime-clock');
-            if (elClock) {
-                const skrg = new Date();
-                
-                // Format tanggal 2 digit (DD/MM/YYYY)
-                const tanggal = String(skrg.getDate()).padStart(2, '0') + '/' + 
-                                String(skrg.getMonth() + 1).padStart(2, '0') + '/' + 
-                                skrg.getFullYear();
-                
-                // Format jam lokal Indonesia 24 jam (HH.MM.SS)
-                const waktu = skrg.toLocaleTimeString('id-ID', { hour12: false }).replace(/:/g, '.');
-                
-                elClock.innerText = `${tanggal}, ${waktu} WIB (REALTIME ACTIVE)`;
-            }
-        }
-
-        function downloadExcelReport() {
-            if (!window.cachedData || window.cachedData.length === 0) {
-                alert("Data kosong atau belum dimuat sepenuhnya.");
-                return;
-            }
-
-            const filteredRows = [];
-            let excelIdx = 1;
-            window.cachedData.forEach(d => {
-                const leasing = String(getProp(d, 'leasing_name') || getProp(d, 'leasing') || '').toUpperCase().trim();
-                if (leasing.includes('ACC')) {
-                    filteredRows.push({
-                        "No": excelIdx++,
-                        "Nama Customer": getProp(d, 'customer_name') || '-',
-                        "Leasing & SPK": 'ACC / SPK: ' + (getProp(d, 'no_spk') || getProp(d, 'spk') || '-'),
-                        "O/S Balance": Number(getProp(d, 'os_balance') || getProp(d, 'balance') || 0),
-                        "Keterangan Admin Cabang": getProp(d, 'ket_cabang') || '',
-                        "Plan Bayar Leasing": getProp(d, 'plan_bayar_leasing') || '',
-                        "Keterangan Leasing": getProp(d, 'ket_leasing') || ''
-                    });
-                }
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-4 text-center">${i + 1}</td>
+                        <td class="p-4 font-bold">${d.customer_name || '-'}</td>
+                        <td class="p-4">${d.No_SPK || d.no_spk || '-'}</td>
+                        <td class="p-4 text-blue-600 font-bold">${os.toLocaleString()}</td>
+                        <td class="p-4"><input type="text" id="plan-${d.id}" value="${d.Plan_Bayar_Leasing || ''}" class="border p-1 w-full rounded"></td>
+                        <td class="p-4"><input type="text" id="ket-${d.id}" value="${d.Ket_Leasing || ''}" class="border p-1 w-full rounded"></td>
+                        <td class="p-4 text-center"><button onclick="simpan('${d.id}')" class="bg-purple-600 text-white px-3 py-1 rounded">SIMPAN</button></td>
+                    </tr>`;
             });
 
-            if (filteredRows.length === 0) {
-                alert("Tidak ada data ACC yang bisa diunduh.");
-                return;
-            }
-
-            const worksheet = XLSX.utils.json_to_sheet(filteredRows);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "ACC Report");
-            XLSX.writeFile(workbook, `Report_Monitoring_ACC_${new Date().toISOString().split('T')[0]}.xlsx`);
+            document.getElementById('total-outstanding').innerText = 'Rp ' + metrics.os.toLocaleString();
+            document.getElementById('total-paid').innerText = metrics.paid + ' Unit';
+            document.getElementById('total-on-proses').innerText = metrics.onProses + ' Unit';
+            document.getElementById('total-overdue').innerText = metrics.overdue + ' Unit';
         }
 
-        window.simpanCatatanAcc = async function(uiId) {
-            const inputCabang = document.getElementById(`cabang-${uiId}`);
-            const inputPlan = document.getElementById(`plan-${uiId}`);
-            const inputKet = document.getElementById(`ket-${uiId}`);
+        window.simpan = async (id) => {
+            const { error } = await supabase.from('ar_unit')
+                .update({ 
+                    'Plan_Bayar_Leasing': document.getElementById(`plan-${id}`).value,
+                    'Ket_Leasing': document.getElementById(`ket-${id}`).value 
+                })
+                .eq('id', id);
 
-            const customerName = inputCabang.getAttribute('data-customer');
-            const dataNo = inputCabang.getAttribute('data-no');
-            const dataId = inputCabang.getAttribute('data-id');
-
-            const valPlan = inputPlan.value;
-            const valKet = inputKet.value;
-
-            try {
-                let payload = {};
-                if (window.cachedData && window.cachedData.length > 0) {
-                    const sample = window.cachedData[0];
-                    const kPlan = sample['Plan_Bayar_Leasing'] !== undefined ? 'Plan_Bayar_Leasing' : 
-                                  (sample['plan_bayar_leasing'] !== undefined ? 'plan_bayar_leasing' : 'plan_bayar_leasing');
-                    const kKet = sample['Ket_Leasing'] !== undefined ? 'Ket_Leasing' : 
-                                 (sample['ket_leasing'] !== undefined ? 'ket_leasing' : 'ket_leasing');
-                    
-                    payload[kPlan] = valPlan;
-                    payload[kKet] = valKet;
-                } else {
-                    payload['plan_bayar_leasing'] = valPlan;
-                    payload['ket_leasing'] = valKet;
-                }
-
-                let queryBuilder = supabase.from('ar_unit').update(payload);
-
-                if (dataId && dataId !== "") {
-                    queryBuilder = queryBuilder.eq('id', dataId);
-                } else if (dataNo && dataNo !== "") {
-                    if (window.cachedData && window.cachedData.length > 0 && window.cachedData[0]['no'] !== undefined) {
-                        queryBuilder = queryBuilder.eq('no', Number(dataNo));
-                    } else {
-                        queryBuilder = queryBuilder.eq('No', Number(dataNo));
-                    }
-                } else {
-                    queryBuilder = queryBuilder.or(`customer_name.eq."${customerName}","Customer name".eq."${customerName}","CUSTOMER_NAME".eq."${customerName}"`);
-                }
-
-                const { error } = await queryBuilder;
-                if (error) throw error;
-                
-                alert("Catatan ACC Berhasil Disimpan Langsung! 👍");
-                fetchAccData();
-
-            } catch (err) {
-                console.error(err);
-                alert("Gagal sinkronisasi: " + err.message);
-            }
+            if (error) alert("Error: " + error.message);
+            else { alert("Berhasil!"); fetchData(); }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchAccData();
-            document.getElementById('btn-download-excel').addEventListener('click', downloadExcelReport);
-            
-            // Jalankan jam pertama kali saat load selesai
-            updateClock();
-            // Loop interval per detik mandiri, tidak akan terganggu respon fetch database
-            setInterval(updateClock, 1000);
-        });
+        setInterval(() => document.getElementById('realtime-clock').innerText = new Date().toLocaleTimeString(), 1000);
+        fetchData();
     </script>
 </body>
 </html>
