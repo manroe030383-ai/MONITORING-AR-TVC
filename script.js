@@ -880,7 +880,7 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
                 Ket_Leasing: valKetLeas 
             })
 
-            .eq('no_spk', spkAngka);
+            .eq('No_SPK', spkAngka);
 
         if (error) throw error;
 
