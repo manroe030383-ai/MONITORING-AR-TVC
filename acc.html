@@ -8,19 +8,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
-        /* Warna Merah Tua Sesuai Referensi */
         .bg-acc-dark { background-color: #B91C1C; }
-        /* Warna Merah Terang Sesuai Referensi */
         .bg-acc-light { background-color: #DC2626; }
     </style>
 </head>
 <body class="p-6">
 
-    <!-- HEADER UTAMA (MERAH TUA) -->
     <header class="bg-acc-dark text-white p-6 rounded-2xl shadow-lg mb-6">
         <div class="flex justify-between items-start">
             <div>
-                <!-- Teks Update Date agar terlihat jelas -->
                 <div id="status-update" class="text-[10px] font-bold text-emerald-300 uppercase tracking-widest mb-1 italic">
                     MEMUAT DATA...
                 </div>
@@ -30,33 +26,32 @@
                 </h1>
                 <p class="text-sm font-medium mt-1">AUTO2000 CO-BRANDING • ASTRA CREDIT COMPANIES (ACC)</p>
             </div>
-            <button class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all shadow-md">
+            
+            <button id="btn-download-excel" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all shadow-md cursor-pointer">
                 💾 DOWNLOAD EXCEL REPORT
             </button>
         </div>
     </header>
 
-    <!-- METRICS (KOTAK ATAS) -->
     <section class="grid grid-cols-4 gap-4 mb-6">
         <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
             <p class="text-[10px] font-bold text-slate-400 uppercase">Total Outstanding</p>
-            <h2 class="text-2xl font-black text-red-900 mt-1">Rp 2.445.124.320</h2>
+            <h2 id="acc-outstanding" class="text-2xl font-black text-red-900 mt-1">Rp 0</h2>
         </div>
         <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
             <p class="text-[10px] font-bold text-slate-400 uppercase">Paid</p>
-            <h2 class="text-2xl font-black text-slate-700 mt-1">0 Unit</h2>
+            <h2 id="acc-paid" class="text-2xl font-black text-slate-700 mt-1">0 Unit</h2>
         </div>
         <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
             <p class="text-[10px] font-bold text-slate-400 uppercase">On Proses</p>
-            <h2 class="text-2xl font-black text-amber-500 mt-1">5 Unit</h2>
+            <h2 id="acc-on-proses" class="text-2xl font-black text-amber-500 mt-1">0 Unit</h2>
         </div>
         <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
             <p class="text-[10px] font-bold text-slate-400 uppercase">Overdue</p>
-            <h2 class="text-2xl font-black text-red-500 mt-1">5 Unit</h2>
+            <h2 id="acc-overdue" class="text-2xl font-black text-red-500 mt-1">0 Unit</h2>
         </div>
     </section>
 
-    <!-- TABEL (HEADER MERAH TERANG) -->
     <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
             <h3 class="text-sm font-bold text-slate-800">📝 BINDING ENTRY UPDATE RESPONS REKONSILIASI TAGIHAN LEASING</h3>
@@ -76,13 +71,11 @@
                 </tr>
             </thead>
             <tbody id="tab-ar-unit-body" class="divide-y divide-slate-100 text-slate-600">
-                <!-- Data akan diisi via script.js -->
             </tbody>
         </table>
     </section>
 
     <script>
-        // Fungsi Jam Realtime
         function updateClock() {
             const now = new Date();
             const dateStr = now.toLocaleDateString('id-ID');
