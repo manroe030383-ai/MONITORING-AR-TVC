@@ -3,117 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACC Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.mini.min.js"></script>
+    <title>ACC DASHBOARD</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .input-custom {
+            width: 100%; padding: 0.5rem; font-size: 11px; font-weight: 700;
+            border: 1px solid #e2e8f0; border-radius: 0.375rem; outline: none;
+            transition: all 0.2s;
+        }
+        .input-custom:focus { border-color: #DC2626; box-shadow: 0 0 0 2px rgba(220,38,38,0.1); }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans antialiased">
+<body class="p-4 lg:p-6 bg-slate-50 text-slate-900 antialiased">
 
-    <div class="bg-[#8B0000] text-white px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-md">
+    <header style="background-color: #B91C1C;" class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-red-900 p-4 rounded-xl mb-6 gap-4 text-white shadow-md">
         <div>
-            <div class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1 mb-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                DATA UPDATE: <span id="realtime-clock" class="font-mono">MEMUAT...</span>
-            </div>
-            <h1 class="text-2xl font-bold tracking-tight uppercase">ACC Dashboard</h1>
+            <div id="status-update" class="text-[9px] font-bold text-emerald-300 uppercase tracking-widest mb-1 italic font-mono">MEMUAT LIVE CLOCK...</div>
+            <h1 class="text-xl lg:text-2xl font-black text-white tracking-tight flex items-center gap-2 uppercase">
+                ACC DASHBOARD 
+                <span class="bg-amber-400 text-red-950 text-[10px] px-2 py-0.5 rounded-md font-extrabold tracking-wide">LEASING SYSTEM</span>
+            </h1>
+            <p class="text-[11px] text-red-100 font-semibold mt-0.5">AUTO2000 CO-BRANDING &bull; ASTRA CREDIT COMPANIES (ACC)</p>
         </div>
-        <button id="btn-download-excel" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all">
-            💾 DOWNLOAD EXCEL
-        </button>
-    </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-download-excel" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 cursor-pointer uppercase">
+                <span>💾</span> DOWNLOAD EXCEL REPORT
+            </button>
+        </div>
+    </header>
 
-    <div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <span class="text-xs font-bold text-gray-500 uppercase">Outstanding</span>
-            <div class="text-2xl font-black mt-2" id="total-outstanding">Rp 0</div>
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
+            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">TOTAL OUTSTANDING</span>
+            <h2 id="acc-outstanding" class="text-lg lg:text-xl font-black text-[#B91C1C] mt-2">Rp 0</h2>
         </div>
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <span class="text-xs font-bold text-gray-500 uppercase">Paid</span>
-            <div class="text-2xl font-black mt-2" id="total-paid">0 Unit</div>
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
+            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">PAID</span>
+            <h2 id="acc-paid" class="text-lg lg:text-xl font-black text-slate-700 mt-2">0 Unit</h2>
         </div>
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <span class="text-xs font-bold text-gray-500 uppercase">On Proses</span>
-            <div class="text-2xl font-black mt-2" id="total-on-proses">0 Unit</div>
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
+            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">ON PROSES</span>
+            <h2 id="acc-on-proses" class="text-lg lg:text-xl font-black text-amber-500 mt-2">0 Unit</h2>
         </div>
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <span class="text-xs font-bold text-red-500 uppercase">Overdue</span>
-            <div class="text-2xl font-black text-red-600 mt-2" id="total-overdue">0 Unit</div>
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
+            <span class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">OVERDUE</span>
+            <h2 id="acc-overdue" class="text-lg lg:text-xl font-black text-red-500 mt-2">0 Unit</h2>
         </div>
-    </div>
+    </section>
 
-    <div class="px-6 pb-10">
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <table class="w-full text-left text-[11px] uppercase">
-                <thead class="bg-[#DC2626] text-white">
-                    <tr>
-                        <th class="p-4 text-center">No</th>
-                        <th class="p-4">Customer</th>
-                        <th class="p-4">SPK</th>
-                        <th class="p-4">Balance</th>
-                        <th class="p-4">Plan Bayar</th>
-                        <th class="p-4">Ket Leasing</th>
-                        <th class="p-4 text-center">Aksi</th>
+    <section class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden mb-6">
+        <div class="bg-slate-100 px-4 py-3 border-b border-slate-200/60 flex items-center justify-between">
+            <h3 class="text-xs font-black uppercase text-red-900 tracking-wide flex items-center gap-2">
+                <span>📝</span> BINDING ENTRY UPDATE RESPONS REKONSILIASI TAGIHAN LEASING
+            </h3>
+            <span class="text-[9px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md font-bold">MODE: LEASING EDITOR</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-[10px]">
+                <thead>
+                    <tr style="background-color: #B91C1C;" class="text-white font-extrabold uppercase border-b border-red-800">
+                        <th class="p-4 w-12 text-center">No</th>
+                        <th class="p-4">Nama Customer</th>
+                        <th class="p-4">Leasing & SPK</th>
+                        <th class="p-4 text-right">O/S Balance</th>
+                        <th class="p-4 text-red-100">Keterangan Admin Cabang</th>
+                        <th class="p-4 bg-red-900/40 text-white">Plan Bayar Leasing</th>
+                        <th class="p-4 bg-red-900/40 text-white">Keterangan Leasing</th>
+                        <th class="p-4 text-center w-16">Aksi</th>
                     </tr>
                 </thead>
-                <tbody id="acc-table-body" class="divide-y divide-gray-100"></tbody>
+                <tbody id="tab-ar-unit-body" class="divide-y divide-slate-100">
+                    <tr>
+                        <td colspan="8" class="p-4 text-center text-slate-400 font-bold uppercase">Memuat data ACC...</td>
+                    </tr>
+                </tbody>
             </table>
         </div>
+    </section>
+
+    <div class="hidden" aria-hidden="true">
+        <div id="acc-outstanding"></div>
+        <div id="acc-paid"></div>
+        <div id="acc-on-proses"></div>
+        <div id="acc-overdue"></div>
     </div>
 
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-
-        const supabase = createClient('https://ahaoznkudusajtzfbnqj.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoYW96bmt1ZHVzYWp0emZibnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzQ0NTEsImV4cCI6MjA5MDgxMDQ1MX0.RbMEdiLooCsDKefdXnM_0jse63_C4sl1tWQ5BfWVU1s');
-
-        async function fetchData() {
-            const { data, error } = await supabase.from('ar_unit').select('*');
-            if (error) return console.error(error);
-
-            const tbody = document.getElementById('acc-table-body');
-            tbody.innerHTML = '';
-            
-            let metrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
-
-            data.filter(d => (d.leasing_name || d.leasing || '').toUpperCase().includes('ACC')).forEach((d, i) => {
-                const os = Number(d.os_balance || d.balance || 0);
-                const isOverdue = (Number(d.total_overdue || 0) > 0);
-                const status = (d.status_tagih || d.status || '').toUpperCase();
-
-                if (status === 'SUDAH GI' || status === 'PAID' || os === 0) metrics.paid++;
-                else { metrics.os += os; isOverdue ? metrics.overdue++ : metrics.onProses++; }
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-gray-50">
-                        <td class="p-4 text-center">${i + 1}</td>
-                        <td class="p-4 font-bold">${d.customer_name || '-'}</td>
-                        <td class="p-4">${d.No_SPK || d.no_spk || '-'}</td>
-                        <td class="p-4 text-blue-600 font-bold">${os.toLocaleString()}</td>
-                        <td class="p-4"><input type="text" id="plan-${d.id}" value="${d.Plan_Bayar_Leasing || ''}" class="border p-1 w-full rounded"></td>
-                        <td class="p-4"><input type="text" id="ket-${d.id}" value="${d.Ket_Leasing || ''}" class="border p-1 w-full rounded"></td>
-                        <td class="p-4 text-center"><button onclick="simpan('${d.id}')" class="bg-purple-600 text-white px-3 py-1 rounded">SIMPAN</button></td>
-                    </tr>`;
-            });
-
-            document.getElementById('total-outstanding').innerText = 'Rp ' + metrics.os.toLocaleString();
-            document.getElementById('total-paid').innerText = metrics.paid + ' Unit';
-            document.getElementById('total-on-proses').innerText = metrics.onProses + ' Unit';
-            document.getElementById('total-overdue').innerText = metrics.overdue + ' Unit';
+    <script>
+        function jalankanJamRealtime() {
+            const elStatus = document.getElementById('status-update');
+            if (elStatus) {
+                const sekarang = new Date();
+                const tanggal = String(sekarang.getDate()).padStart(2, '0') + '/' + 
+                                String(sekarang.getMonth() + 1).padStart(2, '0') + '/' + 
+                                sekarang.getFullYear();
+                const waktu = sekarang.toLocaleTimeString('id-ID', { hour12: false }).replace(/:/g, '.');
+                elStatus.innerText = `DATA UPDATE: ${tanggal}, ${waktu} WIB (LIVE)`;
+            }
         }
-
-        window.simpan = async (id) => {
-            const { error } = await supabase.from('ar_unit')
-                .update({ 
-                    'Plan_Bayar_Leasing': document.getElementById(`plan-${id}`).value,
-                    'Ket_Leasing': document.getElementById(`ket-${id}`).value 
-                })
-                .eq('id', id);
-
-            if (error) alert("Error: " + error.message);
-            else { alert("Berhasil!"); fetchData(); }
-        }
-
-        setInterval(() => document.getElementById('realtime-clock').innerText = new Date().toLocaleTimeString(), 1000);
-        fetchData();
+        jalankanJamRealtime();
+        setInterval(jalankanJamRealtime, 1000);
     </script>
+
+    <script type="module" src="script.js"></script>
 </body>
 </html>
