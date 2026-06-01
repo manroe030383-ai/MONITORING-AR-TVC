@@ -98,7 +98,7 @@ async function fetchData() {
 
                 finalFilteredData = data.filter(d => {
 
-                    const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
+                    const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing_Name') || '').toUpperCase().trim();
 
                     return l.includes('ACC');
                 });
