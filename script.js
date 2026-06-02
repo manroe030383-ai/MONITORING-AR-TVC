@@ -949,50 +949,38 @@ function downloadExcel() {
 }
 
 // ========================================================
-
 // 9. INISIALISASI REALTIME LISTENER & EVENT HANDLER
-
 // ========================================================
-
 document.addEventListener('DOMContentLoaded', () => {
-
     const btnDownload = document.getElementById('btn-download-excel');
-
     if (btnDownload) { btnDownload.addEventListener('click', downloadExcel); }    
-  
 
     // Ambil data pertama kali saat dashboard dibuka
-
     fetchData();
 
     // ========================================================
-
     // AKTIFKAN LIVE SYNC REAL-TIME SUPABASE 
-
     // ========================================================
-
     supabase
-
         .channel('schema-db-changes')
-
         .on(
             'postgres_changes', 
-
             { 
                 event: '*', 
-
                 schema: 'public', 
-
                 table: 'ar_unit' 
             }, 
-
             (payload) => {
                 console.log('Perubahan Database Terdeteksi Real-time:', payload);
-
+                // Langsung update dashboard tanpa perlu refresh halaman
                 fetchData(); 
             }
         )
         .subscribe((status) => {
-            console.log('Status Sinkronisasi Live Realtime:', status);
+            if (status === 'SUBSCRIBED') {
+                console.log('Real-time listener aktif untuk tabel ar_unit');
+            } else if (status === 'CHANNEL_ERROR') {
+                console.error('Gagal terhubung ke Real-time Supabase');
+            }
         });
 });
