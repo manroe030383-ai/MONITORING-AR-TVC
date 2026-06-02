@@ -961,22 +961,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // ========================================================
     // AKTIFKAN LIVE SYNC REAL-TIME SUPABASE 
     // ========================================================
-    supabase
-        .channel('schema-db-changes')
-        .on(
-            'postgres_changes', 
-            { 
-                event: '*', 
-                schema: 'public', 
-                table: 'ar_unit' 
-            }, 
-            (payload) => {
-                console.log('Perubahan Database Terdeteksi Real-time:', payload);
-                // Langsung update dashboard tanpa perlu refresh halaman
-                fetchData(); 
-            }
-        )
-        .subscribe((status) => {
+    // Pastikan listener Anda memicu pengambilan ulang data
+supabase
+  .channel('schema-db-changes')
+  .on(
+    'postgres_changes',
+    { event: '*', schema: 'public', table: 'ar_unit' },
+    (payload) => {
+      console.log('Perubahan terdeteksi:', payload);
+      // Panggil fungsi untuk update tampilan dashboard
+      fetchData(); 
+    }
+  )
+  .subscribe();
             if (status === 'SUBSCRIBED') {
                 console.log('Real-time listener aktif untuk tabel ar_unit');
             } else if (status === 'CHANNEL_ERROR') {
