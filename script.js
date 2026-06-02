@@ -2,6 +2,8 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm'
 
+
+
 // ========================================================
 
 // 1. KONFIGURASI UTAMA DATABASE SUPABASE AUTO2000
@@ -14,9 +16,13 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+
+
 let charts = { bar: null, donut: null }; 
 
 let cachedData = []; 
+
+
 
 // DETEKSI URL SEJAK AWAL UNTUK FILTER GLOBAL
 
@@ -26,11 +32,15 @@ const isTafsPage = urlPath.includes('tafs');
 
 const isAccPage = urlPath.includes('acc');
 
+
+
 // Formatter Mata Uang & Angka
 
 const fmtIDR = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v || 0);
 
 const fmtJuta = (v) => (Number(v) / 1000000).toFixed(1) + " Jt";
+
+
 
 // Helper Pengaman Nama Kolom Supabase (Mengantisipasi Spasi & Huruf Besar/Kecil)
 
@@ -39,7 +49,9 @@ function getProp(obj, key) {
     if (!obj) return undefined;
 
     if (obj[key] !== undefined) return obj[key];
-  
+
+    
+
     const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
 
     for (let k in obj) {
@@ -47,9 +59,14 @@ function getProp(obj, key) {
         const cleanK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
 
         if (cleanK === cleanKey) return obj[k];
+
     }
+
     return undefined;
+
 }
+
+
 
 // ========================================================
 
@@ -64,13 +81,19 @@ async function fetchData() {
         let query = supabase.from('ar_unit').select('*');
 
         const { data, error } = await query;
+
         
+
         if (error) throw error;
-     
+
+        
+
         if (data) {
 
             console.log("DATA DARI SUPABASE (MENTAH):", data); 
+
             
+
             if (data.length === 0) {
 
                 if (document.getElementById('status-update')) {
@@ -78,9 +101,15 @@ async function fetchData() {
                     document.getElementById('status-update').innerText = "KONEKSI SUKSES, TAPI TABEL DI SUPABASE KOSONG (0 DATA)!";
 
                     document.getElementById('status-update').className = "text-[9px] font-bold text-amber-500 uppercase tracking-widest mb-1 italic";
+
                 }
+
                 return;
+
             }
+
+
+
             // FILTER GLOBAL SEBELUM MASUK KE HITUNGAN DASHBOARD
 
             let finalFilteredData = data;
@@ -92,37 +121,49 @@ async function fetchData() {
                     const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
 
                     return l.includes('TAFS');
+
                 });
 
             } else if (isAccPage) {
 
                 finalFilteredData = data.filter(d => {
 
-                    const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing_Name') || '').toUpperCase().trim();
+                    const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
 
                     return l.includes('ACC');
+
                 });
+
             }
+
+
+
             cachedData = finalFilteredData; 
 
             updateDashboard(finalFilteredData);
-          
+
+            
+
             // Render Status Berhasil di UI
 
             if (document.getElementById('status-update')) {
 
-                document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB (LIVE)`;
-
+                document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB (REALTIME ACTIVE)`;
 
                 document.getElementById('status-update').className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic";
+
             }
+
+
 
             if (document.getElementById('tgl-arsip')) {
 
                 const opsiTanggal = { year: 'numeric', month: 'short', day: 'numeric' };
 
                 document.getElementById('tgl-arsip').innerText = new Date().toLocaleDateString('id-ID', opsiTanggal).toUpperCase();
+
             }
+
         }
 
     } catch (e) {
@@ -134,9 +175,14 @@ async function fetchData() {
             document.getElementById('status-update').innerText = `KONEKSI GAGAL ATAU NAMA TABEL SALAH: ${e.message}`;
 
             document.getElementById('status-update').className = "text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic";
+
         }
+
     }
+
 }
+
+
 
 // ========================================================
 
@@ -154,9 +200,13 @@ function updateDashboard(data) {
 
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
 
+
+
     let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
 
     let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
+
+
 
     data.forEach(d => {
 
@@ -168,15 +218,23 @@ function updateDashboard(data) {
 
         const b60 = Number(getProp(d, 'Lebih 60 Hari') || getProp(d, 'lebih_60_hari') || 0);
 
-        const ov = (getProp(d, 'Total Overdue') !== undefined) ? Number(getProp(d, 'Total Overdue')) : (b1_30 + b31_60 + b60);
         
+
+        const ov = (getProp(d, 'Total Overdue') !== undefined) ? Number(getProp(d, 'Total Overdue')) : (b1_30 + b31_60 + b60);
+
+        
+
         const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
 
         const penalti = Number(getProp(d, 'Potensi Penalti') || getProp(d, 'penalty_amount') || 0);
 
         const statusTagih = String(getProp(d, 'status_tagih') || getProp(d, 'Status Tagih') || '').toUpperCase().trim();
 
+        
+
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
+
+
 
         s.os += os; 
 
@@ -185,15 +243,20 @@ function updateDashboard(data) {
         s.pen += penalti; 
 
         s.lan += lancarNominal;
-      
+
+        
+
         if (ov > 0) { 
 
             s.countOv++; 
 
             mOverdueTop.push(d); 
+
         }
 
         if (penalti > 0) s.cPen++;
+
+
 
         aging['LANCAR'] += lancarNominal / 1000000;
 
@@ -202,6 +265,8 @@ function updateDashboard(data) {
         aging['31-60 H'] += b31_60 / 1000000;
 
         aging['>60 H'] += b60 / 1000000;
+
+
 
         if (["CASH", "CASH TERIMA", "", "-"].includes(l)) { 
 
@@ -212,7 +277,9 @@ function updateDashboard(data) {
             s.leas += os; s.cLeas++; 
 
             mLeas[l] = (mLeas[l] || 0) + os; 
-           
+
+            
+
             if (l.includes('TAFS') || l.includes('ACC')) {
 
                 tvc.total++;
@@ -220,8 +287,12 @@ function updateDashboard(data) {
                 if (statusTagih === 'SUDAH GI') tvc.gi++;
 
                 else tvc.deliv++;
+
             }
+
         }
+
+
 
         if (l.includes('TAFS')) {
 
@@ -236,7 +307,9 @@ function updateDashboard(data) {
                 if (ov > 0) tafsMetrics.overdue++;
 
                 else tafsMetrics.onProses++;
+
             }
+
         } 
 
         else if (l.includes('ACC')) {
@@ -244,6 +317,7 @@ function updateDashboard(data) {
             if (statusTagih === 'SUDAH GI' || os === 0) {
 
                 accMetrics.paid++;
+
             } else {
 
                 accMetrics.os += os;
@@ -251,8 +325,12 @@ function updateDashboard(data) {
                 if (ov > 0) accMetrics.overdue++;
 
                 else accMetrics.onProses++;
+
             }
+
         }
+
+
 
         const rawSales = String(getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || "").trim();
 
@@ -262,10 +340,15 @@ function updateDashboard(data) {
 
         const finalSpv = rawSpv !== "" ? rawSpv : "OFFICE";
 
+
+
         mSales[finalSales] = (mSales[finalSales] || 0) + os;
 
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
+
     });
+
+
 
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
 
@@ -278,14 +361,19 @@ function updateDashboard(data) {
     if(document.getElementById('badge-overdue')) document.getElementById('badge-overdue').innerText = `${s.countOv} SPK LEWAT TOP`;
 
     if(document.getElementById('spk-penalty')) document.getElementById('spk-penalty').innerText = `${s.cPen} SPK`;
+
     
+
     if(s.os > 0) {
 
         if(document.getElementById('bar-cash')) document.getElementById('bar-cash').style.width = `${(s.cash/s.os)*100}%`;
 
         if(document.getElementById('bar-leasing')) document.getElementById('bar-leasing').style.width = `${(s.leas/s.os)*100}%`;
+
     }
+
     
+
     if(document.getElementById('val-total-cash')) document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
 
     if(document.getElementById('unit-total-cash')) document.getElementById('unit-total-cash').innerText = `${s.cCash} Unit`;
@@ -295,11 +383,13 @@ function updateDashboard(data) {
     if(document.getElementById('unit-total-leas')) document.getElementById('unit-total-leas').innerText = `${s.cLeas} Unit`;
 
 
+
     if(document.getElementById('total-unit-tvc')) document.getElementById('total-unit-tvc').innerText = `${tvc.total} Unit`;
 
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
 
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
+
 
 
     if(document.getElementById('tafs-outstanding')) document.getElementById('tafs-outstanding').innerText = fmtIDR(tafsMetrics.os);
@@ -311,6 +401,7 @@ function updateDashboard(data) {
     if(document.getElementById('tafs-overdue')) document.getElementById('tafs-overdue').innerText = `${tafsMetrics.overdue} Unit`;
 
 
+
     if(document.getElementById('acc-outstanding')) document.getElementById('acc-outstanding').innerText = fmtIDR(accMetrics.os);
 
     if(document.getElementById('acc-paid')) document.getElementById('acc-paid').innerText = `${accMetrics.paid} Unit`;
@@ -318,6 +409,8 @@ function updateDashboard(data) {
     if(document.getElementById('acc-on-proses')) document.getElementById('acc-on-proses').innerText = `${accMetrics.onProses} Unit`;
 
     if(document.getElementById('acc-overdue')) document.getElementById('acc-overdue').innerText = `${accMetrics.overdue} Unit`;
+
+
 
     renderAgingChart(aging);
 
@@ -330,7 +423,8 @@ function updateDashboard(data) {
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
 
     renderOverdueTop(mOverdueTop);
-   
+
+    
 
     renderTabLeasingFull(data);
 
@@ -339,7 +433,10 @@ function updateDashboard(data) {
     renderDataArUnitFull(data); 
 
     renderTabDatabaseFull(data); 
+
 }
+
+
 
 // ========================================================
 
@@ -381,6 +478,8 @@ function renderAgingChart(agingData) {
 
 }
 
+
+
 // ========================================================
 
 // 5. SINKRONISASI INTERAKTIF JANGKAR ID INPUT BERBASIS SPK
@@ -393,6 +492,8 @@ function renderDataArUnitFull(data) {
 
     if (!el) return;
 
+
+
     if(data.length === 0) { 
 
         const namaHalaman = isTafsPage ? 'TAFS' : (isAccPage ? 'ACC' : 'TAFS / ACC');
@@ -403,7 +504,11 @@ function renderDataArUnitFull(data) {
 
     }
 
+
+
     const isLeasingView = isTafsPage || isAccPage;
+
+
 
     el.innerHTML = data.map((d, i) => {
 
@@ -412,13 +517,16 @@ function renderDataArUnitFull(data) {
         const idSistem = spkAsli.replace(/[^a-zA-Z0-9]/g, '_');
 
         const noCustomer = getProp(d, 'no_customer') || '-';
-      
+
+        
 
         const valKetCabang = d['ket_cabang'] || '';
 
         const valPlanBayar = d['plan_bayar_leasing'] || '';
 
         const valKetLeasing = d['ket_leasing'] || '';
+
+
 
         return `
 
@@ -443,7 +551,9 @@ function renderDataArUnitFull(data) {
             </td>
 
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
-           
+
+            
+
             <td class="p-4 w-48">
 
                 ${isLeasingView ? 
@@ -455,10 +565,12 @@ function renderDataArUnitFull(data) {
                     `<input type="text" id="cabang-${idSistem}" value="${valKetCabang}" placeholder="Ket cabang..." 
 
                      class="input-custom bg-white">`
+
                 }
 
             </td>
-           
+
+            
 
             <td class="p-4 w-48">
 
@@ -469,7 +581,9 @@ function renderDataArUnitFull(data) {
                 ${isLeasingView ? '' : 'readonly'}>
 
             </td>
-           
+
+            
+
             <td class="p-4 w-48">
 
                 <input type="text" id="ket-${idSistem}" value="${valKetLeasing}" placeholder="${isLeasingView ? 'Isi ket leasing...' : 'Menunggu keterangan leasing...'}" 
@@ -479,7 +593,9 @@ function renderDataArUnitFull(data) {
                 ${isLeasingView ? '' : 'readonly'}>
 
             </td>
-           
+
+            
+
             <td class="p-4 text-center w-16">
 
                 ${isLeasingView ? 
@@ -497,6 +613,8 @@ function renderDataArUnitFull(data) {
     }).join('');
 
 }
+
+
 
 function renderDonutLeasing(mLeas) {
 
@@ -532,6 +650,8 @@ function renderDonutLeasing(mLeas) {
 
 }
 
+
+
 function renderLeasingList(map, total) {
 
     const el = document.getElementById('leasing-list'); if (!el) return;
@@ -550,6 +670,8 @@ function renderLeasingList(map, total) {
 
 }
 
+
+
 function renderTopList(map, id, colorClass) {
 
     const el = document.getElementById(id); if (!el) return;
@@ -567,6 +689,8 @@ function renderTopList(map, id, colorClass) {
         </div>`).join('');
 
 }
+
+
 
 function renderOverdueTop(data) {
 
@@ -602,7 +726,11 @@ function renderOverdueTop(data) {
 
 }
 
+
+
 function borderTrClass(i) { return 'hover:bg-slate-50/80 transition-all font-bold uppercase'; }
+
+
 
 // ========================================================
 
@@ -671,6 +799,8 @@ function renderTabLeasingFull(data) {
         </div>`;
 
 }
+
+
 
 function renderTabOverdueFull(data) {
 
@@ -746,6 +876,8 @@ function renderTabOverdueFull(data) {
 
 }
 
+
+
 function renderTabDatabaseFull(data) {
 
     const el = document.getElementById('tab-database-body'); if (!el) return;
@@ -786,6 +918,8 @@ function renderTabDatabaseFull(data) {
 
 }
 
+
+
 // ========================================================
 
 // 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML) - FIXED DATA SYNC
@@ -803,8 +937,12 @@ window.simpanCatatan = async function(nomorSPK) {
         const inputEl = document.getElementById(`cabang-${idSistem}`);
 
         if (!inputEl) return;
-    
+
+        
+
         const valCabang = inputEl.value;
+
+
 
         const spkAngka = parseInt(nomorSPK, 10);
 
@@ -813,28 +951,40 @@ window.simpanCatatan = async function(nomorSPK) {
             alert("Gagal menyimpan: Format Nomor SPK harus berupa angka murni.");
 
             return;
+
         }
+
+
+
         const { error } = await supabase
 
             .from('ar_unit')
 
-            .update({ Ket_Cabang: valCabang })
+            .update({ ket_cabang: valCabang })
 
-            .eq('No_SPK', spkAngka);
+            .eq('no_spk', spkAngka);
+
+
 
         if (error) throw error;
 
         alert("Keterangan cabang berhasil disimpan! 👍");
 
         fetchData();
-       
+
+        
+
     } catch (err) {
 
         console.error(err);
 
         alert("Gagal menyimpan data: " + err.message);
+
     }
+
 }
+
+
 
 // ========================================================
 
@@ -856,9 +1006,13 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
 
         if (!planEl || !ketEl) return;
 
+
+
         const valPlan = planEl.value;
 
         const valKetLeas = ketEl.value;
+
+
 
         const spkAngka = parseInt(nomorSPK, 10);
 
@@ -866,8 +1020,11 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
 
             alert("Leasing gagal menyimpan: Format Nomor SPK harus berupa angka murni.");
 
-           return;
+            return;
+
         }
+
+
 
         const { error } = await supabase
 
@@ -875,19 +1032,24 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
 
             .update({ 
 
-                Plan_bayar_leasing: valPlan, 
+                plan_bayar_leasing: valPlan, 
 
-                Ket_Leasing: valKetLeas 
+                ket_leasing: valKetLeas 
+
             })
 
-            .eq('No_SPK', spkAngka);
+            .eq('no_spk', spkAngka);
+
+
 
         if (error) throw error;
 
         alert("Respon Leasing Berhasil Diperbarui! ✔️");
 
         fetchData();
+
         
+
     } catch (err) {
 
         console.error(err);
@@ -897,6 +1059,8 @@ window.simpanCatatanLeasing = async function(nomorSPK) {
     }
 
 }
+
+
 
 // ========================================================
 
@@ -939,7 +1103,9 @@ function downloadExcel() {
         const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel); const workbook = XLSX.utils.book_new();
 
         XLSX.utils.book_append_sheet(workbook, worksheet, "Data AR Unit");
+
         
+
         const namaFile = isTafsPage ? 'TAFS' : (isAccPage ? 'ACC' : 'All');
 
         XLSX.writeFile(workbook, `Report_AR_Unit_${namaFile}_Auto2000_${new Date().toISOString().slice(0, 10)}.xlsx`);
@@ -948,36 +1114,66 @@ function downloadExcel() {
 
 }
 
+
+
 // ========================================================
+
 // 9. INISIALISASI REALTIME LISTENER & EVENT HANDLER
+
 // ========================================================
+
 document.addEventListener('DOMContentLoaded', () => {
+
     const btnDownload = document.getElementById('btn-download-excel');
+
     if (btnDownload) { btnDownload.addEventListener('click', downloadExcel); }    
 
+    
+
     // Ambil data pertama kali saat dashboard dibuka
+
     fetchData();
 
+    
+
     // ========================================================
+
     // AKTIFKAN LIVE SYNC REAL-TIME SUPABASE 
+
     // ========================================================
-    // Pastikan listener Anda memicu pengambilan ulang data
-supabase
-  .channel('schema-db-changes')
-  .on(
-    'postgres_changes',
-    { event: '*', schema: 'public', table: 'ar_unit' },
-    (payload) => {
-      console.log('Perubahan terdeteksi:', payload);
-      // Panggil fungsi untuk update tampilan dashboard
-      fetchData(); 
-    }
-  )
-  .subscribe();
-            if (status === 'SUBSCRIBED') {
-                console.log('Real-time listener aktif untuk tabel ar_unit');
-            } else if (status === 'CHANNEL_ERROR') {
-                console.error('Gagal terhubung ke Real-time Supabase');
+
+    supabase
+
+        .channel('schema-db-changes')
+
+        .on(
+
+            'postgres_changes', 
+
+            { 
+
+                event: '*', 
+
+                schema: 'public', 
+
+                table: 'ar_unit' 
+
+            }, 
+
+            (payload) => {
+
+                console.log('Perubahan Database Terdeteksi Real-time:', payload);
+
+                fetchData(); 
+
             }
+
+        )
+
+        .subscribe((status) => {
+
+            console.log('Status Sinkronisasi Live Realtime:', status);
+
         });
+
 });
