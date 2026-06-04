@@ -520,7 +520,7 @@ function renderDataArUnitFull(data) {
 
         
 
-        const valKetCabang = d['Ket_Cabang'] || '';
+        const valKetCabang = d['ket_cabang'] || '';
 
         const valPlanBayar = d['plan_bayar_leasing'] || '';
 
