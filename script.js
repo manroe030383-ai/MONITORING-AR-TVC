@@ -960,7 +960,7 @@ window.simpanCatatan = async function(nomorSPK) {
 
             .from('ar_unit')
 
-            .update({ ket_cabang: valCabang })
+            .update({ Ket_Cabang: valCabang })
 
             .eq('no_spk', spkAngka);
 
