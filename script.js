@@ -487,133 +487,78 @@ function renderAgingChart(agingData) {
 // ========================================================
 
 function renderDataArUnitFull(data) {
-
     const el = document.getElementById('tab-ar-unit-body');
-
     if (!el) return;
 
+    // --- TAMBAHKAN FILTER DI SINI ---
+    // Menyaring data agar yang 'LUNAS' tidak masuk ke daftar tabel
+    const dataTampil = data.filter(d => {
+        const ket = String(d.ket_cabang || '').toUpperCase().trim();
+        return ket !== 'LUNAS'; 
+    });
 
-
-    if(data.length === 0) { 
-
+    // Jika dataTampil kosong, tampilkan pesan
+    if(dataTampil.length === 0) { 
         const namaHalaman = isTafsPage ? 'TAFS' : (isAccPage ? 'ACC' : 'TAFS / ACC');
-
-        el.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit dengan Leasing ${namaHalaman}</td></tr>`; 
-
+        el.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400 font-bold">Tidak ada unit aktif dengan Leasing ${namaHalaman}</td></tr>`; 
         return; 
-
     }
-
-
 
     const isLeasingView = isTafsPage || isAccPage;
 
-
-
-    el.innerHTML = data.map((d, i) => {
-
+    // --- UBAH 'data' MENJADI 'dataTampil' ---
+    el.innerHTML = dataTampil.map((d, i) => {
         const spkAsli = String(getProp(d, 'No SPK') || getProp(d, 'no_spk') || '').trim();
-
         const idSistem = spkAsli.replace(/[^a-zA-Z0-9]/g, '_');
-
         const noCustomer = getProp(d, 'no_customer') || '-';
-
         
-
         const valKetCabang = d['ket_cabang'] || '';
-
         const valPlanBayar = d['plan_bayar_leasing'] || '';
-
         const valKetLeasing = d['ket_leasing'] || '';
 
-
-
         return `
-
         <tr class="hover:bg-slate-50/80 transition-all font-bold uppercase whitespace-nowrap">
-
             <td class="p-4 text-center text-slate-400">${i + 1}</td>
-
             <td class="p-4">
-
                 <p class="text-slate-800 font-black text-[11px]">${getProp(d, 'Customer Name') || getProp(d, 'customer_name') || '-'}</p>
-
                 <p class="text-[10px] text-slate-400 font-medium normal-case mt-0.5">${noCustomer}</p>
-
             </td>
-
             <td class="p-4">
-
                 <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[9px] font-extrabold tracking-wide">${getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '-'}</span>
-
                 <p class="text-[7px] text-slate-400 mt-1">SPK: ${spkAsli}</p>
-
             </td>
-
             <td class="p-4 text-right text-blue-600 font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
-
             
-
             <td class="p-4 w-48">
-
                 ${isLeasingView ? 
-
                     `<input type="text" value="${valKetCabang}" placeholder="Ket cabang..." 
-
                      class="input-custom bg-slate-100 text-slate-500 cursor-not-allowed border-none shadow-none" readonly>` : 
-
                     `<input type="text" id="cabang-${idSistem}" value="${valKetCabang}" placeholder="Ket cabang..." 
-
                      class="input-custom bg-white">`
-
                 }
-
             </td>
-
             
-
             <td class="p-4 w-48">
-
                 <input type="text" id="plan-${idSistem}" value="${valPlanBayar}" placeholder="${isLeasingView ? 'Isi plan bayar...' : 'Menunggu isian leasing...'}" 
-
                 class="input-custom ${isLeasingView ? 'bg-white border-emerald-300' : 'bg-slate-50 text-slate-500 cursor-not-allowed'}" 
-
                 ${isLeasingView ? '' : 'readonly'}>
-
             </td>
-
             
-
             <td class="p-4 w-48">
-
                 <input type="text" id="ket-${idSistem}" value="${valKetLeasing}" placeholder="${isLeasingView ? 'Isi ket leasing...' : 'Menunggu keterangan leasing...'}" 
-
                 class="input-custom ${isLeasingView ? 'bg-white border-emerald-300' : 'bg-slate-50 text-slate-500 cursor-not-allowed'}" 
-
                 ${isLeasingView ? '' : 'readonly'}>
-
             </td>
-
             
-
             <td class="p-4 text-center w-16">
-
                 ${isLeasingView ? 
-
                     `<button onclick="simpanCatatanLeasing('${spkAsli}')" class="text-emerald-600 hover:bg-emerald-600 hover:text-white bg-emerald-50 p-2 rounded-lg transition-all" title="Simpan Respon Leasing">💾</button>` :
-
                     `<button onclick="simpanCatatan('${spkAsli}')" class="text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 p-2 rounded-lg transition-all" title="Simpan Catatan Cabang">💾</button>`
-
                 }
-
             </td>
-
         </tr>`;
-
     }).join('');
-
 }
-
 
 
 function renderDonutLeasing(mLeas) {
