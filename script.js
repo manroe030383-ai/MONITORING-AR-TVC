@@ -191,92 +191,252 @@ async function fetchData() {
 // ========================================================
 
 function updateDashboard(data) {
-    // 1. Tentukan filter untuk data LUNAS (sesuaikan nama kolomnya)
-    const isLunas = (d) => String(d.ket_cabang || '').toUpperCase().trim() === 'LUNAS';
-    
-    // 2. Pisahkan data untuk tampilan (Filter keluar yang LUNAS)
-    const dataTampil = data.filter(d => !isLunas(d)); 
-    
-    // 3. Inisialisasi variabel hitungan (Tambahkan paidCount untuk total lunas)
-    let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0, totalPaid: 0 };
+
+    let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
+
     let tvc = { total: 0, gi: 0, deliv: 0 };
+
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
+
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
+
+
+
     let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
+
     let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
 
-    // 4. Proses data (Tetap gunakan 'data' asli agar total tetap akurat)
+
+
     data.forEach(d => {
+
         const os = Number(getProp(d, 'O/S Balance') || getProp(d, 'os_balance') || 0);
-        
-        // Jika lunas, masukkan ke totalPaid saja dan skip perhitungan lain
-        if (isLunas(d)) {
-            s.totalPaid += os; 
-            return;
-        }
 
         const b1_30 = Number(getProp(d, 'Hari 1-30') || getProp(d, 'hari_1_30') || 0);
+
         const b31_60 = Number(getProp(d, 'Hari 31-60') || getProp(d, 'hari_31_60') || 0);
+
         const b60 = Number(getProp(d, 'Lebih 60 Hari') || getProp(d, 'lebih_60_hari') || 0);
+
+        
+
         const ov = (getProp(d, 'Total Overdue') !== undefined) ? Number(getProp(d, 'Total Overdue')) : (b1_30 + b31_60 + b60);
+
+        
+
         const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
+
         const penalti = Number(getProp(d, 'Potensi Penalti') || getProp(d, 'penalty_amount') || 0);
+
         const statusTagih = String(getProp(d, 'status_tagih') || getProp(d, 'Status Tagih') || '').toUpperCase().trim();
+
+        
+
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
-        s.os += os; s.ov += ov; s.pen += penalti; s.lan += lancarNominal;
+
+
+        s.os += os; 
+
+        s.ov += ov; 
+
+        s.pen += penalti; 
+
+        s.lan += lancarNominal;
+
         
-        if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
+
+        if (ov > 0) { 
+
+            s.countOv++; 
+
+            mOverdueTop.push(d); 
+
+        }
+
         if (penalti > 0) s.cPen++;
 
+
+
         aging['LANCAR'] += lancarNominal / 1000000;
+
         aging['1-30 H'] += b1_30 / 1000000;
+
         aging['31-60 H'] += b31_60 / 1000000;
+
         aging['>60 H'] += b60 / 1000000;
 
-        if (["CASH", "CASH TERIMA", "", "-"].includes(l)) { s.cash += os; s.cCash++; } 
-        else { 
-            s.leas += os; s.cLeas++; mLeas[l] = (mLeas[l] || 0) + os; 
+
+
+        if (["CASH", "CASH TERIMA", "", "-"].includes(l)) { 
+
+            s.cash += os; s.cCash++; 
+
+        } else { 
+
+            s.leas += os; s.cLeas++; 
+
+            mLeas[l] = (mLeas[l] || 0) + os; 
+
+            
+
             if (l.includes('TAFS') || l.includes('ACC')) {
+
                 tvc.total++;
-                if (statusTagih === 'SUDAH GI') tvc.gi++; else tvc.deliv++;
+
+                if (statusTagih === 'SUDAH GI') tvc.gi++;
+
+                else tvc.deliv++;
+
             }
+
         }
+
+
 
         if (l.includes('TAFS')) {
-            if (statusTagih === 'SUDAH GI' || os === 0) tafsMetrics.paid++;
-            else { tafsMetrics.os += os; if (ov > 0) tafsMetrics.overdue++; else tafsMetrics.onProses++; }
-        } else if (l.includes('ACC')) {
-            if (statusTagih === 'SUDAH GI' || os === 0) accMetrics.paid++;
-            else { accMetrics.os += os; if (ov > 0) accMetrics.overdue++; else accMetrics.onProses++; }
+
+            if (statusTagih === 'SUDAH GI' || os === 0) {
+
+                tafsMetrics.paid++;
+
+            } else {
+
+                tafsMetrics.os += os;
+
+                if (ov > 0) tafsMetrics.overdue++;
+
+                else tafsMetrics.onProses++;
+
+            }
+
+        } 
+
+        else if (l.includes('ACC')) {
+
+            if (statusTagih === 'SUDAH GI' || os === 0) {
+
+                accMetrics.paid++;
+
+            } else {
+
+                accMetrics.os += os;
+
+                if (ov > 0) accMetrics.overdue++;
+
+                else accMetrics.onProses++;
+
+            }
+
         }
 
+
+
         const rawSales = String(getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || "").trim();
+
         const rawSpv = String(getProp(d, 'Supervisor') || getProp(d, 'supervisor_name') || "").trim();
+
         const finalSales = rawSales !== "" ? rawSales : (rawSpv !== "" ? rawSpv : "OFFICE");
+
         const finalSpv = rawSpv !== "" ? rawSpv : "OFFICE";
+
+
+
         mSales[finalSales] = (mSales[finalSales] || 0) + os;
+
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
+
     });
 
-    // 5. Update UI (Tambahkan total-paid-lunas di HTML Anda nanti)
-    if(document.getElementById('total-paid-lunas')) document.getElementById('total-paid-lunas').innerText = fmtIDR(s.totalPaid);
-    
-    // ... [Copy sisa update UI element Anda di sini] ...
 
-    // 6. RENDER TABEL (Gunakan dataTampil agar LUNAS tidak muncul)
-    renderAgingChart(aging);
-    renderDonutLeasing(mLeas);
-    renderLeasingList(mLeas, s.os);
-    renderTopList(mSales, 'list-sales', 'text-blue-600');
-    renderTopList(mSpv, 'list-spv', 'text-purple-600');
-    renderOverdueTop(mOverdueTop);
+
+    if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
+
+    if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
+
+    if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
+
+    if(document.getElementById('total-penalty')) document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
+
+    if(document.getElementById('badge-overdue')) document.getElementById('badge-overdue').innerText = `${s.countOv} SPK LEWAT TOP`;
+
+    if(document.getElementById('spk-penalty')) document.getElementById('spk-penalty').innerText = `${s.cPen} SPK`;
+
     
-    renderTabLeasingFull(dataTampil);
-    renderTabOverdueFull(dataTampil);
-    renderDataArUnitFull(dataTampil);
-    renderTabDatabaseFull(dataTampil);
+
+    if(s.os > 0) {
+
+        if(document.getElementById('bar-cash')) document.getElementById('bar-cash').style.width = `${(s.cash/s.os)*100}%`;
+
+        if(document.getElementById('bar-leasing')) document.getElementById('bar-leasing').style.width = `${(s.leas/s.os)*100}%`;
+
+    }
+
+    
+
+    if(document.getElementById('val-total-cash')) document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
+
+    if(document.getElementById('unit-total-cash')) document.getElementById('unit-total-cash').innerText = `${s.cCash} Unit`;
+
+    if(document.getElementById('val-total-leas')) document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
+
+    if(document.getElementById('unit-total-leas')) document.getElementById('unit-total-leas').innerText = `${s.cLeas} Unit`;
+
+
+
+    if(document.getElementById('total-unit-tvc')) document.getElementById('total-unit-tvc').innerText = `${tvc.total} Unit`;
+
+    if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
+
+    if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
+
+
+
+    if(document.getElementById('tafs-outstanding')) document.getElementById('tafs-outstanding').innerText = fmtIDR(tafsMetrics.os);
+
+    if(document.getElementById('tafs-paid')) document.getElementById('tafs-paid').innerText = `${tafsMetrics.paid} Unit`;
+
+    if(document.getElementById('tafs-on-proses')) document.getElementById('tafs-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
+
+    if(document.getElementById('tafs-overdue')) document.getElementById('tafs-overdue').innerText = `${tafsMetrics.overdue} Unit`;
+
+
+
+    if(document.getElementById('acc-outstanding')) document.getElementById('acc-outstanding').innerText = fmtIDR(accMetrics.os);
+
+    if(document.getElementById('acc-paid')) document.getElementById('acc-paid').innerText = `${accMetrics.paid} Unit`;
+
+    if(document.getElementById('acc-on-proses')) document.getElementById('acc-on-proses').innerText = `${accMetrics.onProses} Unit`;
+
+    if(document.getElementById('acc-overdue')) document.getElementById('acc-overdue').innerText = `${accMetrics.overdue} Unit`;
+
+
+
+    renderAgingChart(aging);
+
+    renderDonutLeasing(mLeas);
+
+    renderLeasingList(mLeas, s.os);
+
+    renderTopList(mSales, 'list-sales', 'text-blue-600');
+
+    renderTopList(mSpv, 'list-spv', 'text-purple-600');
+
+    renderOverdueTop(mOverdueTop);
+
+    
+
+    renderTabLeasingFull(data);
+
+    renderTabOverdueFull(data);
+
+    renderDataArUnitFull(data); 
+
+    renderTabDatabaseFull(data); 
+
 }
+
+
 
 // ========================================================
 
