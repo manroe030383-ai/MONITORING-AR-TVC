@@ -494,7 +494,7 @@ function renderDataArUnitFull(data) {
     // Menyaring data agar yang 'LUNAS' tidak masuk ke daftar tabel
     const dataTampil = data.filter(d => {
         const ket = String(d.ket_cabang || '').toUpperCase().trim();
-        return ket !== 'LUNAS'; 
+        return !ket.includes('LUNAS'); 
     });
 
     // Jika dataTampil kosong, tampilkan pesan
