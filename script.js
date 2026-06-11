@@ -687,16 +687,24 @@ function renderTabLeasingFull(data) {
 
     const el = document.getElementById('tab-leasing-full-list'); if (!el) return;
 
- // FILTER AGAR CASH TIDAK MUNCUL
-    data = data.filter(d => {
-        const leasing = String(
-            getProp(d, 'Chas/Leasing') ||
-            getProp(d, 'Leasing Name') ||
-            ''
-        ).toUpperCase().trim();
+ // FILTER CASH DAN OS BALANCE = 0
+data = data.filter(d => {
 
-        return !['CASH', 'CASH TERIMA', '', '-'].includes(leasing);
-    });
+    const leasing = String(
+        getProp(d, 'Chas/Leasing') ||
+        getProp(d, 'Leasing Name') ||
+        ''
+    ).toUpperCase().trim();
+
+    const os = Number(
+        getProp(d, 'O/S Balance') ||
+        getProp(d, 'os_balance') ||
+        0
+    );
+
+    return os > 0 &&
+           !['CASH', 'CASH TERIMA', '', '-'].includes(leasing);
+});
 
     if(data.length === 0) { el.innerHTML = '<p class="text-xs text-center py-4 text-slate-400">Tidak ada data kontribusi leasing</p>'; return; }
 
