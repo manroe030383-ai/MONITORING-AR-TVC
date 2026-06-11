@@ -687,6 +687,17 @@ function renderTabLeasingFull(data) {
 
     const el = document.getElementById('tab-leasing-full-list'); if (!el) return;
 
+ // FILTER AGAR CASH TIDAK MUNCUL
+    data = data.filter(d => {
+        const leasing = String(
+            getProp(d, 'Chas/Leasing') ||
+            getProp(d, 'Leasing Name') ||
+            ''
+        ).toUpperCase().trim();
+
+        return !['CASH', 'CASH TERIMA', '', '-'].includes(leasing);
+    });
+
     if(data.length === 0) { el.innerHTML = '<p class="text-xs text-center py-4 text-slate-400">Tidak ada data kontribusi leasing</p>'; return; }
 
     el.innerHTML = `
