@@ -185,258 +185,109 @@ async function fetchData() {
 
 
 // ========================================================
-
 // 3. FUNGSI PROSES LOGIKA DATA & HITUNG METRIK DASHBOARD
 
 // ========================================================
 
 function updateDashboard(data) {
-
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
-
     let tvc = { total: 0, gi: 0, deliv: 0 };
-
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
-
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
-
-
-
-    let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
-
-    let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
-
-
+    
+    // Variabel penampung untuk hitung rata-rata TAFS & ACC
+    let stats = { 
+        TAFS: { total: 0, count: 0 }, 
+        ACC: { total: 0, count: 0 } 
+    };
 
     data.forEach(d => {
-
         const os = Number(getProp(d, 'O/S Balance') || getProp(d, 'os_balance') || 0);
-
         const b1_30 = Number(getProp(d, 'Hari 1-30') || getProp(d, 'hari_1_30') || 0);
-
         const b31_60 = Number(getProp(d, 'Hari 31-60') || getProp(d, 'hari_31_60') || 0);
-
         const b60 = Number(getProp(d, 'Lebih 60 Hari') || getProp(d, 'lebih_60_hari') || 0);
-
         
-
         const ov = (getProp(d, 'Total Overdue') !== undefined) ? Number(getProp(d, 'Total Overdue')) : (b1_30 + b31_60 + b60);
-
-        
-
         const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
-
         const penalti = Number(getProp(d, 'Potensi Penalti') || getProp(d, 'penalty_amount') || 0);
-
         const statusTagih = String(getProp(d, 'status_tagih') || getProp(d, 'Status Tagih') || '').toUpperCase().trim();
-
         
+        // --- LOGIKA LEAD TIME TAFS & ACC ---
+        const lt = Number(getProp(d, 'lead_time') || 0);
+        const ket = String(getProp(d, 'ket_leasing') || '').toUpperCase().trim();
+
+        if (ket === 'LUNAS' && lt > 0) {
+            if (l.includes('TAFS')) { stats.TAFS.total += lt; stats.TAFS.count++; }
+            else if (l.includes('ACC')) { stats.ACC.total += lt; stats.ACC.count++; }
+        }
 
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
-
-
         s.os += os; 
-
         s.ov += ov; 
-
         s.pen += penalti; 
-
         s.lan += lancarNominal;
-
         
-
-        if (ov > 0) { 
-
-            s.countOv++; 
-
-            mOverdueTop.push(d); 
-
-        }
-
+        if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
         if (penalti > 0) s.cPen++;
 
-
-
         aging['LANCAR'] += lancarNominal / 1000000;
-
         aging['1-30 H'] += b1_30 / 1000000;
-
         aging['31-60 H'] += b31_60 / 1000000;
-
         aging['>60 H'] += b60 / 1000000;
 
-
-
         if (["CASH", "CASH TERIMA", "", "-"].includes(l)) { 
-
             s.cash += os; s.cCash++; 
-
         } else { 
-
             s.leas += os; s.cLeas++; 
-
             mLeas[l] = (mLeas[l] || 0) + os; 
-
-            
-
-            if (l.includes('TAFS') || l.includes('ACC')) {
-
-                tvc.total++;
-
-                if (statusTagih === 'SUDAH GI') tvc.gi++;
-
-                else tvc.deliv++;
-
-            }
-
         }
-
-
-
-        if (l.includes('TAFS')) {
-
-            if (statusTagih === 'SUDAH GI' || os === 0) {
-
-                tafsMetrics.paid++;
-
-            } else {
-
-                tafsMetrics.os += os;
-
-                if (ov > 0) tafsMetrics.overdue++;
-
-                else tafsMetrics.onProses++;
-
-            }
-
-        } 
-
-        else if (l.includes('ACC')) {
-
-            if (statusTagih === 'SUDAH GI' || os === 0) {
-
-                accMetrics.paid++;
-
-            } else {
-
-                accMetrics.os += os;
-
-                if (ov > 0) accMetrics.overdue++;
-
-                else accMetrics.onProses++;
-
-            }
-
-        }
-
-
-
-        const rawSales = String(getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || "").trim();
-
-        const rawSpv = String(getProp(d, 'Supervisor') || getProp(d, 'supervisor_name') || "").trim();
-
-        const finalSales = rawSales !== "" ? rawSales : (rawSpv !== "" ? rawSpv : "OFFICE");
-
-        const finalSpv = rawSpv !== "" ? rawSpv : "OFFICE";
-
-
-
-        mSales[finalSales] = (mSales[finalSales] || 0) + os;
-
-        mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
-
     });
 
+    // --- HITUNG RATA-RATA DAN TAMPILKAN ---
+    const avgTAFS = stats.TAFS.count > 0 ? (stats.TAFS.total / stats.TAFS.count) : 0;
+    const avgACC = stats.ACC.count > 0 ? (stats.ACC.total / stats.ACC.count) : 0;
 
+    // Panggil fungsi render untuk Lead Time
+    renderAvgBar('list-avg-leasing', { 'TAFS': avgTAFS, 'ACC': avgACC });
 
-    if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
-
-    if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
-
-    if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
-
-    if(document.getElementById('total-penalty')) document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
-
-    if(document.getElementById('badge-overdue')) document.getElementById('badge-overdue').innerText = `${s.countOv} SPK LEWAT TOP`;
-
-    if(document.getElementById('spk-penalty')) document.getElementById('spk-penalty').innerText = `${s.cPen} SPK`;
-
-    
-
-    if(s.os > 0) {
-
-        if(document.getElementById('bar-cash')) document.getElementById('bar-cash').style.width = `${(s.cash/s.os)*100}%`;
-
-        if(document.getElementById('bar-leasing')) document.getElementById('bar-leasing').style.width = `${(s.leas/s.os)*100}%`;
-
-    }
-
-    
-
-    if(document.getElementById('val-total-cash')) document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
-
-    if(document.getElementById('unit-total-cash')) document.getElementById('unit-total-cash').innerText = `${s.cCash} Unit`;
-
-    if(document.getElementById('val-total-leas')) document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
-
-    if(document.getElementById('unit-total-leas')) document.getElementById('unit-total-leas').innerText = `${s.cLeas} Unit`;
-
-
-
-    if(document.getElementById('total-unit-tvc')) document.getElementById('total-unit-tvc').innerText = `${tvc.total} Unit`;
-
-    if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
-
-    if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
-
-
-
-    if(document.getElementById('tafs-outstanding')) document.getElementById('tafs-outstanding').innerText = fmtIDR(tafsMetrics.os);
-
-    if(document.getElementById('tafs-paid')) document.getElementById('tafs-paid').innerText = `${tafsMetrics.paid} Unit`;
-
-    if(document.getElementById('tafs-on-proses')) document.getElementById('tafs-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
-
-    if(document.getElementById('tafs-overdue')) document.getElementById('tafs-overdue').innerText = `${tafsMetrics.overdue} Unit`;
-
-
-
-    if(document.getElementById('acc-outstanding')) document.getElementById('acc-outstanding').innerText = fmtIDR(accMetrics.os);
-
-    if(document.getElementById('acc-paid')) document.getElementById('acc-paid').innerText = `${accMetrics.paid} Unit`;
-
-    if(document.getElementById('acc-on-proses')) document.getElementById('acc-on-proses').innerText = `${accMetrics.onProses} Unit`;
-
-    if(document.getElementById('acc-overdue')) document.getElementById('acc-overdue').innerText = `${accMetrics.overdue} Unit`;
-
-
-
+    // Render grafik lainnya
     renderAgingChart(aging);
-
     renderDonutLeasing(mLeas);
-
     renderLeasingList(mLeas, s.os);
-
     renderTopList(mSales, 'list-sales', 'text-blue-600');
-
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
-
     renderOverdueTop(mOverdueTop);
-
-    
-
     renderTabLeasingFull(data);
-
     renderTabOverdueFull(data);
-
     renderDataArUnitFull(data); 
-
     renderTabDatabaseFull(data); 
-
 }
 
+// ========================================================
+// 2. FUNGSI UNTUK MERENDER GRAFIK BAR LEAD TIME
+// ========================================================
 
+function renderAvgBar(elementId, data) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    
+    const maxDay = 30; // Skala maksimal bar 30 hari
+    el.innerHTML = `
+        <h3 class="text-[10px] font-bold text-slate-400 uppercase mb-3">Avg Lead Time (LUNAS)</h3>
+        ${Object.entries(data).map(([leasing, avg]) => `
+            <div class="mb-4">
+                <div class="flex justify-between text-[10px] font-bold mb-1 uppercase text-slate-700">
+                    <span>${leasing}</span>
+                    <span>${avg.toFixed(1)} Hari</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div class="bg-blue-600 h-full rounded-full" style="width: ${Math.min((avg / maxDay) * 100, 100)}%"></div>
+                </div>
+            </div>
+        `).join('')}
+    `;
+}
 
 // ========================================================
 
