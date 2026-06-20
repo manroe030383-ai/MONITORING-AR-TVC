@@ -137,6 +137,12 @@
                 </div>
             </div>
 
+            <div class="mb-6 bg-white p-6 rounded-2xl border border-slate-100 card-shadow">
+                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">AVG LEAD TIME (LUNAS)</h4>
+                <div id="list-avg-leasing" class="text-[11px] text-slate-600">
+                    </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                     <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-4">🏆 Top Sales O/S</h4>
@@ -244,7 +250,6 @@
 
     <script>
         function filterTab(btn, tabName) {
-            // Reset status aktif tombol navigasi atas
             document.querySelectorAll('.nav-btn').forEach(b => {
                 b.classList.remove('nav-active');
                 b.classList.add('bg-white', 'text-slate-500');
@@ -253,7 +258,6 @@
             const sideDashboard = document.getElementById('side-btn-ringkasan');
             const sideDatabase = document.getElementById('side-btn-ar-unit');
             
-            // Atur status aktif pada Sidebar Menu kiri secara akurat
             if (sideDashboard && sideDatabase) {
                 [sideDashboard, sideDatabase].forEach(sb => {
                     sb.classList.remove('bg-red-600', 'text-white', 'font-bold', 'shadow-lg');
@@ -269,25 +273,21 @@
                 }
             }
 
-            // Atur status aktif tombol navigasi atas jika yang diklik adalah tab atas
             const targetTopBtn = document.querySelector(`button[onclick*="'${tabName}'"]`);
             if (targetTopBtn && targetTopBtn.classList.contains('nav-btn')) {
                 targetTopBtn.classList.add('nav-active');
                 targetTopBtn.classList.remove('bg-white', 'text-slate-500');
             }
 
-            // Sembunyikan semua konten tab terlebih dahulu
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.add('hidden');
             });
             
-            // Tampilkan tab yang dipilih
             const targetContent = document.getElementById(`content-${tabName}`);
             if (targetContent) {
                 targetContent.classList.remove('hidden');
             }
 
-            // Trigger resize untuk mematangkan ulang render grafik ApexCharts
             if (tabName === 'ringkasan') {
                 window.dispatchEvent(new Event('resize'));
             }
