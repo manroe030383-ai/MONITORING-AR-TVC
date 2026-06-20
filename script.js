@@ -189,17 +189,20 @@ async function fetchData() {
 
 // ========================================================
 
+function hitungSelisihHari(tgl1, tgl2) {
+    if (!tgl1 || !tgl2) return 0;
+    const date1 = new Date(tgl1);
+    const date2 = new Date(tgl2);
+    const diffTime = Math.abs(date2 - date1);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
-    let tvc = { total: 0, gi: 0, deliv: 0 };
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
     
-    // Variabel penampung untuk hitung rata-rata TAFS & ACC
-    let stats = { 
-        TAFS: { total: 0, count: 0 }, 
-        ACC: { total: 0, count: 0 } 
-    };
+    let stats = { TAFS: { total: 0, count: 0 }, ACC: { total: 0, count: 0 } };
 
     data.forEach(d => {
         const os = Number(getProp(d, 'O/S Balance') || getProp(d, 'os_balance') || 0);
@@ -210,11 +213,12 @@ function updateDashboard(data) {
         const ov = (getProp(d, 'Total Overdue') !== undefined) ? Number(getProp(d, 'Total Overdue')) : (b1_30 + b31_60 + b60);
         const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || getProp(d, 'leasing_name') || 'CASH').toUpperCase().trim();
         const penalti = Number(getProp(d, 'Potensi Penalti') || getProp(d, 'penalty_amount') || 0);
-        const statusTagih = String(getProp(d, 'status_tagih') || getProp(d, 'Status Tagih') || '').toUpperCase().trim();
         
-        // --- LOGIKA LEAD TIME TAFS & ACC ---
-        const lt = Number(getProp(d, 'lead_time') || 0);
+        // --- LOGIKA LEAD TIME DARI TANGGAL ---
+        const tglTagih = getProp(d, 'tgl_tagih');
+        const tglBayar = getProp(d, 'tgl_bayar');
         const ket = String(getProp(d, 'ket_leasing') || '').toUpperCase().trim();
+        const lt = (tglTagih && tglBayar) ? hitungSelisihHari(tglTagih, tglBayar) : 0;
 
         if (ket === 'LUNAS' && lt > 0) {
             if (l.includes('TAFS')) { stats.TAFS.total += lt; stats.TAFS.count++; }
@@ -223,11 +227,7 @@ function updateDashboard(data) {
 
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
-        s.os += os; 
-        s.ov += ov; 
-        s.pen += penalti; 
-        s.lan += lancarNominal;
-        
+        s.os += os; s.ov += ov; s.pen += penalti; s.lan += lancarNominal;
         if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
         if (penalti > 0) s.cPen++;
 
@@ -244,14 +244,14 @@ function updateDashboard(data) {
         }
     });
 
-    // --- HITUNG RATA-RATA DAN TAMPILKAN ---
+    // Tampilkan ke UI (Pastikan elemen ID ini ada di HTML Anda)
+    if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
+    if(document.getElementById('total-ov')) document.getElementById('total-ov').innerText = fmtIDR(s.ov);
+
     const avgTAFS = stats.TAFS.count > 0 ? (stats.TAFS.total / stats.TAFS.count) : 0;
     const avgACC = stats.ACC.count > 0 ? (stats.ACC.total / stats.ACC.count) : 0;
 
-    // Panggil fungsi render untuk Lead Time
     renderAvgBar('list-avg-leasing', { 'TAFS': avgTAFS, 'ACC': avgACC });
-
-    // Render grafik lainnya
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
@@ -264,30 +264,26 @@ function updateDashboard(data) {
     renderTabDatabaseFull(data); 
 }
 
-// ========================================================
-// 2. FUNGSI UNTUK MERENDER GRAFIK BAR LEAD TIME
-// ========================================================
-
 function renderAvgBar(elementId, data) {
     const el = document.getElementById(elementId);
     if (!el) return;
-    
-    const maxDay = 30; // Skala maksimal bar 30 hari
+    const maxDay = 30;
     el.innerHTML = `
         <h3 class="text-[10px] font-bold text-slate-400 uppercase mb-3">Avg Lead Time (LUNAS)</h3>
         ${Object.entries(data).map(([leasing, avg]) => `
             <div class="mb-4">
                 <div class="flex justify-between text-[10px] font-bold mb-1 uppercase text-slate-700">
                     <span>${leasing}</span>
-                    <span>${avg.toFixed(1)} Hari</span>
+                    <span>${avg > 0 ? avg.toFixed(1) + " Hari" : "-"}</span>
                 </div>
                 <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div class="bg-blue-600 h-full rounded-full" style="width: ${Math.min((avg / maxDay) * 100, 100)}%"></div>
+                    <div class="bg-blue-600 h-full rounded-full" style="width: ${avg > 0 ? Math.min((avg / maxDay) * 100, 100) : 0}%"></div>
                 </div>
             </div>
         `).join('')}
     `;
 }
+
 
 // ========================================================
 
