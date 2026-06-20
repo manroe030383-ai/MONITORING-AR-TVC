@@ -179,6 +179,29 @@ function updateDashboard(data) {
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
+// --- UPDATE METRIK TAFS ---
+if (document.getElementById('tafs-outstanding')) document.getElementById('tafs-outstanding').innerText = fmtIDR(tafsMetrics.os);
+if (document.getElementById('tafs-paid')) document.getElementById('tafs-paid').innerText = `${tafsMetrics.paid} Unit`;
+if (document.getElementById('tafs-on-proses')) document.getElementById('tafs-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
+if (document.getElementById('tafs-overdue')) document.getElementById('tafs-overdue').innerText = `${tafsMetrics.overdue} Unit`;
+
+// --- UPDATE METRIK ACC ---
+if (document.getElementById('acc-outstanding')) document.getElementById('acc-outstanding').innerText = fmtIDR(accMetrics.os);
+if (document.getElementById('acc-paid')) document.getElementById('acc-paid').innerText = `${accMetrics.paid} Unit`;
+if (document.getElementById('acc-on-proses')) document.getElementById('acc-on-proses').innerText = `${accMetrics.onProses} Unit`;
+if (document.getElementById('acc-overdue')) document.getElementById('acc-overdue').innerText = `${accMetrics.overdue} Unit`;
+
+// --- UPDATE LEAD TIME (TAFS & ACC) ---
+['TAFS', 'ACC'].forEach(leasing => {
+    if (mLeadTime[leasing]) {
+        const avg = Math.round(mLeadTime[leasing].total / mLeadTime[leasing].count);
+        const bar = document.getElementById(`bar-lead-time-${leasing.toLowerCase()}`);
+        const val = document.getElementById(`val-lead-time-${leasing.toLowerCase()}`);
+        
+        if (bar) bar.style.width = `${Math.min((avg / 30) * 100, 100)}%`; // Asumsi max 30 hari
+        if (val) val.innerText = `${avg} Hari`;
+    }
+});
     // 4. Panggil Fungsi Render UI
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
