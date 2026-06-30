@@ -3,95 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACC DASHBOARD - ASTRA CREDIT COMPANIES</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>ACC Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
-        .bg-acc-dark { background-color: #B91C1C; }
-        .bg-acc-light { background-color: #DC2626; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .table-container { width: 100%; overflow-x: auto; }
+        table { min-width: 900px; } 
     </style>
 </head>
-<body class="p-4 md:p-6">
+<body class="p-4 bg-slate-50 text-slate-900 antialiased">
 
-    <header class="bg-acc-dark text-white p-6 rounded-2xl shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+    <header style="background-color: #DC2626;" class="flex flex-col md:flex-row md:items-center md:justify-between p-6 rounded-xl mb-6 gap-4 text-white shadow-lg">
         <div>
-            <div id="status-update" class="text-[10px] font-bold text-emerald-300 uppercase tracking-widest mb-1 italic">MEMUAT DATA...</div>
-            <h1 class="text-xl md:text-3xl font-black uppercase flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
-                ACC DASHBOARD 
-                <span class="bg-amber-400 text-black text-[10px] md:text-xs px-2 py-1 rounded w-fit">LEASING SYSTEM</span>
+            <div id="status-update" class="text-[10px] font-bold text-emerald-300 uppercase tracking-widest mb-1 italic">MEMUAT LIVE CLOCK...</div>
+            <h1 class="text-2xl font-black text-white tracking-tight flex items-center gap-3 uppercase">
+                ACC DASHBOARD  
+                <span class="bg-amber-400 text-slate-900 text-[10px] px-2 py-0.5 rounded-md font-extrabold tracking-wide">LEASING SYSTEM</span>
             </h1>
-            <p class="text-[10px] md:text-sm font-medium mt-1 opacity-90">AUTO2000 CO-BRANDING • ASTRA CREDIT COMPANIES (ACC)</p>
+            <p class="text-[11px] text-red-100 font-semibold mt-1">AUTO2000 CO-BRANDING &bull; ASTRA CREDIT COMPANIES (ACC)</p>
         </div>
-        <button id="btn-download-excel" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg text-xs md:text-sm transition-all shadow-md w-full md:w-auto">
-            💾 DOWNLOAD EXCEL
-        </button>
+        <div>
+            <button id="btn-download-excel" class="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[11px] px-6 py-3 rounded-lg shadow-md transition-all flex items-center gap-2 uppercase">
+                <span>💾</span> DOWNLOAD EXCEL
+            </button>
+        </div>
     </header>
 
-    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-            <p class="text-[9px] font-bold text-slate-400 uppercase">Total O/S</p>
-            <h2 id="acc-outstanding" class="text-lg md:text-2xl font-black text-red-900 mt-1">Rp 0</h2>
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-[10px] font-extrabold text-slate-400 uppercase">TOTAL O/S</span>
+            <h2 id="tafs-outstanding" class="text-2xl font-black text-slate-800 mt-2">Rp 0</h2>
         </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-            <p class="text-[9px] font-bold text-slate-400 uppercase">Paid</p>
-            <h2 id="acc-paid" class="text-lg md:text-2xl font-black text-slate-700 mt-1">0 Unit</h2>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-[10px] font-extrabold text-slate-400 uppercase">PAID</span>
+            <h2 id="tafs-paid" class="text-2xl font-black text-slate-800 mt-2">0 Unit</h2>
         </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-            <p class="text-[9px] font-bold text-slate-400 uppercase">On Proses</p>
-            <h2 id="acc-on-proses" class="text-lg md:text-2xl font-black text-amber-500 mt-1">0 Unit</h2>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-[10px] font-extrabold text-slate-400 uppercase">ON PROSES</span>
+            <h2 id="tafs-on-proses" class="text-2xl font-black text-amber-500 mt-2">0 Unit</h2>
         </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-            <p class="text-[9px] font-bold text-slate-400 uppercase">Overdue</p>
-            <h2 id="acc-overdue" class="text-lg md:text-2xl font-black text-red-500 mt-1">0 Unit</h2>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-[10px] font-extrabold text-slate-400 uppercase">OVERDUE</span>
+            <h2 id="tafs-overdue" class="text-2xl font-black text-red-600 mt-2">0 Unit</h2>
         </div>
     </section>
 
-    <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
-        <h4 class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">AVG LEAD TIME (LUNAS)</h4>
-        <div class="flex items-center gap-3">
+    <section class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6">
+        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">AVG LEAD TIME (LUNAS)</h4>
+        <div class="flex items-center gap-4">
             <span class="text-xs font-bold text-slate-700">ACC</span>
             <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div id="bar-lead-time-acc" class="bg-red-600 h-full" style="width: 0%"></div> 
+                <div id="bar-lead-time-tafs" class="bg-red-600 h-full" style="width: 0%"></div> 
             </div>
-            <span id="val-lead-time-acc" class="text-xs font-black text-red-900 w-16 text-right">0 Hari</span>
+            <span id="val-lead-time-tafs" class="text-xs font-black text-slate-800">0 Hari</span>
         </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
-            <h3 class="text-xs font-bold text-slate-800 uppercase">📝 Binding Entry Update</h3>
-            <span class="bg-amber-100 text-amber-800 text-[9px] font-bold px-3 py-1 rounded-full">MODE: LEASING EDITOR</span>
+    <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 flex items-center justify-between">
+            <h3 class="text-xs font-black uppercase text-slate-600 tracking-wide flex items-center gap-2">
+                <span>📝</span> BINDING ENTRY UPDATE
+            </h3>
+            <span class="text-[9px] bg-amber-100 text-amber-800 px-3 py-1 rounded-md font-bold uppercase">MODE: LEASING EDITOR</span>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-[10px] md:text-xs min-w-[700px]">
-                <thead class="bg-acc-light text-white uppercase tracking-wider">
-                    <tr>
-                        <th class="p-3">No</th>
-                        <th class="p-3">Nama Customer</th>
-                        <th class="p-3">Leasing & Spk</th>
-                        <th class="p-3">O/S Balance</th>
-                        <th class="p-3">Keterangan Admin</th>
-                        <th class="p-3">Plan Bayar</th>
-                        <th class="p-3">Keterangan</th>
-                        <th class="p-3">Aksi</th>
+        <div class="table-container">
+            <table class="w-full text-left text-[11px]">
+                <thead>
+                    <tr style="background-color: #DC2626;" class="text-white font-extrabold uppercase">
+                        <th class="p-4">NO</th>
+                        <th class="p-4">NAMA CUSTOMER</th>
+                        <th class="p-4">LEASING & SPK</th>
+                        <th class="p-4">O/S BALANCE</th>
+                        <th class="p-4">KETERANGAN ADMIN</th>
+                        <th class="p-4 bg-red-800">PLAN BAYAR</th>
+                        <th class="p-4 bg-red-800">KETERANGAN</th>
+                        <th class="p-4">AKSI</th>
                     </tr>
                 </thead>
-                <tbody id="tab-ar-unit-body" class="divide-y divide-slate-100 text-slate-600">
-                    </tbody>
+                <tbody id="tab-ar-unit-body" class="divide-y divide-slate-100">
+                    <tr>
+                        <td colspan="8" class="p-4 text-center text-slate-400 font-bold uppercase">Memuat data...</td>
+                    </tr>
+                </tbody>
             </table>
         </div>
     </section>
 
     <script>
-        function updateClock() {
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('id-ID');
-            const timeStr = now.toLocaleTimeString('id-ID', { hour12: false }).replace(/:/g, '.');
-            document.getElementById('status-update').innerText = `DATA UPDATE: ${dateStr}, ${timeStr} WIB (LIVE)`;
+        function jalankanJamRealtime() {
+            const elStatus = document.getElementById('status-update');
+            if (elStatus) {
+                const sekarang = new Date();
+                const tgl = String(sekarang.getDate()).padStart(2, '0') + '/' + String(sekarang.getMonth() + 1).padStart(2, '0') + '/' + sekarang.getFullYear();
+                const jam = sekarang.toLocaleTimeString('id-ID', { hour12: false }).replace(/:/g, '.');
+                elStatus.innerText = `DATA UPDATE: ${tgl}, ${jam} WIB (LIVE)`;
+            }
         }
-        setInterval(updateClock, 1000);
-        updateClock();
+        jalankanJamRealtime();
+        setInterval(jalankanJamRealtime, 1000);
     </script>
     <script type="module" src="script.js"></script>
 </body>
