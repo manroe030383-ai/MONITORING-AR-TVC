@@ -1,6 +1,8 @@
+/* --- KODE ASLI ANDA --- */
 body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
+    margin: 0; /* Menghindari scroll horisontal yang tidak perlu */
 }
 
 .shadow-soft {
@@ -55,6 +57,34 @@ body {
     border-radius: 4px;
 }
 
-/* Scrollbar Style */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: #CBD5E0; border-radius: 10px; }
+
+/* --- TAMBAHAN KODE UNTUK RESPONSIF DI HP --- */
+
+@media screen and (max-width: 768px) {
+    /* Membuat kartu di bagian atas bertumpuk (Jika menggunakan display flex) */
+    .dashboard-container, .card-wrapper { 
+        display: flex;
+        flex-direction: column !important;
+        gap: 15px;
+    }
+
+    /* Mengatasi tabel agar tidak memotong layar */
+    table {
+        width: 100%;
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    /* Menyesuaikan ukuran teks di HP agar tidak terlalu besar */
+    .card-value {
+        font-size: 1.2rem;
+    }
+
+    /* Mengurangi padding agar tampilan lebih lega di layar kecil */
+    .card {
+        padding: 15px;
+    }
+}
