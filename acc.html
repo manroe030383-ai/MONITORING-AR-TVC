@@ -12,78 +12,75 @@
         .bg-acc-light { background-color: #DC2626; }
     </style>
 </head>
-<body class="p-6">
+<body class="p-4 md:p-6">
 
-    <header class="bg-acc-dark text-white p-6 rounded-2xl shadow-lg mb-6">
-        <div class="flex justify-between items-start">
-            <div>
-                <div id="status-update" class="text-[10px] font-bold text-emerald-300 uppercase tracking-widest mb-1 italic">
-                    MEMUAT DATA...
-                </div>
-                <h1 class="text-3xl font-black uppercase flex items-center gap-3">
-                    ACC DASHBOARD 
-                    <span class="bg-amber-400 text-black text-xs px-2 py-1 rounded">LEASING SYSTEM</span>
-                </h1>
-                <p class="text-sm font-medium mt-1">AUTO2000 CO-BRANDING • ASTRA CREDIT COMPANIES (ACC)</p>
-            </div>
-            
-            <button id="btn-download-excel" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all shadow-md cursor-pointer">
-                💾 DOWNLOAD EXCEL REPORT
-            </button>
+    <header class="bg-acc-dark text-white p-6 rounded-2xl shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+            <div id="status-update" class="text-[10px] font-bold text-emerald-300 uppercase tracking-widest mb-1 italic">MEMUAT DATA...</div>
+            <h1 class="text-xl md:text-3xl font-black uppercase flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+                ACC DASHBOARD 
+                <span class="bg-amber-400 text-black text-[10px] md:text-xs px-2 py-1 rounded w-fit">LEASING SYSTEM</span>
+            </h1>
+            <p class="text-[10px] md:text-sm font-medium mt-1 opacity-90">AUTO2000 CO-BRANDING • ASTRA CREDIT COMPANIES (ACC)</p>
         </div>
+        <button id="btn-download-excel" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg text-xs md:text-sm transition-all shadow-md w-full md:w-auto">
+            💾 DOWNLOAD EXCEL
+        </button>
     </header>
 
-    <section class="grid grid-cols-4 gap-4 mb-6">
-        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-            <p class="text-[10px] font-bold text-slate-400 uppercase">Total Outstanding</p>
-            <h2 id="acc-outstanding" class="text-2xl font-black text-red-900 mt-1">Rp 0</h2>
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-[9px] font-bold text-slate-400 uppercase">Total O/S</p>
+            <h2 id="acc-outstanding" class="text-lg md:text-2xl font-black text-red-900 mt-1">Rp 0</h2>
         </div>
-        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-            <p class="text-[10px] font-bold text-slate-400 uppercase">Paid</p>
-            <h2 id="acc-paid" class="text-2xl font-black text-slate-700 mt-1">0 Unit</h2>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-[9px] font-bold text-slate-400 uppercase">Paid</p>
+            <h2 id="acc-paid" class="text-lg md:text-2xl font-black text-slate-700 mt-1">0 Unit</h2>
         </div>
-        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-            <p class="text-[10px] font-bold text-slate-400 uppercase">On Proses</p>
-            <h2 id="acc-on-proses" class="text-2xl font-black text-amber-500 mt-1">0 Unit</h2>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-[9px] font-bold text-slate-400 uppercase">On Proses</p>
+            <h2 id="acc-on-proses" class="text-lg md:text-2xl font-black text-amber-500 mt-1">0 Unit</h2>
         </div>
-        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-            <p class="text-[10px] font-bold text-slate-400 uppercase">Overdue</p>
-            <h2 id="acc-overdue" class="text-2xl font-black text-red-500 mt-1">0 Unit</h2>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-[9px] font-bold text-slate-400 uppercase">Overdue</p>
+            <h2 id="acc-overdue" class="text-lg md:text-2xl font-black text-red-500 mt-1">0 Unit</h2>
         </div>
     </section>
 
-    <section class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6">
-        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">AVG LEAD TIME (LUNAS)</h4>
-        <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-700 w-16">ACC</span>
-            <div class="flex-1 mx-4 h-2 bg-slate-100 rounded-full overflow-hidden">
+    <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
+        <h4 class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">AVG LEAD TIME (LUNAS)</h4>
+        <div class="flex items-center gap-3">
+            <span class="text-xs font-bold text-slate-700">ACC</span>
+            <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div id="bar-lead-time-acc" class="bg-red-600 h-full" style="width: 0%"></div> 
             </div>
-            <span id="val-lead-time-acc" class="text-xs font-black text-red-900">0 Hari</span>
+            <span id="val-lead-time-acc" class="text-xs font-black text-red-900 w-16 text-right">0 Hari</span>
         </div>
     </section>
 
     <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-            <h3 class="text-sm font-bold text-slate-800">📝 BINDING ENTRY UPDATE RESPONS REKONSILIASI TAGIHAN LEASING</h3>
-            <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-3 py-1 rounded-full">MODE: LEASING EDITOR</span>
+        <div class="px-5 py-4 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+            <h3 class="text-xs font-bold text-slate-800 uppercase">📝 Binding Entry Update</h3>
+            <span class="bg-amber-100 text-amber-800 text-[9px] font-bold px-3 py-1 rounded-full">MODE: LEASING EDITOR</span>
         </div>
-        <table class="w-full text-left text-xs">
-            <thead>
-                <tr class="bg-acc-light text-white uppercase tracking-wider">
-                    <th class="p-4">No</th>
-                    <th class="p-4">Nama Customer</th>
-                    <th class="p-4">Leasing & Spk</th>
-                    <th class="p-4">O/S Balance</th>
-                    <th class="p-4">Keterangan Admin Cabang</th>
-                    <th class="p-4">Plan Bayar Leasing</th>
-                    <th class="p-4">Keterangan Leasing</th>
-                    <th class="p-4">Aksi</th>
-                </tr>
-            </thead>
-            <tbody id="tab-ar-unit-body" class="divide-y divide-slate-100 text-slate-600">
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-[10px] md:text-xs min-w-[700px]">
+                <thead class="bg-acc-light text-white uppercase tracking-wider">
+                    <tr>
+                        <th class="p-3">No</th>
+                        <th class="p-3">Nama Customer</th>
+                        <th class="p-3">Leasing & Spk</th>
+                        <th class="p-3">O/S Balance</th>
+                        <th class="p-3">Keterangan Admin</th>
+                        <th class="p-3">Plan Bayar</th>
+                        <th class="p-3">Keterangan</th>
+                        <th class="p-3">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tab-ar-unit-body" class="divide-y divide-slate-100 text-slate-600">
+                    </tbody>
+            </table>
+        </div>
     </section>
 
     <script>
