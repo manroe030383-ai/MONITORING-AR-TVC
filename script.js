@@ -94,6 +94,9 @@ async function fetchData() {
 // ========================================================
 // 3. FUNGSI PROSES LOGIKA DATA & HITUNG METRIK DASHBOARD
 // ========================================================
+            </table>
+        </div>`;
+}
 function updateDashboard(data) {
     // 1. Inisialisasi Variabel Perhitungan
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
@@ -103,6 +106,12 @@ function updateDashboard(data) {
     let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
     let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
     let mLeadTime = {};
+    
+    // Variabel Breakdown Baru
+    let breakdown = {
+        TAFS: { tagih: 0, belum: 0, lunas: 0 },
+        ACC: { tagih: 0, belum: 0, lunas: 0 }
+    };
 
     // 2. Loop Data untuk Hitung Metrik
     data.forEach(d => {
@@ -134,6 +143,12 @@ function updateDashboard(data) {
             if (l.includes('TAFS') || l.includes('ACC')) {
                 tvc.total++;
                 if (statusTagih === 'SUDAH GI') tvc.gi++; else tvc.deliv++;
+                
+                // Kalkulasi Breakdown
+                let key = l.includes('TAFS') ? 'TAFS' : 'ACC';
+                if (statusTagih === 'SUDAH GI') breakdown[key].tagih++;
+                else if (os === 0) breakdown[key].lunas++;
+                else breakdown[key].belum++;
             }
         }
 
@@ -179,29 +194,37 @@ function updateDashboard(data) {
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
-// --- UPDATE METRIK TAFS ---
-if (document.getElementById('tafs-outstanding')) document.getElementById('tafs-outstanding').innerText = fmtIDR(tafsMetrics.os);
-if (document.getElementById('tafs-paid')) document.getElementById('tafs-paid').innerText = `${tafsMetrics.paid} Unit`;
-if (document.getElementById('tafs-on-proses')) document.getElementById('tafs-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
-if (document.getElementById('tafs-overdue')) document.getElementById('tafs-overdue').innerText = `${tafsMetrics.overdue} Unit`;
+    // Metrik TAFS
+    if (document.getElementById('tafs-outstanding')) document.getElementById('tafs-outstanding').innerText = fmtIDR(tafsMetrics.os);
+    if (document.getElementById('tafs-paid')) document.getElementById('tafs-paid').innerText = `${tafsMetrics.paid} Unit`;
+    if (document.getElementById('tafs-on-proses')) document.getElementById('tafs-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
+    if (document.getElementById('tafs-overdue')) document.getElementById('tafs-overdue').innerText = `${tafsMetrics.overdue} Unit`;
 
-// --- UPDATE METRIK ACC ---
-if (document.getElementById('acc-outstanding')) document.getElementById('acc-outstanding').innerText = fmtIDR(accMetrics.os);
-if (document.getElementById('acc-paid')) document.getElementById('acc-paid').innerText = `${accMetrics.paid} Unit`;
-if (document.getElementById('acc-on-proses')) document.getElementById('acc-on-proses').innerText = `${accMetrics.onProses} Unit`;
-if (document.getElementById('acc-overdue')) document.getElementById('acc-overdue').innerText = `${accMetrics.overdue} Unit`;
+    // Metrik ACC
+    if (document.getElementById('acc-outstanding')) document.getElementById('acc-outstanding').innerText = fmtIDR(accMetrics.os);
+    if (document.getElementById('acc-paid')) document.getElementById('acc-paid').innerText = `${accMetrics.paid} Unit`;
+    if (document.getElementById('acc-on-proses')) document.getElementById('acc-on-proses').innerText = `${accMetrics.onProses} Unit`;
+    if (document.getElementById('acc-overdue')) document.getElementById('acc-overdue').innerText = `${accMetrics.overdue} Unit`;
 
-// --- UPDATE LEAD TIME (TAFS & ACC) ---
-['TAFS', 'ACC'].forEach(leasing => {
-    if (mLeadTime[leasing]) {
-        const avg = Math.round(mLeadTime[leasing].total / mLeadTime[leasing].count);
-        const bar = document.getElementById(`bar-lead-time-${leasing.toLowerCase()}`);
-        const val = document.getElementById(`val-lead-time-${leasing.toLowerCase()}`);
-        
-        if (bar) bar.style.width = `${Math.min((avg / 30) * 100, 100)}%`; // Asumsi max 30 hari
-        if (val) val.innerText = `${avg} Hari`;
-    }
-});
+    // Update Breakdown Baru ke DOM
+    if(document.getElementById('tafs-tagih')) document.getElementById('tafs-tagih').innerText = breakdown.TAFS.tagih;
+    if(document.getElementById('tafs-belum')) document.getElementById('tafs-belum').innerText = breakdown.TAFS.belum;
+    if(document.getElementById('tafs-lunas')) document.getElementById('tafs-lunas').innerText = breakdown.TAFS.lunas;
+    if(document.getElementById('acc-tagih')) document.getElementById('acc-tagih').innerText = breakdown.ACC.tagih;
+    if(document.getElementById('acc-belum')) document.getElementById('acc-belum').innerText = breakdown.ACC.belum;
+    if(document.getElementById('acc-lunas')) document.getElementById('acc-lunas').innerText = breakdown.ACC.lunas;
+
+    // Update Lead Time
+    ['TAFS', 'ACC'].forEach(leasing => {
+        if (mLeadTime[leasing]) {
+            const avg = Math.round(mLeadTime[leasing].total / mLeadTime[leasing].count);
+            const bar = document.getElementById(`bar-lead-time-${leasing.toLowerCase()}`);
+            const val = document.getElementById(`val-lead-time-${leasing.toLowerCase()}`);
+            if (bar) bar.style.width = `${Math.min((avg / 30) * 100, 100)}%`;
+            if (val) val.innerText = `${avg} Hari`;
+        }
+    });
+
     // 4. Panggil Fungsi Render UI
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
@@ -214,7 +237,6 @@ if (document.getElementById('acc-overdue')) document.getElementById('acc-overdue
     renderDataArUnitFull(data);
     renderTabDatabaseFull(data);
     
-    // Update Lead Time UI
     let avgData = Object.entries(mLeadTime).map(([leasing, val]) => ({
         leasing: leasing,
         avg: Math.round(val.total / val.count)
@@ -411,9 +433,6 @@ function renderTabLeasingFull(data) {
                             <td class="p-3 text-right pr-6 text-blue-600 text-[11px] font-black">${fmtIDR(getProp(d, 'O/S Balance') || getProp(d, 'os_balance'))}</td>
                         </tr>`).join('')}
                 </tbody>
-            </table>
-        </div>`;
-}
 
 function renderTabOverdueFull(data) {
     const el = document.getElementById('tab-overdue-full-list'); if (!el) return;
