@@ -84,22 +84,38 @@
                     <div id="list-sales"></div>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
-                    <h4 class="text-[10px] font-bold text-blue-500 uppercase mb-4">📊 Breakdown Leasing TVC</h4>
-                    <div class="bg-[#F0F7FF] p-6 rounded-2xl border border-blue-100 text-center mb-4">
-                        <span class="text-[9px] font-bold text-blue-600 uppercase">Total Penjualan TAFS & ACC</span>
-                        <p id="total-unit-tvc" class="text-3xl font-black text-[#1B2559]">0 Unit</p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="bg-[#F0FDF4] p-3 rounded-xl text-center border border-emerald-100">
-                            <p class="text-[8px] font-bold text-emerald-600 uppercase">SUDAH GI / TAGIH</p>
-                            <p id="unit-gi-tvc" class="text-2xl font-black text-emerald-700">0</p>
-                        </div>
-                        <div class="bg-[#FFF7ED] p-3 rounded-xl text-center border border-orange-100">
-                            <p class="text-[8px] font-bold text-orange-600 uppercase">BELUM DELIVERY</p>
-                            <p id="unit-delivery-tvc" class="text-2xl font-black text-orange-700">0</p>
-                        </div>
-                    </div>
-                </div>
+    <h4 class="text-[10px] font-bold text-blue-500 uppercase mb-4">📊 Breakdown Leasing TVC</h4>
+    <table class="w-full text-center text-[10px] border-collapse border border-slate-200">
+        <thead>
+            <tr class="bg-slate-50"><th colspan="2" class="border p-2 font-bold">TOTAL DO</th></tr>
+            <tr>
+                <th class="border p-1">ACC</th>
+                <th class="border p-1">TAFS</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td id="total-do-acc" class="border p-1 font-bold">0</td>
+                <td id="total-do-tafs" class="border p-1 font-bold">0</td>
+            </tr>
+            <tr class="bg-slate-50"><th colspan="2" class="border p-2 font-bold">SUDAH TAGIH</th></tr>
+            <tr>
+                <td id="sudah-tagih-acc" class="border p-1 font-bold">0</td>
+                <td id="sudah-tagih-tafs" class="border p-1 font-bold">0</td>
+            </tr>
+            <tr class="bg-slate-50"><th colspan="2" class="border p-2 font-bold">BELUM TAGIH</th></tr>
+            <tr>
+                <td id="belum-tagih-acc" class="border p-1 font-bold">0</td>
+                <td id="belum-tagih-tafs" class="border p-1 font-bold">0</td>
+            </tr>
+            <tr class="bg-slate-50"><th colspan="2" class="border p-2 font-bold">LUNAS</th></tr>
+            <tr>
+                <td id="lunas-acc" class="border p-1 font-bold">0</td>
+                <td id="lunas-tafs" class="border p-1 font-bold">0</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                     <h4 class="text-[10px] font-bold text-red-500 uppercase mb-4 italic">⚠️ Top 5 Overdue</h4>
                     <div id="list-overdue"></div>
