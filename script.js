@@ -186,6 +186,21 @@ function updateDashboard(data) {
     if(document.getElementById('lunas-acc')) document.getElementById('lunas-acc').innerText = breakdown.ACC.lunas;
     if(document.getElementById('lunas-tafs')) document.getElementById('lunas-tafs').innerText = breakdown.TAFS.lunas;
 
+if (mLeadTime.ACC && mLeadTime.ACC.count > 0) {
+    let avgACC = Math.round(mLeadTime.ACC.total / mLeadTime.ACC.count);
+    if(document.getElementById("avg-lead-acc")) document.getElementById("avg-lead-acc").innerText = avgACC + " Hari";
+    if(document.getElementById("bar-acc")) document.getElementById("bar-acc").style.width = Math.min(avgACC / 30 * 100, 100) + "%";
+} else {
+    if(document.getElementById("avg-lead-acc")) document.getElementById("avg-lead-acc").innerText = "0 Hari";
+}
+
+if (mLeadTime.TAFS && mLeadTime.TAFS.count > 0) {
+    let avgTAFS = Math.round(mLeadTime.TAFS.total / mLeadTime.TAFS.count);
+    if(document.getElementById("avg-lead-tafs")) document.getElementById("avg-lead-tafs").innerText = avgTAFS + " Hari";
+    if(document.getElementById("bar-tafs")) document.getElementById("bar-tafs").style.width = Math.min(avgTAFS / 30 * 100, 100) + "%";
+} else {
+    if(document.getElementById("avg-lead-tafs")) document.getElementById("avg-lead-tafs").innerText = "0 Hari";
+}
     // 4. Render UI
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
