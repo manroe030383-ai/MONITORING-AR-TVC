@@ -201,6 +201,25 @@ if (mLeadTime.TAFS && mLeadTime.TAFS.count > 0) {
 } else {
     if(document.getElementById("avg-lead-tafs")) document.getElementById("avg-lead-tafs").innerText = "0 Hari";
 }
+// --- TAMBAHAN: Update Metrik untuk Dashboard TAFS & ACC ---
+    
+    // Update TAFS Metrics
+    if(document.getElementById('os-tafs')) document.getElementById('os-tafs').innerText = fmtIDR(tafsMetrics.os);
+    if(document.getElementById('paid-tafs')) document.getElementById('paid-tafs').innerText = tafsMetrics.paid + " Unit";
+    if(document.getElementById('proses-tafs')) document.getElementById('proses-tafs').innerText = tafsMetrics.onProses + " Unit";
+    if(document.getElementById('overdue-tafs')) document.getElementById('overdue-tafs').innerText = tafsMetrics.overdue + " Unit";
+
+    // Update ACC Metrics
+    if(document.getElementById('os-acc')) document.getElementById('os-acc').innerText = fmtIDR(accMetrics.os);
+    if(document.getElementById('paid-acc')) document.getElementById('paid-acc').innerText = accMetrics.paid + " Unit";
+    if(document.getElementById('proses-acc')) document.getElementById('proses-acc').innerText = accMetrics.onProses + " Unit";
+    if(document.getElementById('overdue-acc')) document.getElementById('overdue-acc').innerText = accMetrics.overdue + " Unit";
+
+    // --- TAMBAHAN: Update Total Cash & Leasing untuk Komposisi Penjualan ---
+    if(document.getElementById('total-cash-os')) document.getElementById('total-cash-os').innerText = fmtIDR(s.cash);
+    if(document.getElementById('total-cash-count')) document.getElementById('total-cash-count').innerText = s.cCash + " Unit";
+    if(document.getElementById('total-leasing-os')) document.getElementById('total-leasing-os').innerText = fmtIDR(s.leas);
+    if(document.getElementById('total-leasing-count')) document.getElementById('total-leasing-count').innerText = s.cLeas + " Unit";
     // 4. Render UI
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
