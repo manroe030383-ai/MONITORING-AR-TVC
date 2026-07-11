@@ -171,35 +171,43 @@ function updateDashboard(data) {
         mLeas[l] += os;
     });
 
-    // 3. Update DOM
+    // 3. Update DOM (Dinamis & Universal)
     const update = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.innerText = val;
     };
 
+    // --- A. Update Untuk Admin Dashboard ---
     update('total-os', fmtIDR(s.os));
     update('total-overdue', fmtIDR(s.ov));
     update('total-lancar', fmtIDR(s.lan));
     update('total-penalty', fmtIDR(s.pen));
 
+    // --- B. Update Untuk TAFS & ACC Dashboard ---
     ['ACC', 'TAFS'].forEach(key => {
         let k = key.toLowerCase();
-        update(`total-do-${k}`, breakdown[key].total);
-        update(`sudah-tagih-${k}`, breakdown[key].sudah);
-        update(`belum-tagih-${k}`, breakdown[key].belum);
-        update(`lunas-${k}`, breakdown[key].lunas);
-        
         let m = (key === 'ACC') ? accMetrics : tafsMetrics;
+
+        // 1. Coba update ID standar (format: os-tafs, paid-tafs)
         update(`os-${k}`, fmtIDR(m.os));
         update(`paid-${k}`, m.paid + " Unit");
         update(`proses-${k}`, m.onProses + " Unit");
         update(`overdue-${k}`, m.overdue + " Unit");
 
-        if (mLeadTime[key].count > 0) {
-            let avg = Math.round(mLeadTime[key].total / mLeadTime[key].count);
-            update(`avg-lead-${k}`, avg + " Hari");
-            let bar = document.getElementById(`bar-${k}`);
-            if (bar) bar.style.width = Math.min(avg / 30 * 100, 100) + "%";
+        // 2. Coba update ID khusus Dashboard TAFS (sesuai HTML Anda: tafs-outstanding, dll)
+        if (key === 'TAFS') {
+            update('tafs-outstanding', fmtIDR(m.os));
+            update('tafs-paid', m.paid + " Unit");
+            update('tafs-on-proses', m.onProses + " Unit");
+            update('tafs-overdue', m.overdue + " Unit");
+            
+            // Lead time TAFS
+            if (mLeadTime['TAFS'].count > 0) {
+                let avg = Math.round(mLeadTime['TAFS'].total / mLeadTime['TAFS'].count);
+                update('val-lead-time-tafs', avg + " Hari");
+                let bar = document.getElementById('bar-lead-time-tafs');
+                if (bar) bar.style.width = Math.min(avg / 30 * 100, 100) + "%";
+            }
         }
     });
 
