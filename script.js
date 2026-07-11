@@ -185,6 +185,15 @@ function updateDashboard(data) {
     if(document.getElementById('belum-tagih-tafs')) document.getElementById('belum-tagih-tafs').innerText = breakdown.TAFS.belum;
     if(document.getElementById('lunas-acc')) document.getElementById('lunas-acc').innerText = breakdown.ACC.lunas;
     if(document.getElementById('lunas-tafs')) document.getElementById('lunas-tafs').innerText = breakdown.TAFS.lunas;
+// Tambahkan tepat setelah update Breakdown UI
+if(document.getElementById('os-tafs')) document.getElementById('os-tafs').innerText = fmtIDR(tafsMetrics.os);
+if(document.getElementById('os-acc')) document.getElementById('os-acc').innerText = fmtIDR(accMetrics.os);
+if(document.getElementById('paid-tafs')) document.getElementById('paid-tafs').innerText = tafsMetrics.paid + " Unit";
+if(document.getElementById('paid-acc')) document.getElementById('paid-acc').innerText = accMetrics.paid + " Unit";
+if(document.getElementById('proses-tafs')) document.getElementById('proses-tafs').innerText = tafsMetrics.onProses + " Unit";
+if(document.getElementById('proses-acc')) document.getElementById('proses-acc').innerText = accMetrics.onProses + " Unit";
+if(document.getElementById('overdue-tafs')) document.getElementById('overdue-tafs').innerText = tafsMetrics.overdue + " Unit";
+if(document.getElementById('overdue-acc')) document.getElementById('overdue-acc').innerText = accMetrics.overdue + " Unit";
 
 if (mLeadTime.ACC && mLeadTime.ACC.count > 0) {
     let avgACC = Math.round(mLeadTime.ACC.total / mLeadTime.ACC.count);
