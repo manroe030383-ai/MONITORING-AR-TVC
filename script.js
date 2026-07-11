@@ -98,6 +98,7 @@ function updateDashboard(data) {
     // 1. Inisialisasi Variabel Perhitungan
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
     let tvc = { total: 0, gi: 0, deliv: 0 };
+    let breakdown = { ACC: { gi: 0, deliv: 0 }, TAFS: { gi: 0, deliv: 0 } };
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
     let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
@@ -133,18 +134,22 @@ function updateDashboard(data) {
             s.leas += os; s.cLeas++; mLeas[l] = (mLeas[l] || 0) + os; 
             if (l.includes('TAFS') || l.includes('ACC')) {
                 tvc.total++;
-                if (statusTagih === 'SUDAH GI') tvc.gi++; else tvc.deliv++;
+                if (statusTagih === 'SUDAH GI') {
+                    tvc.gi++;
+                    if (l.includes('ACC')) breakdown.ACC.gi++; else breakdown.TAFS.gi++;
+                } else {
+                    tvc.deliv++;
+                    if (l.includes('ACC')) breakdown.ACC.deliv++; else breakdown.TAFS.deliv++;
+                }
             }
         }
 
-        // Metrik Leasing Spesifik
         if (l.includes('TAFS') || l.includes('ACC')) {
             let m = l.includes('TAFS') ? tafsMetrics : accMetrics;
             if (statusTagih === 'SUDAH GI' || os === 0) m.paid++;
             else { m.os += os; if (ov > 0) m.overdue++; else m.onProses++; }
         }
 
-        // Lead Time Lunas
         if (ketCabang.includes('LUNAS') && lt > 0 && (l.includes('TAFS') || l.includes('ACC'))) {
             if (!mLeadTime[l]) mLeadTime[l] = { total: 0, count: 0 };
             mLeadTime[l].total += lt; mLeadTime[l].count += 1;
@@ -156,7 +161,7 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // 3. Update DOM (Teks & Badge)
+    // 3. Update DOM
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
@@ -164,13 +169,11 @@ function updateDashboard(data) {
     if(document.getElementById('badge-overdue')) document.getElementById('badge-overdue').innerText = `${s.countOv} SPK LEWAT TOP`;
     if(document.getElementById('spk-penalty')) document.getElementById('spk-penalty').innerText = `${s.cPen} SPK`;
     
-    // Progress Bar
     if(s.os > 0) {
         if(document.getElementById('bar-cash')) document.getElementById('bar-cash').style.width = `${(s.cash/s.os)*100}%`;
         if(document.getElementById('bar-leasing')) document.getElementById('bar-leasing').style.width = `${(s.leas/s.os)*100}%`;
     }
 
-    // Detail Unit
     if(document.getElementById('val-total-cash')) document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
     if(document.getElementById('unit-total-cash')) document.getElementById('unit-total-cash').innerText = `${s.cCash} Unit`;
     if(document.getElementById('val-total-leas')) document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
@@ -179,30 +182,35 @@ function updateDashboard(data) {
     if(document.getElementById('unit-gi-tvc')) document.getElementById('unit-gi-tvc').innerText = `${tvc.gi} Unit`;
     if(document.getElementById('unit-delivery-tvc')) document.getElementById('unit-delivery-tvc').innerText = `${tvc.deliv} Unit`;
 
-// --- UPDATE METRIK TAFS ---
-if (document.getElementById('tafs-outstanding')) document.getElementById('tafs-outstanding').innerText = fmtIDR(tafsMetrics.os);
-if (document.getElementById('tafs-paid')) document.getElementById('tafs-paid').innerText = `${tafsMetrics.paid} Unit`;
-if (document.getElementById('tafs-on-proses')) document.getElementById('tafs-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
-if (document.getElementById('tafs-overdue')) document.getElementById('tafs-overdue').innerText = `${tafsMetrics.overdue} Unit`;
+    // Breakdown TVC Detail
+    if(document.getElementById('sudah-tagih-acc')) document.getElementById('sudah-tagih-acc').innerText = breakdown.ACC.gi;
+    if(document.getElementById('sudah-tagih-tafs')) document.getElementById('sudah-tagih-tafs').innerText = breakdown.TAFS.gi;
+    if(document.getElementById('belum-tagih-acc')) document.getElementById('belum-tagih-acc').innerText = breakdown.ACC.deliv;
+    if(document.getElementById('belum-tagih-tafs')) document.getElementById('belum-tagih-tafs').innerText = breakdown.TAFS.deliv;
 
-// --- UPDATE METRIK ACC ---
-if (document.getElementById('acc-outstanding')) document.getElementById('acc-outstanding').innerText = fmtIDR(accMetrics.os);
-if (document.getElementById('acc-paid')) document.getElementById('acc-paid').innerText = `${accMetrics.paid} Unit`;
-if (document.getElementById('acc-on-proses')) document.getElementById('acc-on-proses').innerText = `${accMetrics.onProses} Unit`;
-if (document.getElementById('acc-overdue')) document.getElementById('acc-overdue').innerText = `${accMetrics.overdue} Unit`;
+    if (document.getElementById('tafs-outstanding')) document.getElementById('tafs-outstanding').innerText = fmtIDR(tafsMetrics.os);
+    if (document.getElementById('tafs-paid')) document.getElementById('tafs-paid').innerText = `${tafsMetrics.paid} Unit`;
+    if (document.getElementById('tafs-on-proses')) document.getElementById('tafs-on-proses').innerText = `${tafsMetrics.onProses} Unit`;
+    if (document.getElementById('tafs-overdue')) document.getElementById('tafs-overdue').innerText = `${tafsMetrics.overdue} Unit`;
 
-// --- UPDATE LEAD TIME (TAFS & ACC) ---
-['TAFS', 'ACC'].forEach(leasing => {
-    if (mLeadTime[leasing]) {
-        const avg = Math.round(mLeadTime[leasing].total / mLeadTime[leasing].count);
-        const bar = document.getElementById(`bar-lead-time-${leasing.toLowerCase()}`);
-        const val = document.getElementById(`val-lead-time-${leasing.toLowerCase()}`);
-        
-        if (bar) bar.style.width = `${Math.min((avg / 30) * 100, 100)}%`; // Asumsi max 30 hari
-        if (val) val.innerText = `${avg} Hari`;
+    if (document.getElementById('acc-outstanding')) document.getElementById('acc-outstanding').innerText = fmtIDR(accMetrics.os);
+    if (document.getElementById('acc-paid')) document.getElementById('acc-paid').innerText = `${accMetrics.paid} Unit`;
+    if (document.getElementById('acc-on-proses')) document.getElementById('acc-on-proses').innerText = `${accMetrics.onProses} Unit`;
+    if (document.getElementById('acc-overdue')) document.getElementById('acc-overdue').innerText = `${accMetrics.overdue} Unit`;
+
+    if (mLeadTime.ACC) {
+        const avgACC = Math.round(mLeadTime.ACC.total / mLeadTime.ACC.count);
+        if(document.getElementById("avg-lead-acc")) document.getElementById("avg-lead-acc").innerText = avgACC + " Hari";
+        if(document.getElementById("bar-acc")) document.getElementById("bar-acc").style.width = Math.min(avgACC / 30 * 100, 100) + "%";
     }
-});
-    // 4. Panggil Fungsi Render UI
+
+    if (mLeadTime.TAFS) {
+        const avgTAFS = Math.round(mLeadTime.TAFS.total / mLeadTime.TAFS.count);
+        if(document.getElementById("avg-lead-tafs")) document.getElementById("avg-lead-tafs").innerText = avgTAFS + " Hari";
+        if(document.getElementById("bar-tafs")) document.getElementById("bar-tafs").style.width = Math.min(avgTAFS / 30 * 100, 100) + "%";
+    }
+
+    // 4. Render UI
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
@@ -213,16 +221,7 @@ if (document.getElementById('acc-overdue')) document.getElementById('acc-overdue
     renderTabOverdueFull(data);
     renderDataArUnitFull(data);
     renderTabDatabaseFull(data);
-    
-    // Update Lead Time UI
-    let avgData = Object.entries(mLeadTime).map(([leasing, val]) => ({
-        leasing: leasing,
-        avg: Math.round(val.total / val.count)
-    }));
-    updateLeadTimeUI(avgData);
-}
-
-// ========================================================
+} // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
 function renderAgingChart(agingData) {
