@@ -125,6 +125,7 @@ function updateDashboard(data) {
 
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
+        // Kalkulasi Global
         s.os += os; s.ov += ov; s.pen += penalti; s.lan += lancarNominal;
         if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
         
@@ -133,8 +134,12 @@ function updateDashboard(data) {
         aging['31-60 H'] += b31_60 / 1000000;
         aging['>60 H'] += b60 / 1000000;
 
-        if (l.includes('TAFS') || l.includes('ACC')) {
-            let key = l.includes('ACC') ? 'ACC' : 'TAFS';
+        // Deteksi Leasing Fleksibel
+        const isACC = l.includes('ACC') || l.includes('ASTRA CREDIT');
+        const isTAFS = l.includes('TAFS') || l.includes('TOYOTA ASTRA');
+
+        if (isACC || isTAFS) {
+            let key = isACC ? 'ACC' : 'TAFS';
             let b = breakdown[key];
             let m = (key === 'ACC') ? accMetrics : tafsMetrics;
 
@@ -160,19 +165,17 @@ function updateDashboard(data) {
         mLeas[l] += os;
     });
 
-    // 3. Helper Update DOM
+    // 3. Update DOM
     const update = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.innerText = val;
     };
 
-    // Update Global Admin
     update('total-os', fmtIDR(s.os));
     update('total-overdue', fmtIDR(s.ov));
     update('total-lancar', fmtIDR(s.lan));
     update('total-penalty', fmtIDR(s.pen));
 
-    // Update Breakdown & Metrics (ACC/TAFS)
     ['ACC', 'TAFS'].forEach(key => {
         let k = key.toLowerCase();
         update(`total-do-${k}`, breakdown[key].total);
@@ -194,21 +197,17 @@ function updateDashboard(data) {
         }
     });
 
-    // 4. Render UI Lengkap
-    if (typeof renderAgingChart === 'function') renderAgingChart(aging);
-    if (typeof renderDonutLeasing === 'function') renderDonutLeasing(mLeas);
-    if (typeof renderLeasingList === 'function') renderLeasingList(mLeas, s.os);
-    if (typeof renderTopList === 'function') {
-        renderTopList(mSales, 'list-sales', 'text-blue-600');
-        renderTopList(mSpv, 'list-spv', 'text-purple-600');
-    }
-    if (typeof renderOverdueTop === 'function') renderOverdueTop(mOverdueTop);
-    if (typeof renderTabLeasingFull === 'function') renderTabLeasingFull(data);
-    if (typeof renderTabOverdueFull === 'function') renderTabOverdueFull(data);
-    if (typeof renderDataArUnitFull === 'function') renderDataArUnitFull(data);
-    if (typeof renderTabDatabaseFull === 'function') renderTabDatabaseFull(data);
-
-    console.log("Dashboard Updated Successfully");
+    // 4. Render UI
+    renderAgingChart(aging);
+    renderDonutLeasing(mLeas);
+    renderLeasingList(mLeas, s.os);
+    renderTopList(mSales, 'list-sales', 'text-blue-600');
+    renderTopList(mSpv, 'list-spv', 'text-purple-600');
+    renderOverdueTop(mOverdueTop);
+    renderTabLeasingFull(data);
+    renderTabOverdueFull(data);
+    renderDataArUnitFull(data);
+    renderTabDatabaseFull(data);
 }
    
  // ========================================================
