@@ -95,27 +95,20 @@ async function fetchData() {
 // 3. FUNGSI PROSES LOGIKA DATA & HITUNG METRIK DASHBOARD
 // ========================================================
 function updateDashboard(data) {
-// TAMBAHKAN INI:
-    console.log("updateDashboard dipanggil dengan data:", data); 
-    if (!data || data.length === 0) {
-        console.warn("Data kosong!");
-        return;
-    }
-    if (!data || data.length === 0) {
-        console.warn("Data kosong atau tidak diterima!");
-        return;
-    }
-
-    // 1. Inisialisasi Variabel
+    // 1. Inisialisasi Variabel Perhitungan
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
-    let breakdown = { ACC: { total: 0, sudah: 0, belum: 0, lunas: 0 }, TAFS: { total: 0, sudah: 0, belum: 0, lunas: 0 } };
+    // Struktur breakdown baru dengan field: total, sudah, belum, lunas
+    let breakdown = { 
+        ACC: { total: 0, sudah: 0, belum: 0, lunas: 0 }, 
+        TAFS: { total: 0, sudah: 0, belum: 0, lunas: 0 } 
+    };
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
     let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
     let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
-    let mLeadTime = { ACC: { total: 0, count: 0 }, TAFS: { total: 0, count: 0 } };
+    let mLeadTime = {};
 
-    // 2. Loop Data
+    // 2. Loop Data untuk Hitung Metrik
     data.forEach(d => {
         const os = Number(getProp(d, 'O/S Balance') || getProp(d, 'os_balance') || 0);
         const b1_30 = Number(getProp(d, 'Hari 1-30') || getProp(d, 'hari_1_30') || 0);
@@ -126,91 +119,88 @@ function updateDashboard(data) {
         const penalti = Number(getProp(d, 'Potensi Penalti') || getProp(d, 'penalty_amount') || 0);
         const ketCabang = String(d.ket_cabang || '').toUpperCase().trim();
         const lt = Number(getProp(d, 'lead_time') || 0);
+        
+        // Ambil tanggal untuk Breakdown TVC
         const tglTagih = getProp(d, 'tgl_tagih');
         const tglBayar = getProp(d, 'tgl_bayar');
 
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
-        // Kalkulasi Global
         s.os += os; s.ov += ov; s.pen += penalti; s.lan += lancarNominal;
         if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
-        
+        if (penalti > 0) s.cPen++;
+
         aging['LANCAR'] += lancarNominal / 1000000;
         aging['1-30 H'] += b1_30 / 1000000;
         aging['31-60 H'] += b31_60 / 1000000;
         aging['>60 H'] += b60 / 1000000;
 
-        // Deteksi Leasing Fleksibel
-        const isACC = l.includes('ACC') || l.includes('ASTRA CREDIT');
-        const isTAFS = l.includes('TAFS') || l.includes('TOYOTA ASTRA');
-
-        if (isACC || isTAFS) {
-            let key = isACC ? 'ACC' : 'TAFS';
-            let b = breakdown[key];
-            let m = (key === 'ACC') ? accMetrics : tafsMetrics;
-
-            b.total++;
-            if (tglBayar || os === 0) { b.lunas++; m.paid++; }
-            else if (tglTagih) { b.sudah++; m.onProses++; }
-            else { b.belum++; m.onProses++; }
-
-            m.os += os;
-            if (ov > 0) m.overdue++;
+        if (["CASH", "CASH TERIMA", "", "-"].includes(l)) { s.cash += os; s.cCash++; } 
+        else { 
+            s.leas += os; s.cLeas++; mLeas[l] = (mLeas[l] || 0) + os; 
             
-            if (ketCabang.includes('LUNAS') && lt > 0) {
-                mLeadTime[key].total += lt;
-                mLeadTime[key].count += 1;
+            // Logika Breakdown TVC Baru
+            if (l.includes('TAFS') || l.includes('ACC')) {
+                let target = l.includes('ACC') ? breakdown.ACC : breakdown.TAFS;
+                target.total++; // Hitung Total DO
+                if (tglBayar) {
+                    target.lunas++; // Jika ada tgl_bayar = Lunas
+                } else if (tglTagih) {
+                    target.sudah++; // Jika tidak lunas tapi ada tgl_tagih = Sudah Tagih
+                } else {
+                    target.belum++; // Jika tidak ada keduanya = Belum Tagih
+                }
             }
+        }
+
+        if (l.includes('TAFS') || l.includes('ACC')) {
+            let m = l.includes('TAFS') ? tafsMetrics : accMetrics;
+            if (tglBayar || os === 0) m.paid++;
+            else { m.os += os; if (ov > 0) m.overdue++; else m.onProses++; }
+        }
+
+        if (ketCabang.includes('LUNAS') && lt > 0 && (l.includes('TAFS') || l.includes('ACC'))) {
+            if (!mLeadTime[l]) mLeadTime[l] = { total: 0, count: 0 };
+            mLeadTime[l].total += lt; mLeadTime[l].count += 1;
         }
 
         const finalSales = (getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || "OFFICE").trim();
         const finalSpv = (getProp(d, 'Supervisor') || getProp(d, 'supervisor_name') || "OFFICE").trim();
         mSales[finalSales] = (mSales[finalSales] || 0) + os;
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
-        if (!mLeas[l]) mLeas[l] = 0;
-        mLeas[l] += os;
     });
 
-    // 3. Update DOM (Dinamis & Universal)
-    const update = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.innerText = val;
-    };
+    // 3. Update DOM
+    if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
+    if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
+    if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
+    if(document.getElementById('total-penalty')) document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
+    
+    // Update Breakdown UI
+    if(document.getElementById('total-do-acc')) document.getElementById('total-do-acc').innerText = breakdown.ACC.total;
+    if(document.getElementById('total-do-tafs')) document.getElementById('total-do-tafs').innerText = breakdown.TAFS.total;
+    if(document.getElementById('sudah-tagih-acc')) document.getElementById('sudah-tagih-acc').innerText = breakdown.ACC.sudah;
+    if(document.getElementById('sudah-tagih-tafs')) document.getElementById('sudah-tagih-tafs').innerText = breakdown.TAFS.sudah;
+    if(document.getElementById('belum-tagih-acc')) document.getElementById('belum-tagih-acc').innerText = breakdown.ACC.belum;
+    if(document.getElementById('belum-tagih-tafs')) document.getElementById('belum-tagih-tafs').innerText = breakdown.TAFS.belum;
+    if(document.getElementById('lunas-acc')) document.getElementById('lunas-acc').innerText = breakdown.ACC.lunas;
+    if(document.getElementById('lunas-tafs')) document.getElementById('lunas-tafs').innerText = breakdown.TAFS.lunas;
 
-    // --- A. Update Untuk Admin Dashboard ---
-    update('total-os', fmtIDR(s.os));
-    update('total-overdue', fmtIDR(s.ov));
-    update('total-lancar', fmtIDR(s.lan));
-    update('total-penalty', fmtIDR(s.pen));
+if (mLeadTime.ACC && mLeadTime.ACC.count > 0) {
+    let avgACC = Math.round(mLeadTime.ACC.total / mLeadTime.ACC.count);
+    if(document.getElementById("avg-lead-acc")) document.getElementById("avg-lead-acc").innerText = avgACC + " Hari";
+    if(document.getElementById("bar-acc")) document.getElementById("bar-acc").style.width = Math.min(avgACC / 30 * 100, 100) + "%";
+} else {
+    if(document.getElementById("avg-lead-acc")) document.getElementById("avg-lead-acc").innerText = "0 Hari";
+}
 
-    // --- B. Update Untuk TAFS & ACC Dashboard ---
-    ['ACC', 'TAFS'].forEach(key => {
-        let k = key.toLowerCase();
-        let m = (key === 'ACC') ? accMetrics : tafsMetrics;
-
-        // 1. Coba update ID standar (format: os-tafs, paid-tafs)
-        update(`os-${k}`, fmtIDR(m.os));
-        update(`paid-${k}`, m.paid + " Unit");
-        update(`proses-${k}`, m.onProses + " Unit");
-        update(`overdue-${k}`, m.overdue + " Unit");
-
-        // 2. Coba update ID khusus Dashboard TAFS (sesuai HTML Anda: tafs-outstanding, dll)
-        if (key === 'TAFS') {
-            update('tafs-outstanding', fmtIDR(m.os));
-            update('tafs-paid', m.paid + " Unit");
-            update('tafs-on-proses', m.onProses + " Unit");
-            update('tafs-overdue', m.overdue + " Unit");
-            
-            // Lead time TAFS
-            if (mLeadTime['TAFS'].count > 0) {
-                let avg = Math.round(mLeadTime['TAFS'].total / mLeadTime['TAFS'].count);
-                update('val-lead-time-tafs', avg + " Hari");
-                let bar = document.getElementById('bar-lead-time-tafs');
-                if (bar) bar.style.width = Math.min(avg / 30 * 100, 100) + "%";
-            }
-        }
-    });
-
+if (mLeadTime.TAFS && mLeadTime.TAFS.count > 0) {
+    let avgTAFS = Math.round(mLeadTime.TAFS.total / mLeadTime.TAFS.count);
+    if(document.getElementById("avg-lead-tafs")) document.getElementById("avg-lead-tafs").innerText = avgTAFS + " Hari";
+    if(document.getElementById("bar-tafs")) document.getElementById("bar-tafs").style.width = Math.min(avgTAFS / 30 * 100, 100) + "%";
+} else {
+    if(document.getElementById("avg-lead-tafs")) document.getElementById("avg-lead-tafs").innerText = "0 Hari";
+}
     // 4. Render UI
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
