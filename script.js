@@ -126,8 +126,9 @@ function updateDashboard(data) {
         aging['31-60 H'] += b31_60 / 1000000;
         aging['>60 H'] += b60 / 1000000;
 
-        if (["CASH", "CASH TERIMA", "", "-"].includes(l)) { s.cash += os; s.cCash++; } 
-        else { 
+        if (["CASH", "CASH TERIMA", "", "-", "CASH (DEBIT/TRANSFER)"].includes(l)) { 
+            s.cash += os; s.cCash++; 
+        } else { 
             s.leas += os; s.cLeas++; mLeas[l] = (mLeas[l] || 0) + os; 
             if (l.includes('TAFS') || l.includes('ACC')) {
                 let target = l.includes('ACC') ? breakdown.ACC : breakdown.TAFS;
@@ -154,7 +155,12 @@ function updateDashboard(data) {
     if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
     if(document.getElementById('total-penalty')) document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
     
-    // Update Breakdown & Metrics UI (Lanjutkan update DOM sesuai ID di HTML Anda)
+    // Update kartu Cash & Leasing sesuai ID di HTML Anda
+    if(document.getElementById('val-total-cash')) document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
+    if(document.getElementById('unit-total-cash')) document.getElementById('unit-total-cash').innerText = s.cCash + " Unit";
+    if(document.getElementById('val-total-leas')) document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
+    if(document.getElementById('unit-total-leas')) document.getElementById('unit-total-leas').innerText = s.cLeas + " Unit";
+
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
@@ -166,6 +172,7 @@ function updateDashboard(data) {
     renderDataArUnitFull(data);
     renderTabDatabaseFull(data);
 }
+
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
