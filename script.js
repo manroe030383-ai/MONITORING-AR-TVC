@@ -95,6 +95,12 @@ async function fetchData() {
 // 3. FUNGSI PROSES LOGIKA DATA & HITUNG METRIK DASHBOARD
 // ========================================================
 function updateDashboard(data) {
+// TAMBAHKAN INI:
+    console.log("updateDashboard dipanggil dengan data:", data); 
+    if (!data || data.length === 0) {
+        console.warn("Data kosong!");
+        return;
+    }
     if (!data || data.length === 0) {
         console.warn("Data kosong atau tidak diterima!");
         return;
