@@ -95,7 +95,6 @@ async function fetchData() {
 // 3. FUNGSI PROSES LOGIKA DATA & HITUNG METRIK DASHBOARD
 // ========================================================
 function updateDashboard(data) {
-function updateDashboard(data) {
     // 1. Inisialisasi Variabel Perhitungan
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
     // Struktur breakdown baru dengan field: total, sudah, belum, lunas
