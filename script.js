@@ -205,7 +205,34 @@ function updateDashboard(data) {
         renderDataArUnitFull(data);
     }
 }
+const canvas = document.getElementById('osBarChart');
+    if (!canvas) {
+        console.error("Elemen canvas dengan ID 'osBarChart' tidak ditemukan!");
+        return;
+    }
 
+    if (window.myOsChart instanceof Chart) {
+        window.myOsChart.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    window.myOsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['CASH', 'LEASING'],
+            datasets: [{
+                label: 'Total O/S',
+                data: [data.cash, data.leasing],
+                backgroundColor: ['#10B981', '#3B82F6']
+            }]
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
+}
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
