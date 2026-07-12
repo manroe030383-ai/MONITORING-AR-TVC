@@ -149,6 +149,17 @@ function updateDashboard(data) {
         mSales[finalSales] = (mSales[finalSales] || 0) + os;
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
+// --- UPDATE BARIS GRAFIK (CASH & LEASING) ---
+    if (s.os > 0) {
+        let pctCash = (s.cash / s.os) * 100;
+        let pctLeas = (s.leas / s.os) * 100;
+
+        const barCash = document.getElementById('bar-cash');
+        const barLeas = document.getElementById('bar-leasing');
+
+        if (barCash) barCash.style.width = pctCash + "%";
+        if (barLeas) barLeas.style.width = pctLeas + "%";
+    }
 // --- UPDATE BREAKDOWN LEASING TVC ---
     const b = breakdown;
     const updateCell = (id, val) => { if(document.getElementById(id)) document.getElementById(id).innerText = val; };
