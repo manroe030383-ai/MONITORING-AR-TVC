@@ -104,20 +104,21 @@ function updateDashboard(data) {
     let mLeadTime = {};
 
     data.forEach(d => {
-        const os = Number(getProp(d, 'O/S Balance') || getProp(d, 'os_balance') || 0);
-        const b1_30 = Number(getProp(d, 'Hari 1-30') || getProp(d, 'hari_1_30') || 0);
-        const b31_60 = Number(getProp(d, 'Hari 31-60') || getProp(d, 'hari_31_60') || 0);
-        const b60 = Number(getProp(d, 'Lebih 60 Hari') || getProp(d, 'lebih_60_hari') || 0);
-        const ov = (getProp(d, 'Total Overdue') !== undefined) ? Number(getProp(d, 'Total Overdue')) : (b1_30 + b31_60 + b60);
+        // Menggunakan nama kolom yang sesuai dengan struktur Supabase Anda
+        const os = Number(d.os_balance || 0);
+        const b1_30 = Number(d.hari_1_30 || 0);
+        const b31_60 = Number(d.hari_31_60 || 0);
+        const b60 = Number(d.lebih_60_hari || 0);
+        const ov = Number(d.total_overdue || 0);
         
-        // Pembersihan nama leasing agar lebih fleksibel (menghapus spasi berlebih)
-        let l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
+        let l = String(d.leasing_name || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
         
-        const penalti = Number(getProp(d, 'Potensi Penalti') || getProp(d, 'penalty_amount') || 0);
+        const penalti = Number(d.penalty_amount || 0);
         const ketCabang = String(d.ket_cabang || '').toUpperCase().trim();
-        const lt = Number(getProp(d, 'lead_time') || 0);
-        const tglTagih = getProp(d, 'tgl_tagih');
-        const tglBayar = getProp(d, 'tgl_bayar');
+        const lt = Number(d.lead_time || 0);
+        const tglTagih = d.tgl_tagih;
+        const tglBayar = d.tgl_bayar;
+        
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
         s.os += os; s.ov += ov; s.pen += penalti; s.lan += lancarNominal;
@@ -129,11 +130,10 @@ function updateDashboard(data) {
         aging['31-60 H'] += b31_60 / 1000000;
         aging['>60 H'] += b60 / 1000000;
 
-        // Logika pengelompokan
         const isTafs = l.includes('TAFS');
         const isAcc = l.includes('ACC');
 
-        if (["CASH", "CASH-TERIMA", ""].includes(l)) { 
+        if (["CASH"].includes(l) || l === "") { 
             s.cash += os; s.cCash++; 
         } else { 
             s.leas += os; s.cLeas++; mLeas[l] = (mLeas[l] || 0) + os; 
@@ -155,8 +155,8 @@ function updateDashboard(data) {
             mLeadTime[l].total += lt; mLeadTime[l].count += 1;
         }
         
-        const finalSales = (getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || "OFFICE").trim();
-        const finalSpv = (getProp(d, 'Supervisor') || getProp(d, 'supervisor_name') || "OFFICE").trim();
+        const finalSales = String(d.salesman_name || "OFFICE").trim();
+        const finalSpv = String(d.supervisor_name || "OFFICE").trim();
         mSales[finalSales] = (mSales[finalSales] || 0) + os;
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
@@ -167,7 +167,24 @@ function updateDashboard(data) {
         if(el) el.innerText = val; 
     };
     
-    // Update Metrik
+    // Update Ringkasan Utama Admin
+    updateCell('total-os', fmtIDR(s.os));
+    updateCell('total-overdue', fmtIDR(s.ov));
+    updateCell('total-penalty', fmtIDR(s.pen));
+    updateCell('total-lancar', fmtIDR(s.lan));
+    
+    updateCell('val-total-cash', fmtIDR(s.cash));
+    updateCell('unit-total-cash', s.cCash + " Unit");
+    updateCell('val-total-leas', fmtIDR(s.leas));
+    updateCell('unit-total-leas', s.cLeas + " Unit");
+    
+    let badgeOv = document.getElementById('badge-overdue');
+    if(badgeOv) badgeOv.innerText = s.countOv + " SPK Lewat TOP";
+    
+    let spkPen = document.getElementById('spk-penalty');
+    if(spkPen) spkPen.innerText = s.cPen + " SPK";
+
+    // Update Metrik TAFS/ACC
     updateCell('tafs-outstanding', fmtIDR(tafsMetrics.os));
     updateCell('tafs-paid', tafsMetrics.paid + " Unit");
     updateCell('tafs-on-proses', tafsMetrics.onProses + " Unit");
@@ -212,8 +229,6 @@ function updateDashboard(data) {
         renderDataArUnitFull(data);
     }
 }
-
-
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
