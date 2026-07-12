@@ -109,7 +109,10 @@ function updateDashboard(data) {
         const b31_60 = Number(getProp(d, 'Hari 31-60') || getProp(d, 'hari_31_60') || 0);
         const b60 = Number(getProp(d, 'Lebih 60 Hari') || getProp(d, 'lebih_60_hari') || 0);
         const ov = (getProp(d, 'Total Overdue') !== undefined) ? Number(getProp(d, 'Total Overdue')) : (b1_30 + b31_60 + b60);
-        const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || 'CASH').toUpperCase().trim();
+        
+        // Pembersihan nama leasing agar lebih fleksibel (menghapus spasi berlebih)
+        let l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
+        
         const penalti = Number(getProp(d, 'Potensi Penalti') || getProp(d, 'penalty_amount') || 0);
         const ketCabang = String(d.ket_cabang || '').toUpperCase().trim();
         const lt = Number(getProp(d, 'lead_time') || 0);
@@ -126,24 +129,28 @@ function updateDashboard(data) {
         aging['31-60 H'] += b31_60 / 1000000;
         aging['>60 H'] += b60 / 1000000;
 
-        if (["CASH", "CASH TERIMA", "", "-", "CASH (DEBIT/TRANSFER)"].includes(l)) { 
+        // Logika pengelompokan
+        const isTafs = l.includes('TAFS');
+        const isAcc = l.includes('ACC');
+
+        if (["CASH", "CASH-TERIMA", ""].includes(l)) { 
             s.cash += os; s.cCash++; 
         } else { 
             s.leas += os; s.cLeas++; mLeas[l] = (mLeas[l] || 0) + os; 
-            if (l.includes('TAFS') || l.includes('ACC')) {
-                let target = l.includes('ACC') ? breakdown.ACC : breakdown.TAFS;
+            if (isTafs || isAcc) {
+                let target = isAcc ? breakdown.ACC : breakdown.TAFS;
                 target.total++;
                 if (tglBayar) target.lunas++; else if (tglTagih) target.sudah++; else target.belum++;
             }
         }
         
-        if (l.includes('TAFS') || l.includes('ACC')) {
-            let m = l.includes('TAFS') ? tafsMetrics : accMetrics;
-            if (tglBayar || os === 0) m.paid++; 
+        if (isTafs || isAcc) {
+            let m = isTafs ? tafsMetrics : accMetrics;
+            if (tglBayar || os <= 0) m.paid++; 
             else { m.os += os; if (ov > 0) m.overdue++; else m.onProses++; }
         }
 
-        if (ketCabang.includes('LUNAS') && lt > 0 && (l.includes('TAFS') || l.includes('ACC'))) {
+        if (ketCabang.includes('LUNAS') && lt > 0 && (isTafs || isAcc)) {
             if (!mLeadTime[l]) mLeadTime[l] = { total: 0, count: 0 };
             mLeadTime[l].total += lt; mLeadTime[l].count += 1;
         }
@@ -155,24 +162,27 @@ function updateDashboard(data) {
     });
 
     // --- PEMBARUAN Tampilan (DOM) ---
-    const updateCell = (id, val) => { if(document.getElementById(id)) document.getElementById(id).innerText = val; };
-    
-    // Update Metrik TAFS & ACC
-    const updateLeasingMetrics = (prefix, m) => {
-        updateCell(`${prefix}-outstanding`, fmtIDR(m.os));
-        updateCell(`${prefix}-paid`, m.paid + " Unit");
-        updateCell(`${prefix}-on-proses`, m.onProses + " Unit");
-        updateCell(`${prefix}-overdue`, m.overdue + " Unit");
+    const updateCell = (id, val) => { 
+        let el = document.getElementById(id);
+        if(el) el.innerText = val; 
     };
     
-    updateLeasingMetrics('tafs', tafsMetrics);
-    updateLeasingMetrics('acc', accMetrics);
+    // Update Metrik
+    updateCell('tafs-outstanding', fmtIDR(tafsMetrics.os));
+    updateCell('tafs-paid', tafsMetrics.paid + " Unit");
+    updateCell('tafs-on-proses', tafsMetrics.onProses + " Unit");
+    updateCell('tafs-overdue', tafsMetrics.overdue + " Unit");
+
+    updateCell('acc-outstanding', fmtIDR(accMetrics.os));
+    updateCell('acc-paid', accMetrics.paid + " Unit");
+    updateCell('acc-on-proses', accMetrics.onProses + " Unit");
+    updateCell('acc-overdue', accMetrics.overdue + " Unit");
 
     // Update Lead Time
     ['ACC', 'TAFS'].forEach(l => {
         let avg = (mLeadTime[l] && mLeadTime[l].count > 0) ? Math.round(mLeadTime[l].total / mLeadTime[l].count) : 0;
         updateCell(`val-lead-time-${l.toLowerCase()}`, avg + " Hari");
-        const bar = document.getElementById(`bar-lead-time-${l.toLowerCase()}`);
+        let bar = document.getElementById(`bar-lead-time-${l.toLowerCase()}`);
         if (bar) bar.style.width = Math.min(avg, 100) + "%";
     });
 
@@ -194,12 +204,10 @@ function updateDashboard(data) {
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
     
-    // Render Tabel Bawah (Data Entry/Admin)
     renderTabLeasingFull(data);
     renderTabOverdueFull(data);
     renderTabDatabaseFull(data);
     
-    // Pastikan ini dipanggil untuk mengisi tabel "BINDING ENTRY UPDATE"
     if (typeof renderDataArUnitFull === 'function') {
         renderDataArUnitFull(data);
     }
