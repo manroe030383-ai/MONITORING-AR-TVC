@@ -195,6 +195,24 @@ function updateDashboard(data) {
     if(document.getElementById('val-total-leas')) document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
     if(document.getElementById('unit-total-leas')) document.getElementById('unit-total-leas').innerText = s.cLeas + " Unit";
 
+// --- UPDATE METRIK KHUSUS TAFS & ACC ---
+function updateMetrics(prefix, metrics) {
+    const ids = {
+        os: `total-os-${prefix}`,      // Pastikan elemen ini ada
+        paid: `paid-unit-${prefix}`,   // Contoh ID untuk unit lunas
+        proc: `proc-unit-${prefix}`,   // Contoh ID untuk unit on proses
+        over: `over-unit-${prefix}`    // Contoh ID untuk unit overdue
+    };
+    
+    if (document.getElementById(ids.os)) document.getElementById(ids.os).innerText = fmtIDR(metrics.os);
+    if (document.getElementById(ids.paid)) document.getElementById(ids.paid).innerText = metrics.paid + " Unit";
+    if (document.getElementById(ids.proc)) document.getElementById(ids.proc).innerText = metrics.onProses + " Unit";
+    if (document.getElementById(ids.over)) document.getElementById(ids.over).innerText = metrics.overdue + " Unit";
+}
+
+// Panggil fungsi ini di akhir updateDashboard
+updateMetrics('tafs', tafsMetrics);
+updateMetrics('acc', accMetrics);
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
