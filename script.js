@@ -104,7 +104,6 @@ function updateDashboard(data) {
     let mLeadTime = {};
 
     data.forEach(d => {
-        // Menggunakan nama kolom yang sesuai dengan struktur Supabase Anda
         const os = Number(d.os_balance || 0);
         const b1_30 = Number(d.hari_1_30 || 0);
         const b31_60 = Number(d.hari_31_60 || 0);
@@ -114,11 +113,9 @@ function updateDashboard(data) {
         let l = String(d.leasing_name || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
         
         const penalti = Number(d.penalty_amount || 0);
-        const ketCabang = String(d.ket_cabang || '').toUpperCase().trim();
         const lt = Number(d.lead_time || 0);
         const tglTagih = d.tgl_tagih;
         const tglBayar = d.tgl_bayar;
-        
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
         s.os += os; s.ov += ov; s.pen += penalti; s.lan += lancarNominal;
@@ -150,7 +147,8 @@ function updateDashboard(data) {
             else { m.os += os; if (ov > 0) m.overdue++; else m.onProses++; }
         }
 
-        if (ketCabang.includes('LUNAS') && lt > 0 && (isTafs || isAcc)) {
+        // PERBAIKAN LOGIKA LEAD TIME
+        if (tglBayar && lt > 0 && (isTafs || isAcc)) {
             if (!mLeadTime[l]) mLeadTime[l] = { total: 0, count: 0 };
             mLeadTime[l].total += lt; mLeadTime[l].count += 1;
         }
@@ -162,27 +160,21 @@ function updateDashboard(data) {
     });
 
     // --- PEMBARUAN Tampilan (DOM) ---
-    const updateCell = (id, val) => { 
-        let el = document.getElementById(id);
-        if(el) el.innerText = val; 
-    };
+    const updateCell = (id, val) => { let el = document.getElementById(id); if(el) el.innerText = val; };
     
-    // Update Ringkasan Utama Admin
     updateCell('total-os', fmtIDR(s.os));
     updateCell('total-overdue', fmtIDR(s.ov));
     updateCell('total-penalty', fmtIDR(s.pen));
     updateCell('total-lancar', fmtIDR(s.lan));
-    
     updateCell('val-total-cash', fmtIDR(s.cash));
     updateCell('unit-total-cash', s.cCash + " Unit");
     updateCell('val-total-leas', fmtIDR(s.leas));
     updateCell('unit-total-leas', s.cLeas + " Unit");
     
-    let badgeOv = document.getElementById('badge-overdue');
-    if(badgeOv) badgeOv.innerText = s.countOv + " SPK Lewat TOP";
-    
-    let spkPen = document.getElementById('spk-penalty');
-    if(spkPen) spkPen.innerText = s.cPen + " SPK";
+    // Update Grafik Batang Cash vs Leasing
+    if (typeof renderOsBarChart === 'function') {
+        renderOsBarChart({ cash: s.cash, leasing: s.leas });
+    }
 
     // Update Metrik TAFS/ACC
     updateCell('tafs-outstanding', fmtIDR(tafsMetrics.os));
@@ -195,40 +187,25 @@ function updateDashboard(data) {
     updateCell('acc-on-proses', accMetrics.onProses + " Unit");
     updateCell('acc-overdue', accMetrics.overdue + " Unit");
 
-    // Update Lead Time
     ['ACC', 'TAFS'].forEach(l => {
         let avg = (mLeadTime[l] && mLeadTime[l].count > 0) ? Math.round(mLeadTime[l].total / mLeadTime[l].count) : 0;
         updateCell(`val-lead-time-${l.toLowerCase()}`, avg + " Hari");
-        let bar = document.getElementById(`bar-lead-time-${l.toLowerCase()}`);
-        if (bar) bar.style.width = Math.min(avg, 100) + "%";
     });
 
-    // Update Breakdown List
-    updateCell('total-do-acc', breakdown.ACC.total);
-    updateCell('total-do-tafs', breakdown.TAFS.total);
-    updateCell('sudah-tagih-acc', breakdown.ACC.sudah);
-    updateCell('sudah-tagih-tafs', breakdown.TAFS.sudah);
-    updateCell('belum-tagih-acc', breakdown.ACC.belum);
-    updateCell('belum-tagih-tafs', breakdown.TAFS.belum);
-    updateCell('lunas-acc', breakdown.ACC.lunas);
-    updateCell('lunas-tafs', breakdown.TAFS.lunas);
-
-    // Render Lainnya
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
     renderTopList(mSales, 'list-sales', 'text-blue-600');
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
-    
     renderTabLeasingFull(data);
     renderTabOverdueFull(data);
     renderTabDatabaseFull(data);
-    
     if (typeof renderDataArUnitFull === 'function') {
         renderDataArUnitFull(data);
     }
 }
+
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
