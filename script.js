@@ -157,7 +157,7 @@ function updateDashboard(data) {
     // --- PEMBARUAN Tampilan (DOM) ---
     const updateCell = (id, val) => { if(document.getElementById(id)) document.getElementById(id).innerText = val; };
     
-    // Update Metrik TAFS & ACC (Sesuai ID di HTML Anda)
+    // Update Metrik TAFS & ACC
     const updateLeasingMetrics = (prefix, m) => {
         updateCell(`${prefix}-outstanding`, fmtIDR(m.os));
         updateCell(`${prefix}-paid`, m.paid + " Unit");
@@ -193,10 +193,18 @@ function updateDashboard(data) {
     renderTopList(mSales, 'list-sales', 'text-blue-600');
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
+    
+    // Render Tabel Bawah (Data Entry/Admin)
     renderTabLeasingFull(data);
     renderTabOverdueFull(data);
     renderTabDatabaseFull(data);
+    
+    // Pastikan ini dipanggil untuk mengisi tabel "BINDING ENTRY UPDATE"
+    if (typeof renderDataArUnitFull === 'function') {
+        renderDataArUnitFull(data);
+    }
 }
+
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
