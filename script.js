@@ -149,6 +149,29 @@ function updateDashboard(data) {
         mSales[finalSales] = (mSales[finalSales] || 0) + os;
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
+// --- UPDATE BREAKDOWN LEASING TVC ---
+    const b = breakdown;
+    const updateCell = (id, val) => { if(document.getElementById(id)) document.getElementById(id).innerText = val; };
+    
+    updateCell('total-do-acc', b.ACC.total);
+    updateCell('total-do-tafs', b.TAFS.total);
+    updateCell('sudah-tagih-acc', b.ACC.sudah);
+    updateCell('sudah-tagih-tafs', b.TAFS.sudah);
+    updateCell('belum-tagih-acc', b.ACC.belum);
+    updateCell('belum-tagih-tafs', b.TAFS.belum);
+    updateCell('lunas-acc', b.ACC.lunas);
+    updateCell('lunas-tafs', b.TAFS.lunas);
+
+    // --- UPDATE AVG LEAD TIME ---
+    ['ACC', 'TAFS'].forEach(leasing => {
+        let avg = 0;
+        if (mLeadTime[leasing] && mLeadTime[leasing].count > 0) {
+            avg = Math.round(mLeadTime[leasing].total / mLeadTime[leasing].count);
+        }
+        updateCell(`avg-lead-${leasing.toLowerCase()}`, avg + " Hari");
+        const bar = document.getElementById(`bar-${leasing.toLowerCase()}`);
+        if (bar) bar.style.width = Math.min(avg, 100) + "%";
+    });
 
     if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
     if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
