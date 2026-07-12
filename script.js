@@ -213,6 +213,34 @@ function updateDashboard(data) {
     updateCell('lunas-acc', breakdown.ACC.lunas);
     updateCell('lunas-tafs', breakdown.TAFS.lunas);
 
+// --- 1. Logika Grafik Total O/S Balance (Bar Hijau & Biru) ---
+    let totalOs = s.os > 0 ? s.os : 1;
+    let pctCash = (s.cash / totalOs) * 100;
+    let pctLeas = (s.leas / totalOs) * 100;
+    
+    let elBarCash = document.getElementById('bar-cash');
+    let elBarLeas = document.getElementById('bar-leasing');
+    if (elBarCash) elBarCash.style.width = pctCash + "%";
+    if (elBarLeas) elBarLeas.style.width = pctLeas + "%";
+
+    // --- 2. Logika Grafik Avg Lead Time (Override Warna Spesifik) ---
+    ['ACC', 'TAFS'].forEach(l => {
+        let avg = (mLeadTime[l] && mLeadTime[l].count > 0) ? Math.round(mLeadTime[l].total / mLeadTime[l].count) : 0;
+        
+        // Update teks
+        updateCell(`avg-lead-${l.toLowerCase()}`, avg + " Hari");
+        
+        // Update bar
+        let bar = document.getElementById(`bar-${l.toLowerCase()}`);
+        if (bar) {
+            bar.style.width = Math.min(avg, 100) + "%";
+            // Set warna: Merah untuk ACC, Biru untuk TAFS
+            bar.style.backgroundColor = (l === 'ACC') ? '#EF4444' : '#3B82F6';
+        }
+    });
+
+
+
     // Render Lainnya
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
