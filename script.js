@@ -136,115 +136,57 @@ function updateDashboard(data) {
                 if (tglBayar) target.lunas++; else if (tglTagih) target.sudah++; else target.belum++;
             }
         }
-        if (l.includes('TAFS') || l.includes('ACC')) {
-            let m = l.includes('TAFS') ? tafsMetrics : accMetrics;
-            if (tglBayar || os === 0) m.paid++; else { m.os += os; if (ov > 0) m.overdue++; else m.onProses++; }
-        }
-        if (ketCabang.includes('LUNAS') && lt > 0 && (l.includes('TAFS') || l.includes('ACC'))) {
-            if (!mLeadTime[l]) mLeadTime[l] = { total: 0, count: 0 };
-            mLeadTime[l].total += lt; mLeadTime[l].count += 1;
-        }
-        const finalSales = (getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || "OFFICE").trim();
-        const finalSpv = (getProp(d, 'Supervisor') || getProp(d, 'supervisor_name') || "OFFICE").trim();
-        mSales[finalSales] = (mSales[finalSales] || 0) + os;
-        mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
-    });
-// --- UPDATE BARIS GRAFIK (CASH & LEASING) ---
-    if (s.os > 0) {
-        let pctCash = (s.cash / s.os) * 100;
-        let pctLeas = (s.leas / s.os) * 100;
-
-        const barCash = document.getElementById('bar-cash');
-        const barLeas = document.getElementById('bar-leasing');
-
-        if (barCash) barCash.style.width = pctCash + "%";
-        if (barLeas) barLeas.style.width = pctLeas + "%";
-    }
-// --- UPDATE BREAKDOWN LEASING TVC ---
-    const b = breakdown;
-    const updateCell = (id, val) => { if(document.getElementById(id)) document.getElementById(id).innerText = val; };
-    
-    updateCell('total-do-acc', b.ACC.total);
-    updateCell('total-do-tafs', b.TAFS.total);
-    updateCell('sudah-tagih-acc', b.ACC.sudah);
-    updateCell('sudah-tagih-tafs', b.TAFS.sudah);
-    updateCell('belum-tagih-acc', b.ACC.belum);
-    updateCell('belum-tagih-tafs', b.TAFS.belum);
-    updateCell('lunas-acc', b.ACC.lunas);
-    updateCell('lunas-tafs', b.TAFS.lunas);
-
-// Logika pengisian metrik untuk TAFS/ACC
+        
         if (l.includes('TAFS') || l.includes('ACC')) {
             let m = l.includes('TAFS') ? tafsMetrics : accMetrics;
             if (tglBayar || os === 0) m.paid++; 
-            else { 
-                m.os += os; 
-                if (ov > 0) m.overdue++; 
-                else m.onProses++; 
-            }
+            else { m.os += os; if (ov > 0) m.overdue++; else m.onProses++; }
         }
 
         if (ketCabang.includes('LUNAS') && lt > 0 && (l.includes('TAFS') || l.includes('ACC'))) {
             if (!mLeadTime[l]) mLeadTime[l] = { total: 0, count: 0 };
             mLeadTime[l].total += lt; mLeadTime[l].count += 1;
         }
+        
         const finalSales = (getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || "OFFICE").trim();
         const finalSpv = (getProp(d, 'Supervisor') || getProp(d, 'supervisor_name') || "OFFICE").trim();
         mSales[finalSales] = (mSales[finalSales] || 0) + os;
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // --- FUNGSI PEMBARUAN METRIK (Mapping ke HTML Anda) ---
-    function updateLeasingMetrics(prefix, metrics) {
-        if (document.getElementById(`${prefix}-outstanding`)) document.getElementById(`${prefix}-outstanding`).innerText = fmtIDR(metrics.os);
-        if (document.getElementById(`${prefix}-paid`)) document.getElementById(`${prefix}-paid`).innerText = metrics.paid + " Unit";
-        if (document.getElementById(`${prefix}-on-proses`)) document.getElementById(`${prefix}-on-proses`).innerText = metrics.onProses + " Unit";
-        if (document.getElementById(`${prefix}-overdue`)) document.getElementById(`${prefix}-overdue`).innerText = metrics.overdue + " Unit";
-    }
-
-    // Panggil Update
+    // --- PEMBARUAN Tampilan (DOM) ---
+    const updateCell = (id, val) => { if(document.getElementById(id)) document.getElementById(id).innerText = val; };
+    
+    // Update Metrik TAFS & ACC (Sesuai ID di HTML Anda)
+    const updateLeasingMetrics = (prefix, m) => {
+        updateCell(`${prefix}-outstanding`, fmtIDR(m.os));
+        updateCell(`${prefix}-paid`, m.paid + " Unit");
+        updateCell(`${prefix}-on-proses`, m.onProses + " Unit");
+        updateCell(`${prefix}-overdue`, m.overdue + " Unit");
+    };
+    
     updateLeasingMetrics('tafs', tafsMetrics);
     updateLeasingMetrics('acc', accMetrics);
 
-    // --- UPDATE AVG LEAD TIME ---
-    ['ACC', 'TAFS'].forEach(leasing => {
-        let avg = 0;
-        if (mLeadTime[leasing] && mLeadTime[leasing].count > 0) {
-            avg = Math.round(mLeadTime[leasing].total / mLeadTime[leasing].count);
-        }
-        updateCell(`avg-lead-${leasing.toLowerCase()}`, avg + " Hari");
-        const bar = document.getElementById(`bar-${leasing.toLowerCase()}`);
+    // Update Lead Time
+    ['ACC', 'TAFS'].forEach(l => {
+        let avg = (mLeadTime[l] && mLeadTime[l].count > 0) ? Math.round(mLeadTime[l].total / mLeadTime[l].count) : 0;
+        updateCell(`val-lead-time-${l.toLowerCase()}`, avg + " Hari");
+        const bar = document.getElementById(`bar-lead-time-${l.toLowerCase()}`);
         if (bar) bar.style.width = Math.min(avg, 100) + "%";
     });
 
-    if(document.getElementById('total-os')) document.getElementById('total-os').innerText = fmtIDR(s.os);
-    if(document.getElementById('total-overdue')) document.getElementById('total-overdue').innerText = fmtIDR(s.ov);
-    if(document.getElementById('total-lancar')) document.getElementById('total-lancar').innerText = fmtIDR(s.lan);
-    if(document.getElementById('total-penalty')) document.getElementById('total-penalty').innerText = fmtIDR(s.pen);
-    
-    // Update kartu Cash & Leasing sesuai ID di HTML Anda
-    if(document.getElementById('val-total-cash')) document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
-    if(document.getElementById('unit-total-cash')) document.getElementById('unit-total-cash').innerText = s.cCash + " Unit";
-    if(document.getElementById('val-total-leas')) document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
-    if(document.getElementById('unit-total-leas')) document.getElementById('unit-total-leas').innerText = s.cLeas + " Unit";
+    // Update Breakdown List
+    updateCell('total-do-acc', breakdown.ACC.total);
+    updateCell('total-do-tafs', breakdown.TAFS.total);
+    updateCell('sudah-tagih-acc', breakdown.ACC.sudah);
+    updateCell('sudah-tagih-tafs', breakdown.TAFS.sudah);
+    updateCell('belum-tagih-acc', breakdown.ACC.belum);
+    updateCell('belum-tagih-tafs', breakdown.TAFS.belum);
+    updateCell('lunas-acc', breakdown.ACC.lunas);
+    updateCell('lunas-tafs', breakdown.TAFS.lunas);
 
-// --- UPDATE KARTU UMUM ---
-    if(document.getElementById('val-total-cash')) document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
-    // ... (baris update lainnya)
-
-    // --- PENEMPATAN KODE BARU ---
-    // Tambahkan fungsi pembantu ini di dalam atau di luar scope fungsi utama
-    function updateMetrics(prefix, metrics) {
-        if (document.getElementById(`total-os-${prefix}`)) document.getElementById(`total-os-${prefix}`).innerText = fmtIDR(metrics.os);
-        if (document.getElementById(`paid-unit-${prefix}`)) document.getElementById(`paid-unit-${prefix}`).innerText = metrics.paid + " Unit";
-        if (document.getElementById(`proc-unit-${prefix}`)) document.getElementById(`proc-unit-${prefix}`).innerText = metrics.onProses + " Unit";
-        if (document.getElementById(`over-unit-${prefix}`)) document.getElementById(`over-unit-${prefix}`).innerText = metrics.overdue + " Unit";
-    }
-
-    // Panggil untuk TAFS dan ACC
-    updateMetrics('tafs', tafsMetrics);
-    updateMetrics('acc', accMetrics);
-
+    // Render Lainnya
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
@@ -253,10 +195,8 @@ function updateDashboard(data) {
     renderOverdueTop(mOverdueTop);
     renderTabLeasingFull(data);
     renderTabOverdueFull(data);
-    renderDataArUnitFull(data);
     renderTabDatabaseFull(data);
 }
-
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
