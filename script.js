@@ -173,6 +173,39 @@ function updateDashboard(data) {
     updateCell('lunas-acc', b.ACC.lunas);
     updateCell('lunas-tafs', b.TAFS.lunas);
 
+// Logika pengisian metrik untuk TAFS/ACC
+        if (l.includes('TAFS') || l.includes('ACC')) {
+            let m = l.includes('TAFS') ? tafsMetrics : accMetrics;
+            if (tglBayar || os === 0) m.paid++; 
+            else { 
+                m.os += os; 
+                if (ov > 0) m.overdue++; 
+                else m.onProses++; 
+            }
+        }
+
+        if (ketCabang.includes('LUNAS') && lt > 0 && (l.includes('TAFS') || l.includes('ACC'))) {
+            if (!mLeadTime[l]) mLeadTime[l] = { total: 0, count: 0 };
+            mLeadTime[l].total += lt; mLeadTime[l].count += 1;
+        }
+        const finalSales = (getProp(d, 'Salesman Name') || getProp(d, 'salesman_name') || "OFFICE").trim();
+        const finalSpv = (getProp(d, 'Supervisor') || getProp(d, 'supervisor_name') || "OFFICE").trim();
+        mSales[finalSales] = (mSales[finalSales] || 0) + os;
+        mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
+    });
+
+    // --- FUNGSI PEMBARUAN METRIK (Mapping ke HTML Anda) ---
+    function updateLeasingMetrics(prefix, metrics) {
+        if (document.getElementById(`${prefix}-outstanding`)) document.getElementById(`${prefix}-outstanding`).innerText = fmtIDR(metrics.os);
+        if (document.getElementById(`${prefix}-paid`)) document.getElementById(`${prefix}-paid`).innerText = metrics.paid + " Unit";
+        if (document.getElementById(`${prefix}-on-proses`)) document.getElementById(`${prefix}-on-proses`).innerText = metrics.onProses + " Unit";
+        if (document.getElementById(`${prefix}-overdue`)) document.getElementById(`${prefix}-overdue`).innerText = metrics.overdue + " Unit";
+    }
+
+    // Panggil Update
+    updateLeasingMetrics('tafs', tafsMetrics);
+    updateLeasingMetrics('acc', accMetrics);
+
     // --- UPDATE AVG LEAD TIME ---
     ['ACC', 'TAFS'].forEach(leasing => {
         let avg = 0;
@@ -195,24 +228,23 @@ function updateDashboard(data) {
     if(document.getElementById('val-total-leas')) document.getElementById('val-total-leas').innerText = fmtIDR(s.leas);
     if(document.getElementById('unit-total-leas')) document.getElementById('unit-total-leas').innerText = s.cLeas + " Unit";
 
-// --- UPDATE METRIK KHUSUS TAFS & ACC ---
-function updateMetrics(prefix, metrics) {
-    const ids = {
-        os: `total-os-${prefix}`,      // Pastikan elemen ini ada
-        paid: `paid-unit-${prefix}`,   // Contoh ID untuk unit lunas
-        proc: `proc-unit-${prefix}`,   // Contoh ID untuk unit on proses
-        over: `over-unit-${prefix}`    // Contoh ID untuk unit overdue
-    };
-    
-    if (document.getElementById(ids.os)) document.getElementById(ids.os).innerText = fmtIDR(metrics.os);
-    if (document.getElementById(ids.paid)) document.getElementById(ids.paid).innerText = metrics.paid + " Unit";
-    if (document.getElementById(ids.proc)) document.getElementById(ids.proc).innerText = metrics.onProses + " Unit";
-    if (document.getElementById(ids.over)) document.getElementById(ids.over).innerText = metrics.overdue + " Unit";
-}
+// --- UPDATE KARTU UMUM ---
+    if(document.getElementById('val-total-cash')) document.getElementById('val-total-cash').innerText = fmtIDR(s.cash);
+    // ... (baris update lainnya)
 
-// Panggil fungsi ini di akhir updateDashboard
-updateMetrics('tafs', tafsMetrics);
-updateMetrics('acc', accMetrics);
+    // --- PENEMPATAN KODE BARU ---
+    // Tambahkan fungsi pembantu ini di dalam atau di luar scope fungsi utama
+    function updateMetrics(prefix, metrics) {
+        if (document.getElementById(`total-os-${prefix}`)) document.getElementById(`total-os-${prefix}`).innerText = fmtIDR(metrics.os);
+        if (document.getElementById(`paid-unit-${prefix}`)) document.getElementById(`paid-unit-${prefix}`).innerText = metrics.paid + " Unit";
+        if (document.getElementById(`proc-unit-${prefix}`)) document.getElementById(`proc-unit-${prefix}`).innerText = metrics.onProses + " Unit";
+        if (document.getElementById(`over-unit-${prefix}`)) document.getElementById(`over-unit-${prefix}`).innerText = metrics.overdue + " Unit";
+    }
+
+    // Panggil untuk TAFS dan ACC
+    updateMetrics('tafs', tafsMetrics);
+    updateMetrics('acc', accMetrics);
+
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
