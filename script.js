@@ -92,7 +92,7 @@ async function fetchData() {
 }
 
 // ========================================================
-// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD
+// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (UPDATED)
 // ========================================================
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
@@ -103,6 +103,11 @@ function updateDashboard(data) {
     let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
     let mLeadTime = {};
 
+    if (!data || data.length === 0) {
+        console.warn("Data dashboard kosong!");
+        return;
+    }
+
     data.forEach(d => {
         const os = Number(getProp(d, 'O/S Balance') || getProp(d, 'os_balance') || 0);
         const b1_30 = Number(getProp(d, 'Hari 1-30') || getProp(d, 'hari_1_30') || 0);
@@ -110,7 +115,6 @@ function updateDashboard(data) {
         const b60 = Number(getProp(d, 'Lebih 60 Hari') || getProp(d, 'lebih_60_hari') || 0);
         const ov = (getProp(d, 'Total Overdue') !== undefined) ? Number(getProp(d, 'Total Overdue')) : (b1_30 + b31_60 + b60);
         
-        // Pembersihan nama leasing agar lebih fleksibel (menghapus spasi berlebih)
         let l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
         
         const penalti = Number(getProp(d, 'Potensi Penalti') || getProp(d, 'penalty_amount') || 0);
@@ -129,7 +133,6 @@ function updateDashboard(data) {
         aging['31-60 H'] += b31_60 / 1000000;
         aging['>60 H'] += b60 / 1000000;
 
-        // Logika pengelompokan
         const isTafs = l.includes('TAFS');
         const isAcc = l.includes('ACC');
 
@@ -146,8 +149,13 @@ function updateDashboard(data) {
         
         if (isTafs || isAcc) {
             let m = isTafs ? tafsMetrics : accMetrics;
+            // Jika ada tanggal bayar atau OS 0, dianggap Lunas/Paid
             if (tglBayar || os <= 0) m.paid++; 
-            else { m.os += os; if (ov > 0) m.overdue++; else m.onProses++; }
+            else { 
+                m.os += os; 
+                if (ov > 0) m.overdue++; 
+                else m.onProses++; 
+            }
         }
 
         if (ketCabang.includes('LUNAS') && lt > 0 && (isTafs || isAcc)) {
@@ -161,13 +169,16 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // --- PEMBARUAN Tampilan (DOM) ---
+    // --- DEBUGGING: Cek apakah metrik terisi ---
+    console.log("ACC Metrics:", accMetrics);
+    console.log("TAFS Metrics:", tafsMetrics);
+
     const updateCell = (id, val) => { 
         let el = document.getElementById(id);
         if(el) el.innerText = val; 
     };
     
-    // Update Metrik
+    // Update Tampilan (DOM)
     updateCell('tafs-outstanding', fmtIDR(tafsMetrics.os));
     updateCell('tafs-paid', tafsMetrics.paid + " Unit");
     updateCell('tafs-on-proses', tafsMetrics.onProses + " Unit");
@@ -212,7 +223,6 @@ function updateDashboard(data) {
         renderDataArUnitFull(data);
     }
 }
-
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
