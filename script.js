@@ -40,8 +40,7 @@ async function fetchData() {
     try {
         let query = supabase.from('ar_unit').select('*');
         const { data, error } = await query;
-        const { data, error } = await query;
-        
+                
         if (error) throw error;
         
         if (data) {
