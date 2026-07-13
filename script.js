@@ -32,12 +32,12 @@ function getProp(obj, key) {
     }
     return undefined;
 }
-
 // ========================================================
-// 2. FUNGSI AMBIL DATA LIVE DARI SUPABASE
+// 2. FUNGSI AMBIL DATA LIVE DARI SUPABASE (TERBARU)
 // ========================================================
 async function fetchData() {
     try {
+        // Menggunakan query dasar tanpa filter untuk mendapatkan data utuh
         let query = supabase.from('ar_unit').select('*');
         const { data, error } = await query;
                 
@@ -54,6 +54,10 @@ async function fetchData() {
                 return;
             }
 
+            // --- PERBAIKAN: HITUNG TOTAL GLOBAL SEBELUM FILTER ---
+            // Ini memastikan Total O/S tidak terpengaruh oleh filter TAFS/ACC
+            const totalOsGlobal = data.reduce((acc, curr) => acc + (parseFloat(curr.os_balance) || 0), 0);
+
             // FILTER GLOBAL SEBELUM MASUK KE HITUNGAN DASHBOARD
             let finalFilteredData = data;
             if (isTafsPage) {
@@ -69,7 +73,9 @@ async function fetchData() {
             }
 
             cachedData = finalFilteredData; 
-            updateDashboard(finalFilteredData);
+            
+            // --- PERBAIKAN: KIRIM TOTAL GLOBAL KE FUNGSI DASHBOARD ---
+            updateDashboard(finalFilteredData, totalOsGlobal);
             
             // Render Status Berhasil di UI
             if (document.getElementById('status-update')) {
