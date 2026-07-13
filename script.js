@@ -100,10 +100,9 @@ async function fetchData() {
 // ========================================================
 // 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (DIPERBARUI)
 // ========================================================
-// Tambahkan parameter 'totalGlobal' untuk menerima nilai dari fetchData
 function updateDashboard(data, totalGlobal) {
+    // 1. Inisialisasi variabel s
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
-    // ... (kode inisialisasi lainnya tetap SAMA, JANGAN DIUBAH) ...
     let breakdown = { ACC: { total: 0, sudah: 0, belum: 0, lunas: 0 }, TAFS: { total: 0, sudah: 0, belum: 0, lunas: 0 } };
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
@@ -112,9 +111,10 @@ function updateDashboard(data, totalGlobal) {
     let mLeadTime = {};
 
     data.forEach(d => {
-        // ... (seluruh logika perulangan d.forEach tetap SAMA, JANGAN DIUBAH) ...
         const os = Number(getProp(d, 'os_balance') || d.os_balance || 0);
-        // ... (lanjutan logika d.forEach Anda) ...
+        
+        s.os += os; // Tetap diakumulasi untuk keperluan internal kalkulasi persentase
+        
         const b1_30 = Number(getProp(d, 'hari_1_30') || d.hari_1_30 || 0);
         const b31_60 = Number(getProp(d, 'hari_31_60') || d.hari_31_60 || 0);
         const b60 = Number(getProp(d, 'lebih_60_hari') || d.lebih_60_hari || 0);
@@ -128,7 +128,7 @@ function updateDashboard(data, totalGlobal) {
         let l = String(getProp(d, 'Chas/Leasing') || d.leasing_name || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
-        s.os += os; s.ov += ov; s.pen += penalti; s.lan += lancarNominal;
+        s.ov += ov; s.pen += penalti; s.lan += lancarNominal;
         if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
         if (penalti > 0) s.cPen++;
 
@@ -168,19 +168,14 @@ function updateDashboard(data, totalGlobal) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // --- PERBAIKAN: Gunakan totalGlobal jika tersedia ---
-    const finalOs = (totalGlobal !== undefined && totalGlobal > 0) ? totalGlobal : s.os;
+    // --- PEMBATASAN: Gunakan totalGlobal untuk tampilan ---
+    const displayOs = (totalGlobal !== undefined && totalGlobal > 0) ? totalGlobal : s.os;
 
-    // --- PEMBARUAN Tampilan (DOM) ---
-    const updateCell = (id, val) => { 
-        let el = document.getElementById(id);
-        if(el) el.innerText = val; 
-    };
+    const updateCell = (id, val) => { let el = document.getElementById(id); if(el) el.innerText = val; };
     
-    // Gunakan finalOs di sini
-    updateCell('total-os', fmtIDR(finalOs));
+    // Tampilkan totalGlobal
+    updateCell('total-os', fmtIDR(displayOs)); 
     
-    // ... (seluruh baris updateCell di bawah ini tetap SAMA, JANGAN DIUBAH) ...
     updateCell('total-overdue', fmtIDR(s.ov));
     updateCell('total-penalty', fmtIDR(s.pen));
     updateCell('total-lancar', fmtIDR(s.lan));
@@ -222,10 +217,10 @@ function updateDashboard(data, totalGlobal) {
     updateCell('lunas-acc', breakdown.ACC.lunas);
     updateCell('lunas-tafs', breakdown.TAFS.lunas);
 
-    // ... (sisa logika chart dan rendering lainnya tetap SAMA, JANGAN DIUBAH) ...
-    let totalOs = finalOs > 0 ? finalOs : 1;
-    let pctCash = (s.cash / totalOs) * 100;
-    let pctLeas = (s.leas / totalOs) * 100;
+    // Kalkulasi persentase menggunakan s.os agar proporsional
+    let totalOsInternal = s.os > 0 ? s.os : 1;
+    let pctCash = (s.cash / totalOsInternal) * 100;
+    let pctLeas = (s.leas / totalOsInternal) * 100;
     
     let elBarCash = document.getElementById('bar-cash');
     let elBarLeas = document.getElementById('bar-leasing');
@@ -244,7 +239,7 @@ function updateDashboard(data, totalGlobal) {
 
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
-    renderLeasingList(mLeas, finalOs);
+    renderLeasingList(mLeas, displayOs);
     renderTopList(mSales, 'list-sales', 'text-blue-600');
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
@@ -257,6 +252,7 @@ function updateDashboard(data, totalGlobal) {
         renderDataArUnitFull(data);
     }
 }
+
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
