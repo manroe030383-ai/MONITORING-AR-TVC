@@ -92,7 +92,7 @@ async function fetchData() {
 }
 
 // ========================================================
-// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD
+// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (LENGKAP & KONSISTEN)
 // ========================================================
 function updateDashboard(data) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
@@ -104,20 +104,21 @@ function updateDashboard(data) {
     let mLeadTime = {};
 
     data.forEach(d => {
-        // Menggunakan nama kolom yang sesuai dengan struktur Supabase Anda
-        const os = Number(d.os_balance || 0);
-        const b1_30 = Number(d.hari_1_30 || 0);
-        const b31_60 = Number(d.hari_31_60 || 0);
-        const b60 = Number(d.lebih_60_hari || 0);
-        const ov = Number(d.total_overdue || 0);
+        // Mengambil nilai dengan getProp untuk memastikan kolom terbaca meski case-sensitive atau ada spasi
+        const os = Number(getProp(d, 'os_balance') || d.os_balance || 0);
+        const b1_30 = Number(getProp(d, 'hari_1_30') || d.hari_1_30 || 0);
+        const b31_60 = Number(getProp(d, 'hari_31_60') || d.hari_31_60 || 0);
+        const b60 = Number(getProp(d, 'lebih_60_hari') || d.lebih_60_hari || 0);
+        const ov = Number(getProp(d, 'total_overdue') || d.total_overdue || 0);
+        const penalti = Number(getProp(d, 'penalty_amount') || d.penalty_amount || 0);
+        const lt = Number(getProp(d, 'lead_time') || d.lead_time || 0);
         
-        let l = String(d.leasing_name || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
+        const tglTagih = getProp(d, 'tgl_tagih') || d.tgl_tagih;
+        const tglBayar = getProp(d, 'tgl_bayar') || d.tgl_bayar;
+        const ketCabang = String(getProp(d, 'ket_cabang') || d.ket_cabang || '').toUpperCase().trim();
         
-        const penalti = Number(d.penalty_amount || 0);
-        const ketCabang = String(d.ket_cabang || '').toUpperCase().trim();
-        const lt = Number(d.lead_time || 0);
-        const tglTagih = d.tgl_tagih;
-        const tglBayar = d.tgl_bayar;
+        // Logika Leasing
+        let l = String(getProp(d, 'Chas/Leasing') || d.leasing_name || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
         
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
@@ -133,7 +134,7 @@ function updateDashboard(data) {
         const isTafs = l.includes('TAFS');
         const isAcc = l.includes('ACC');
 
-        if (["CASH"].includes(l) || l === "") { 
+        if (l === "CASH" || l === "") { 
             s.cash += os; s.cCash++; 
         } else { 
             s.leas += os; s.cLeas++; mLeas[l] = (mLeas[l] || 0) + os; 
@@ -155,8 +156,8 @@ function updateDashboard(data) {
             mLeadTime[l].total += lt; mLeadTime[l].count += 1;
         }
         
-        const finalSales = String(d.salesman_name || "OFFICE").trim();
-        const finalSpv = String(d.supervisor_name || "OFFICE").trim();
+        const finalSales = String(getProp(d, 'salesman_name') || d.salesman_name || "OFFICE").trim();
+        const finalSpv = String(getProp(d, 'supervisor_name') || d.supervisor_name || "OFFICE").trim();
         mSales[finalSales] = (mSales[finalSales] || 0) + os;
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
@@ -167,7 +168,6 @@ function updateDashboard(data) {
         if(el) el.innerText = val; 
     };
     
-    // Update Ringkasan Utama Admin
     updateCell('total-os', fmtIDR(s.os));
     updateCell('total-overdue', fmtIDR(s.ov));
     updateCell('total-penalty', fmtIDR(s.pen));
@@ -184,7 +184,6 @@ function updateDashboard(data) {
     let spkPen = document.getElementById('spk-penalty');
     if(spkPen) spkPen.innerText = s.cPen + " SPK";
 
-    // Update Metrik TAFS/ACC
     updateCell('tafs-outstanding', fmtIDR(tafsMetrics.os));
     updateCell('tafs-paid', tafsMetrics.paid + " Unit");
     updateCell('tafs-on-proses', tafsMetrics.onProses + " Unit");
@@ -195,7 +194,6 @@ function updateDashboard(data) {
     updateCell('acc-on-proses', accMetrics.onProses + " Unit");
     updateCell('acc-overdue', accMetrics.overdue + " Unit");
 
-    // Update Lead Time
     ['ACC', 'TAFS'].forEach(l => {
         let avg = (mLeadTime[l] && mLeadTime[l].count > 0) ? Math.round(mLeadTime[l].total / mLeadTime[l].count) : 0;
         updateCell(`val-lead-time-${l.toLowerCase()}`, avg + " Hari");
@@ -203,7 +201,6 @@ function updateDashboard(data) {
         if (bar) bar.style.width = Math.min(avg, 100) + "%";
     });
 
-    // Update Breakdown List
     updateCell('total-do-acc', breakdown.ACC.total);
     updateCell('total-do-tafs', breakdown.TAFS.total);
     updateCell('sudah-tagih-acc', breakdown.ACC.sudah);
@@ -213,7 +210,6 @@ function updateDashboard(data) {
     updateCell('lunas-acc', breakdown.ACC.lunas);
     updateCell('lunas-tafs', breakdown.TAFS.lunas);
 
-// --- 1. Logika Grafik Total O/S Balance (Bar Hijau & Biru) ---
     let totalOs = s.os > 0 ? s.os : 1;
     let pctCash = (s.cash / totalOs) * 100;
     let pctLeas = (s.leas / totalOs) * 100;
@@ -223,25 +219,16 @@ function updateDashboard(data) {
     if (elBarCash) elBarCash.style.width = pctCash + "%";
     if (elBarLeas) elBarLeas.style.width = pctLeas + "%";
 
-    // --- 2. Logika Grafik Avg Lead Time (Override Warna Spesifik) ---
     ['ACC', 'TAFS'].forEach(l => {
         let avg = (mLeadTime[l] && mLeadTime[l].count > 0) ? Math.round(mLeadTime[l].total / mLeadTime[l].count) : 0;
-        
-        // Update teks
         updateCell(`avg-lead-${l.toLowerCase()}`, avg + " Hari");
-        
-        // Update bar
         let bar = document.getElementById(`bar-${l.toLowerCase()}`);
         if (bar) {
             bar.style.width = Math.min(avg, 100) + "%";
-            // Set warna: Merah untuk ACC, Biru untuk TAFS
             bar.style.backgroundColor = (l === 'ACC') ? '#EF4444' : '#3B82F6';
         }
     });
 
-
-
-    // Render Lainnya
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, s.os);
