@@ -105,8 +105,9 @@ function updateStatusUI(type, message = "") {
         el.className = "text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic";
     }
 }
+
 // ========================================================
-// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (LENGKAP)
+// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (DIPERBAIKI)
 // ========================================================
 function updateDashboard(data, totalGlobal) {
     // 1. Inisialisasi variabel
@@ -119,6 +120,7 @@ function updateDashboard(data, totalGlobal) {
     let mLeadTime = {};
 
     data.forEach(d => {
+        // Akses langsung kolom database
         const os = Number(d.os_balance || 0);
         s.os += os; 
         
@@ -132,6 +134,8 @@ function updateDashboard(data, totalGlobal) {
         const tglTagih = d.tgl_tagih;
         const tglBayar = d.tgl_bayar;
         const ketCabang = String(d.ket_cabang || '').toUpperCase().trim();
+        
+        // Menggunakan leasing_name sesuai database
         let l = String(d.leasing_name || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
@@ -139,18 +143,10 @@ function updateDashboard(data, totalGlobal) {
         if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
         if (penalti > 0) s.cPen++;
 
-        // --- TAMBAHAN LOGIKA AGING (MENGATASI UMUR 37, 39, 45 DST) ---
-        const umur = Number(d.age || 0);
-        if (umur > 0 && umur <= 30) {
-            aging['1-30 H'] += os / 1000000;
-        } else if (umur >= 31 && umur <= 60) {
-            aging['31-60 H'] += os / 1000000;
-        } else if (umur > 60) {
-            aging['>60 H'] += os / 1000000;
-        } else {
-            aging['LANCAR'] += lancarNominal / 1000000;
-        }
-        // -----------------------------------------------------------
+        aging['LANCAR'] += lancarNominal / 1000000;
+        aging['1-30 H'] += b1_30 / 1000000;
+        aging['31-60 H'] += b31_60 / 1000000;
+        aging['>60 H'] += b60 / 1000000;
 
         const isTafs = l.includes('TAFS');
         const isAcc = l.includes('ACC');
@@ -183,21 +179,37 @@ function updateDashboard(data, totalGlobal) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // 2. LOGIKA TAMPILAN DOM (SAMA PERSIS DENGAN KODING ANDA)
-    const updateCell = (id, val) => { const elements = document.querySelectorAll(`[id="${id}"]`); elements.forEach(el => el.innerText = val); };
-    const displayOs = (totalGlobal && totalGlobal > 0) ? totalGlobal : s.os;
-    updateCell('total-os', fmtIDR(displayOs)); updateCell('total-overdue', fmtIDR(s.ov));
-    updateCell('total-penalty', fmtIDR(s.pen)); updateCell('total-lancar', fmtIDR(s.lan));
-    updateCell('val-total-cash', fmtIDR(s.cash)); updateCell('unit-total-cash', s.cCash + " Unit");
-    updateCell('val-total-leas', fmtIDR(s.leas)); updateCell('unit-total-leas', s.cLeas + " Unit");
-    
-    let badgeOv = document.getElementById('badge-overdue'); if(badgeOv) badgeOv.innerText = s.countOv + " SPK Lewat TOP";
-    let spkPen = document.getElementById('spk-penalty'); if(spkPen) spkPen.innerText = s.cPen + " SPK";
+    // 2. LOGIKA TAMPILAN DOM
+    const updateCell = (id, val) => { 
+        const elements = document.querySelectorAll(`[id="${id}"]`);
+        elements.forEach(el => el.innerText = val);
+    };
 
-    updateCell('tafs-outstanding', fmtIDR(tafsMetrics.os)); updateCell('tafs-paid', tafsMetrics.paid + " Unit");
-    updateCell('tafs-on-proses', tafsMetrics.onProses + " Unit"); updateCell('tafs-overdue', tafsMetrics.overdue + " Unit");
-    updateCell('acc-outstanding', fmtIDR(accMetrics.os)); updateCell('acc-paid', accMetrics.paid + " Unit");
-    updateCell('acc-on-proses', accMetrics.onProses + " Unit"); updateCell('acc-overdue', accMetrics.overdue + " Unit");
+    const displayOs = (totalGlobal && totalGlobal > 0) ? totalGlobal : s.os;
+    updateCell('total-os', fmtIDR(displayOs)); 
+    
+    updateCell('total-overdue', fmtIDR(s.ov));
+    updateCell('total-penalty', fmtIDR(s.pen));
+    updateCell('total-lancar', fmtIDR(s.lan));
+    updateCell('val-total-cash', fmtIDR(s.cash));
+    updateCell('unit-total-cash', s.cCash + " Unit");
+    updateCell('val-total-leas', fmtIDR(s.leas));
+    updateCell('unit-total-leas', s.cLeas + " Unit");
+    
+    let badgeOv = document.getElementById('badge-overdue');
+    if(badgeOv) badgeOv.innerText = s.countOv + " SPK Lewat TOP";
+    let spkPen = document.getElementById('spk-penalty');
+    if(spkPen) spkPen.innerText = s.cPen + " SPK";
+
+    updateCell('tafs-outstanding', fmtIDR(tafsMetrics.os));
+    updateCell('tafs-paid', tafsMetrics.paid + " Unit");
+    updateCell('tafs-on-proses', tafsMetrics.onProses + " Unit");
+    updateCell('tafs-overdue', tafsMetrics.overdue + " Unit");
+
+    updateCell('acc-outstanding', fmtIDR(accMetrics.os));
+    updateCell('acc-paid', accMetrics.paid + " Unit");
+    updateCell('acc-on-proses', accMetrics.onProses + " Unit");
+    updateCell('acc-overdue', accMetrics.overdue + " Unit");
 
     ['ACC', 'TAFS'].forEach(l => {
         let avg = (mLeadTime[l] && mLeadTime[l].count > 0) ? Math.round(mLeadTime[l].total / mLeadTime[l].count) : 0;
@@ -206,17 +218,50 @@ function updateDashboard(data, totalGlobal) {
         if (bar) bar.style.width = Math.min(avg, 100) + "%";
     });
 
-    updateCell('total-do-acc', breakdown.ACC.total); updateCell('total-do-tafs', breakdown.TAFS.total);
-    updateCell('sudah-tagih-acc', breakdown.ACC.sudah); updateCell('sudah-tagih-tafs', breakdown.TAFS.sudah);
-    updateCell('belum-tagih-acc', breakdown.ACC.belum); updateCell('belum-tagih-tafs', breakdown.TAFS.belum);
-    updateCell('lunas-acc', breakdown.ACC.lunas); updateCell('lunas-tafs', breakdown.TAFS.lunas);
+    updateCell('total-do-acc', breakdown.ACC.total);
+    updateCell('total-do-tafs', breakdown.TAFS.total);
+    updateCell('sudah-tagih-acc', breakdown.ACC.sudah);
+    updateCell('sudah-tagih-tafs', breakdown.TAFS.sudah);
+    updateCell('belum-tagih-acc', breakdown.ACC.belum);
+    updateCell('belum-tagih-tafs', breakdown.TAFS.belum);
+    updateCell('lunas-acc', breakdown.ACC.lunas);
+    updateCell('lunas-tafs', breakdown.TAFS.lunas);
 
-    // Render Akhir
-    renderAgingChart(aging); renderDonutLeasing(mLeas); renderLeasingList(mLeas, displayOs);
-    renderTopList(mSales, 'list-sales', 'text-blue-600'); renderTopList(mSpv, 'list-spv', 'text-purple-600');
-    renderOverdueTop(mOverdueTop); renderTabLeasingFull(data); renderTabOverdueFull(data); renderTabDatabaseFull(data);
-    if (typeof renderDataArUnitFull === 'function') renderDataArUnitFull(data);
+    let totalOsInternal = s.os > 0 ? s.os : 1;
+    let pctCash = (s.cash / totalOsInternal) * 100;
+    let pctLeas = (s.leas / totalOsInternal) * 100;
+    
+    let elBarCash = document.getElementById('bar-cash');
+    let elBarLeas = document.getElementById('bar-leasing');
+    if (elBarCash) elBarCash.style.width = pctCash + "%";
+    if (elBarLeas) elBarLeas.style.width = pctLeas + "%";
+
+    ['ACC', 'TAFS'].forEach(l => {
+        let avg = (mLeadTime[l] && mLeadTime[l].count > 0) ? Math.round(mLeadTime[l].total / mLeadTime[l].count) : 0;
+        updateCell(`avg-lead-${l.toLowerCase()}`, avg + " Hari");
+        let bar = document.getElementById(`bar-${l.toLowerCase()}`);
+        if (bar) {
+            bar.style.width = Math.min(avg, 100) + "%";
+            bar.style.backgroundColor = (l === 'ACC') ? '#EF4444' : '#3B82F6';
+        }
+    });
+
+    renderAgingChart(aging);
+    renderDonutLeasing(mLeas);
+    renderLeasingList(mLeas, displayOs);
+    renderTopList(mSales, 'list-sales', 'text-blue-600');
+    renderTopList(mSpv, 'list-spv', 'text-purple-600');
+    renderOverdueTop(mOverdueTop);
+    renderTabLeasingFull(data);
+    renderTabOverdueFull(data);
+    renderTabDatabaseFull(data);
+    
+    if (typeof renderDataArUnitFull === 'function') {
+        renderDataArUnitFull(data);
+    }
 }
+
+
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
