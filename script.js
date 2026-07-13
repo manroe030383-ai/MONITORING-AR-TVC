@@ -60,6 +60,13 @@ async function fetchData() {
 
         // 3. Filter data berdasarkan halaman (gunakan fungsi helper)
         let finalFilteredData = filterDataByPage(data);
+// --- TAMBAHAN LOGIKA SORTING (TIDAK MENGUBAH STRUKTUR LAIN) ---
+        finalFilteredData.sort((a, b) => {
+            const dateA = a.tgl_tagih ? new Date(a.tgl_tagih) : new Date('9999-12-31');
+            const dateB = b.tgl_tagih ? new Date(b.tgl_tagih) : new Date('9999-12-31');
+            return dateA - dateB;
+        });
+        // -------------------------------------------------------------
 
         // 4. Update state global
         cachedData = finalFilteredData; 
@@ -97,7 +104,8 @@ function updateStatusUI(type, message = "") {
         el.innerText = `KONEKSI GAGAL: ${message}`;
         el.className = "text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic";
     }
-}// ========================================================
+}
+// ========================================================
 // 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (DIPERBAIKI)
 // ========================================================
 function updateDashboard(data, totalGlobal) {
