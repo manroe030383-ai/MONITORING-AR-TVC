@@ -109,6 +109,12 @@ function updateStatusUI(type, message = "") {
 // 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (DIPERBAIKI)
 // ========================================================
 function updateDashboard(data, totalGlobal) {
+// Debugging: Lihat apa yang diterima fungsi
+    const totalDiterima = data.reduce((acc, curr) => acc + Number(curr.os_balance || 0), 0);
+    console.log("Total dari Array Data:", totalDiterima);
+    console.log("Total Global (dari parameter):", totalGlobal);
+    
+    // Jika totalDiterima != totalGlobal, berarti masalahnya ada di query fetch data Anda!
     // 1. Inisialisasi variabel
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
     let breakdown = { ACC: { total: 0, sudah: 0, belum: 0, lunas: 0 }, TAFS: { total: 0, sudah: 0, belum: 0, lunas: 0 } };
