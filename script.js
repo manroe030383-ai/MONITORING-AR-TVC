@@ -39,8 +39,6 @@ function getProp(obj, key) {
 async function fetchData() {
     try {
         let query = supabase.from('ar_unit').select('*');
-.order('id', { ascending: false }); // Memaksa Supabase mengambil data terbaru
-
         const { data, error } = await query;
         const { data, error } = await query;
         
