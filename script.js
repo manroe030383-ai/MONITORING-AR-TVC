@@ -98,8 +98,9 @@ async function fetchData() {
 }
 
 // ========================================================
-// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (DIPERBARUI)
+// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD
 // ========================================================
+
 function updateDashboard(data, totalGlobal) {
     // 1. Inisialisasi variabel s
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
@@ -112,8 +113,7 @@ function updateDashboard(data, totalGlobal) {
 
     data.forEach(d => {
         const os = Number(getProp(d, 'os_balance') || d.os_balance || 0);
-        
-        s.os += os; // Tetap diakumulasi untuk keperluan internal kalkulasi persentase
+        s.os += os; 
         
         const b1_30 = Number(getProp(d, 'hari_1_30') || d.hari_1_30 || 0);
         const b31_60 = Number(getProp(d, 'hari_31_60') || d.hari_31_60 || 0);
@@ -168,26 +168,28 @@ function updateDashboard(data, totalGlobal) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // --- PEMBATASAN: Gunakan totalGlobal untuk tampilan ---
-    const displayOs = (totalGlobal !== undefined && totalGlobal > 0) ? totalGlobal : s.os;
+    // 2. LOGIKA TAMPILAN DOM (Sapu bersih duplikasi ID)
+    const updateCell = (id, val) => { 
+        const elements = document.querySelectorAll(`[id="${id}"]`);
+        elements.forEach(el => el.innerText = val);
+    };
 
-    const updateCell = (id, val) => { let el = document.getElementById(id); if(el) el.innerText = val; };
-    
-    // Tampilkan totalGlobal
+    // Gunakan totalGlobal (prioritas tertinggi)
+    const displayOs = (totalGlobal && totalGlobal > 0) ? totalGlobal : s.os;
     updateCell('total-os', fmtIDR(displayOs)); 
     
+    // Update data lainnya
     updateCell('total-overdue', fmtIDR(s.ov));
     updateCell('total-penalty', fmtIDR(s.pen));
     updateCell('total-lancar', fmtIDR(s.lan));
-    
     updateCell('val-total-cash', fmtIDR(s.cash));
     updateCell('unit-total-cash', s.cCash + " Unit");
     updateCell('val-total-leas', fmtIDR(s.leas));
     updateCell('unit-total-leas', s.cLeas + " Unit");
     
+    // Badge & Metrics
     let badgeOv = document.getElementById('badge-overdue');
     if(badgeOv) badgeOv.innerText = s.countOv + " SPK Lewat TOP";
-    
     let spkPen = document.getElementById('spk-penalty');
     if(spkPen) spkPen.innerText = s.cPen + " SPK";
 
@@ -217,7 +219,7 @@ function updateDashboard(data, totalGlobal) {
     updateCell('lunas-acc', breakdown.ACC.lunas);
     updateCell('lunas-tafs', breakdown.TAFS.lunas);
 
-    // Kalkulasi persentase menggunakan s.os agar proporsional
+    // Kalkulasi Chart (tetap pakai s.os agar proporsional)
     let totalOsInternal = s.os > 0 ? s.os : 1;
     let pctCash = (s.cash / totalOsInternal) * 100;
     let pctLeas = (s.leas / totalOsInternal) * 100;
@@ -237,13 +239,13 @@ function updateDashboard(data, totalGlobal) {
         }
     });
 
+    // Render Komponen
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, displayOs);
     renderTopList(mSales, 'list-sales', 'text-blue-600');
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
-    
     renderTabLeasingFull(data);
     renderTabOverdueFull(data);
     renderTabDatabaseFull(data);
@@ -252,7 +254,6 @@ function updateDashboard(data, totalGlobal) {
         renderDataArUnitFull(data);
     }
 }
-
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
