@@ -33,51 +33,67 @@ function getProp(obj, key) {
     return undefined;
 }
 // ========================================================
-// 2. FUNGSI AMBIL DATA LIVE DARI SUPABASE (TERBARU)
+// 2. FUNGSI AMBIL DATA LIVE (DIPERBAIKI SESUAI STRUKTUR DB)
 // ========================================================
 async function fetchData() {
     try {
-        // Menggunakan query dasar tanpa filter untuk mendapatkan data utuh
-        let query = supabase.from('ar_unit').select('*');
-        const { data, error } = await query;
-                
-        if (error) throw error;
-        
-        if (data) {
-            console.log("DATA DARI SUPABASE (MENTAH):", data); 
+        // Menggunakan looping untuk mengambil seluruh data (mengatasi limit 1000 baris Supabase)
+        let allData = [];
+        let from = 0;
+        let to = 999;
+        let hasMore = true;
+
+        while (hasMore) {
+            const { data, error } = await supabase
+                .from('ar_unit')
+                .select('*')
+                .range(from, to);
             
-            if (data.length === 0) {
-                if (document.getElementById('status-update')) {
-                    document.getElementById('status-update').innerText = "KONEKSI SUKSES, TAPI TABEL DI SUPABASE KOSONG (0 DATA)!";
-                    document.getElementById('status-update').className = "text-[9px] font-bold text-amber-500 uppercase tracking-widest mb-1 italic";
+            if (error) throw error;
+            
+            if (data && data.length > 0) {
+                allData = allData.concat(data);
+                // Jika data yang didapat kurang dari 1000, berarti ini halaman terakhir
+                if (data.length < 1000) {
+                    hasMore = false;
+                } else {
+                    from += 1000;
+                    to += 1000;
                 }
-                return;
+            } else {
+                hasMore = false;
             }
+        }
+        
+        console.log("TOTAL DATA DIAMBIL DARI SUPABASE:", allData.length);
+            
+        if (allData.length > 0) {
+            // Menghitung Total Global menggunakan kolom 'os_balance' yang benar
+            const totalOsGlobal = allData.reduce((acc, curr) => {
+                const val = Number(curr.os_balance || 0);
+                return acc + val;
+            }, 0);
 
-            // --- PERBAIKAN: HITUNG TOTAL GLOBAL SEBELUM FILTER ---
-            // Ini memastikan Total O/S tidak terpengaruh oleh filter TAFS/ACC
-            const totalOsGlobal = data.reduce((acc, curr) => acc + (parseFloat(curr.os_balance) || 0), 0);
-
-            // FILTER GLOBAL SEBELUM MASUK KE HITUNGAN DASHBOARD
-            let finalFilteredData = data;
-            if (isTafsPage) {
-                finalFilteredData = data.filter(d => {
-                    const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
+            // Melakukan filter data sesuai halaman (TAFS/ACC) menggunakan 'leasing_name'
+            let finalFilteredData = allData;
+            if (typeof isTafsPage !== 'undefined' && isTafsPage) {
+                finalFilteredData = allData.filter(d => {
+                    const l = String(d.leasing_name || '').toUpperCase().trim();
                     return l.includes('TAFS');
                 });
-            } else if (isAccPage) {
-                finalFilteredData = data.filter(d => {
-                    const l = String(getProp(d, 'Chas/Leasing') || getProp(d, 'Leasing Name') || '').toUpperCase().trim();
+            } else if (typeof isAccPage !== 'undefined' && isAccPage) {
+                finalFilteredData = allData.filter(d => {
+                    const l = String(d.leasing_name || '').toUpperCase().trim();
                     return l.includes('ACC');
                 });
             }
 
             cachedData = finalFilteredData; 
             
-            // --- PERBAIKAN: KIRIM TOTAL GLOBAL KE FUNGSI DASHBOARD ---
+            // Mengirim data terfilter dan total global ke dashboard
             updateDashboard(finalFilteredData, totalOsGlobal);
             
-            // Render Status Berhasil di UI
+            // Update status UI
             if (document.getElementById('status-update')) {
                 document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB (REALTIME ACTIVE)`;
                 document.getElementById('status-update').className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic";
@@ -87,22 +103,26 @@ async function fetchData() {
                 const opsiTanggal = { year: 'numeric', month: 'short', day: 'numeric' };
                 document.getElementById('tgl-arsip').innerText = new Date().toLocaleDateString('id-ID', opsiTanggal).toUpperCase();
             }
+        } else {
+            // Penanganan jika data kosong
+            if (document.getElementById('status-update')) {
+                document.getElementById('status-update').innerText = "KONEKSI SUKSES, TAPI TABEL DI SUPABASE KOSONG (0 DATA)!";
+                document.getElementById('status-update').className = "text-[9px] font-bold text-amber-500 uppercase tracking-widest mb-1 italic";
+            }
         }
     } catch (e) {
-        console.error("Error Fetching:", e);
+        console.error("Error Fetching Data:", e);
         if (document.getElementById('status-update')) {
             document.getElementById('status-update').innerText = `KONEKSI GAGAL ATAU NAMA TABEL SALAH: ${e.message}`;
             document.getElementById('status-update').className = "text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic";
         }
     }
 }
-
 // ========================================================
-// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD
+// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (DIPERBAIKI)
 // ========================================================
-
 function updateDashboard(data, totalGlobal) {
-    // 1. Inisialisasi variabel s
+    // 1. Inisialisasi variabel
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
     let breakdown = { ACC: { total: 0, sudah: 0, belum: 0, lunas: 0 }, TAFS: { total: 0, sudah: 0, belum: 0, lunas: 0 } };
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
@@ -112,20 +132,23 @@ function updateDashboard(data, totalGlobal) {
     let mLeadTime = {};
 
     data.forEach(d => {
-        const os = Number(getProp(d, 'os_balance') || d.os_balance || 0);
+        // Akses langsung kolom database
+        const os = Number(d.os_balance || 0);
         s.os += os; 
         
-        const b1_30 = Number(getProp(d, 'hari_1_30') || d.hari_1_30 || 0);
-        const b31_60 = Number(getProp(d, 'hari_31_60') || d.hari_31_60 || 0);
-        const b60 = Number(getProp(d, 'lebih_60_hari') || d.lebih_60_hari || 0);
-        const ov = Number(getProp(d, 'total_overdue') || d.total_overdue || 0);
-        const penalti = Number(getProp(d, 'penalty_amount') || d.penalty_amount || 0);
-        const lt = Number(getProp(d, 'lead_time') || d.lead_time || 0);
+        const b1_30 = Number(d.hari_1_30 || 0);
+        const b31_60 = Number(d.hari_31_60 || 0);
+        const b60 = Number(d.lebih_60_hari || 0);
+        const ov = Number(d.total_overdue || 0);
+        const penalti = Number(d.penalty_amount || 0);
+        const lt = Number(d.lead_time || 0);
         
-        const tglTagih = getProp(d, 'tgl_tagih') || d.tgl_tagih;
-        const tglBayar = getProp(d, 'tgl_bayar') || d.tgl_bayar;
-        const ketCabang = String(getProp(d, 'ket_cabang') || d.ket_cabang || '').toUpperCase().trim();
-        let l = String(getProp(d, 'Chas/Leasing') || d.leasing_name || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
+        const tglTagih = d.tgl_tagih;
+        const tglBayar = d.tgl_bayar;
+        const ketCabang = String(d.ket_cabang || '').toUpperCase().trim();
+        
+        // Menggunakan leasing_name sesuai database
+        let l = String(d.leasing_name || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
         s.ov += ov; s.pen += penalti; s.lan += lancarNominal;
@@ -162,23 +185,21 @@ function updateDashboard(data, totalGlobal) {
             mLeadTime[l].total += lt; mLeadTime[l].count += 1;
         }
         
-        const finalSales = String(getProp(d, 'salesman_name') || d.salesman_name || "OFFICE").trim();
-        const finalSpv = String(getProp(d, 'supervisor_name') || d.supervisor_name || "OFFICE").trim();
+        const finalSales = String(d.salesman_name || "OFFICE").trim();
+        const finalSpv = String(d.supervisor_name || "OFFICE").trim();
         mSales[finalSales] = (mSales[finalSales] || 0) + os;
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
-    // 2. LOGIKA TAMPILAN DOM (Sapu bersih duplikasi ID)
+    // 2. LOGIKA TAMPILAN DOM
     const updateCell = (id, val) => { 
         const elements = document.querySelectorAll(`[id="${id}"]`);
         elements.forEach(el => el.innerText = val);
     };
 
-    // Gunakan totalGlobal (prioritas tertinggi)
     const displayOs = (totalGlobal && totalGlobal > 0) ? totalGlobal : s.os;
     updateCell('total-os', fmtIDR(displayOs)); 
     
-    // Update data lainnya
     updateCell('total-overdue', fmtIDR(s.ov));
     updateCell('total-penalty', fmtIDR(s.pen));
     updateCell('total-lancar', fmtIDR(s.lan));
@@ -187,7 +208,6 @@ function updateDashboard(data, totalGlobal) {
     updateCell('val-total-leas', fmtIDR(s.leas));
     updateCell('unit-total-leas', s.cLeas + " Unit");
     
-    // Badge & Metrics
     let badgeOv = document.getElementById('badge-overdue');
     if(badgeOv) badgeOv.innerText = s.countOv + " SPK Lewat TOP";
     let spkPen = document.getElementById('spk-penalty');
@@ -219,7 +239,6 @@ function updateDashboard(data, totalGlobal) {
     updateCell('lunas-acc', breakdown.ACC.lunas);
     updateCell('lunas-tafs', breakdown.TAFS.lunas);
 
-    // Kalkulasi Chart (tetap pakai s.os agar proporsional)
     let totalOsInternal = s.os > 0 ? s.os : 1;
     let pctCash = (s.cash / totalOsInternal) * 100;
     let pctLeas = (s.leas / totalOsInternal) * 100;
@@ -239,7 +258,6 @@ function updateDashboard(data, totalGlobal) {
         }
     });
 
-    // Render Komponen
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, displayOs);
@@ -254,6 +272,7 @@ function updateDashboard(data, totalGlobal) {
         renderDataArUnitFull(data);
     }
 }
+
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
