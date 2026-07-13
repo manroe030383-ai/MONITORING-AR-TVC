@@ -32,93 +32,72 @@ function getProp(obj, key) {
     }
     return undefined;
 }
+
 // ========================================================
-// 2. FUNGSI AMBIL DATA LIVE (DIPERBAIKI SESUAI STRUKTUR DB)
+// 2. FUNGSI AMBIL DATA LIVE DARI SUPABASE
 // ========================================================
+
 async function fetchData() {
     try {
-        // Menggunakan looping untuk mengambil seluruh data (mengatasi limit 1000 baris Supabase)
-        let allData = [];
-        let from = 0;
-        let to = 999;
-        let hasMore = true;
-
-        while (hasMore) {
-            const { data, error } = await supabase
-                .from('ar_unit')
-                .select('*')
-                .range(from, to);
+        // 1. Ambil data tanpa looping manual jika data < 5000 baris
+        // Ini jauh lebih cepat dan meminimalkan beban koneksi
+        const { data, error } = await supabase
+            .from('ar_unit')
+            .select('*'); 
             
-            if (error) throw error;
-            
-            if (data && data.length > 0) {
-                allData = allData.concat(data);
-                // Jika data yang didapat kurang dari 1000, berarti ini halaman terakhir
-                if (data.length < 1000) {
-                    hasMore = false;
-                } else {
-                    from += 1000;
-                    to += 1000;
-                }
-            } else {
-                hasMore = false;
-            }
-        }
+        if (error) throw error;
         
-        console.log("TOTAL DATA DIAMBIL DARI SUPABASE:", allData.length);
-            
-        if (allData.length > 0) {
-            // Menghitung Total Global menggunakan kolom 'os_balance' yang benar
-            const totalOsGlobal = allData.reduce((acc, curr) => {
-                const val = Number(curr.os_balance || 0);
-                return acc + val;
-            }, 0);
-
-            // Melakukan filter data sesuai halaman (TAFS/ACC) menggunakan 'leasing_name'
-            let finalFilteredData = allData;
-            if (typeof isTafsPage !== 'undefined' && isTafsPage) {
-                finalFilteredData = allData.filter(d => {
-                    const l = String(d.leasing_name || '').toUpperCase().trim();
-                    return l.includes('TAFS');
-                });
-            } else if (typeof isAccPage !== 'undefined' && isAccPage) {
-                finalFilteredData = allData.filter(d => {
-                    const l = String(d.leasing_name || '').toUpperCase().trim();
-                    return l.includes('ACC');
-                });
-            }
-
-            cachedData = finalFilteredData; 
-            
-            // Mengirim data terfilter dan total global ke dashboard
-            updateDashboard(finalFilteredData, totalOsGlobal);
-            
-            // Update status UI
-            if (document.getElementById('status-update')) {
-                document.getElementById('status-update').innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB (REALTIME ACTIVE)`;
-                document.getElementById('status-update').className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic";
-            }
-
-            if (document.getElementById('tgl-arsip')) {
-                const opsiTanggal = { year: 'numeric', month: 'short', day: 'numeric' };
-                document.getElementById('tgl-arsip').innerText = new Date().toLocaleDateString('id-ID', opsiTanggal).toUpperCase();
-            }
-        } else {
-            // Penanganan jika data kosong
-            if (document.getElementById('status-update')) {
-                document.getElementById('status-update').innerText = "KONEKSI SUKSES, TAPI TABEL DI SUPABASE KOSONG (0 DATA)!";
-                document.getElementById('status-update').className = "text-[9px] font-bold text-amber-500 uppercase tracking-widest mb-1 italic";
-            }
+        if (!data || data.length === 0) {
+            console.warn("Data kosong atau gagal diambil.");
+            return;
         }
+
+        console.log("DATA BERHASIL DIAMBIL:", data.length);
+
+        // 2. Gunakan data terbaru untuk perhitungan global
+        // Pastikan nama kolom 'os_balance' sesuai dengan database Anda
+        const totalOsGlobal = data.reduce((acc, curr) => acc + Number(curr.os_balance || 0), 0);
+
+        // 3. Filter data berdasarkan halaman (gunakan fungsi helper)
+        let finalFilteredData = filterDataByPage(data);
+
+        // 4. Update state global
+        cachedData = finalFilteredData; 
+        
+        // 5. Update UI
+        updateDashboard(finalFilteredData, totalOsGlobal);
+        updateStatusUI("SUCCESS");
+
     } catch (e) {
         console.error("Error Fetching Data:", e);
-        if (document.getElementById('status-update')) {
-            document.getElementById('status-update').innerText = `KONEKSI GAGAL ATAU NAMA TABEL SALAH: ${e.message}`;
-            document.getElementById('status-update').className = "text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic";
-        }
+        updateStatusUI("ERROR", e.message);
     }
 }
-// ========================================================
+
+// Helper untuk filter agar kode lebih rapi
+function filterDataByPage(data) {
+    if (typeof isTafsPage !== 'undefined' && isTafsPage) {
+        return data.filter(d => String(d.leasing_name || '').toUpperCase().includes('TAFS'));
+    } 
+    if (typeof isAccPage !== 'undefined' && isAccPage) {
+        return data.filter(d => String(d.leasing_name || '').toUpperCase().includes('ACC'));
+    }
+    return data;
+}
+
+// Helper untuk update status UI agar tidak berantakan di dalam fetchData
+function updateStatusUI(type, message = "") {
+    const el = document.getElementById('status-update');
+    if (!el) return;
+    
+    if (type === "SUCCESS") {
+        el.innerText = `DATA UPDATE: ${new Date().toLocaleString('id-ID')} WIB (REALTIME ACTIVE)`;
+        el.className = "text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 italic";
+    } else {
+        el.innerText = `KONEKSI GAGAL: ${message}`;
+        el.className = "text-[9px] font-bold text-red-600 uppercase tracking-widest mb-1 italic";
+    }
+}// ========================================================
 // 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (DIPERBAIKI)
 // ========================================================
 function updateDashboard(data, totalGlobal) {
@@ -630,71 +609,41 @@ window.updateLeadTimeUI = function(dataArray) {
 
 
 
-// ========================================================
-
 // 10. INISIALISASI REALTIME LISTENER & EVENT HANDLER
-
-// ========================================================
-
 document.addEventListener('DOMContentLoaded', () => {
-
     const btnDownload = document.getElementById('btn-download-excel');
-
     if (btnDownload) { btnDownload.addEventListener('click', downloadExcel); }    
-
     
-
     // Ambil data pertama kali saat dashboard dibuka
-
     fetchData();
-// Inisialisasi timer untuk debounce
+
+    // Inisialisasi timer untuk debounce
     let debounceTimer;
     
-
     // ========================================================
-
     // AKTIFKAN LIVE SYNC REAL-TIME SUPABASE 
-
     // ========================================================
-
     supabase
-
         .channel('schema-db-changes')
-
         .on(
-
             'postgres_changes', 
-
             { 
-
                 event: '*', 
-
                 schema: 'public', 
-
                 table: 'ar_unit' 
-
             }, 
-
             (payload) => {
-
-                console.log('Perubahan Database Terdeteksi Real-time:', payload);
-
-                fetchData(); 
-
-            }
-
-        )
-// Hapus timer sebelumnya dan mulai timer baru
+                console.log('Perubahan Database Terdeteksi, menjalankan debounce...');
+                
+                // Hapus timer sebelumnya dan mulai timer baru
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
+                    console.log('Refreshing data setelah debounce...');
                     fetchData(); 
-                }, 800); // Tunggu 800ms setelah perubahan terakhir sebelum refresh
+                }, 800); 
             }
         )
         .subscribe((status) => {
-
             console.log('Status Sinkronisasi Live Realtime:', status);
-
         });
-
 });
