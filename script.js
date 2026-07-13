@@ -98,10 +98,12 @@ async function fetchData() {
 }
 
 // ========================================================
-// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (LENGKAP & KONSISTEN)
+// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (DIPERBARUI)
 // ========================================================
-function updateDashboard(data) {
+// Tambahkan parameter 'totalGlobal' untuk menerima nilai dari fetchData
+function updateDashboard(data, totalGlobal) {
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
+    // ... (kode inisialisasi lainnya tetap SAMA, JANGAN DIUBAH) ...
     let breakdown = { ACC: { total: 0, sudah: 0, belum: 0, lunas: 0 }, TAFS: { total: 0, sudah: 0, belum: 0, lunas: 0 } };
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
@@ -110,8 +112,9 @@ function updateDashboard(data) {
     let mLeadTime = {};
 
     data.forEach(d => {
-        // Mengambil nilai dengan getProp untuk memastikan kolom terbaca meski case-sensitive atau ada spasi
+        // ... (seluruh logika perulangan d.forEach tetap SAMA, JANGAN DIUBAH) ...
         const os = Number(getProp(d, 'os_balance') || d.os_balance || 0);
+        // ... (lanjutan logika d.forEach Anda) ...
         const b1_30 = Number(getProp(d, 'hari_1_30') || d.hari_1_30 || 0);
         const b31_60 = Number(getProp(d, 'hari_31_60') || d.hari_31_60 || 0);
         const b60 = Number(getProp(d, 'lebih_60_hari') || d.lebih_60_hari || 0);
@@ -122,10 +125,7 @@ function updateDashboard(data) {
         const tglTagih = getProp(d, 'tgl_tagih') || d.tgl_tagih;
         const tglBayar = getProp(d, 'tgl_bayar') || d.tgl_bayar;
         const ketCabang = String(getProp(d, 'ket_cabang') || d.ket_cabang || '').toUpperCase().trim();
-        
-        // Logika Leasing
         let l = String(getProp(d, 'Chas/Leasing') || d.leasing_name || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
-        
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
         s.os += os; s.ov += ov; s.pen += penalti; s.lan += lancarNominal;
@@ -168,13 +168,19 @@ function updateDashboard(data) {
         mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
     });
 
+    // --- PERBAIKAN: Gunakan totalGlobal jika tersedia ---
+    const finalOs = (totalGlobal !== undefined && totalGlobal > 0) ? totalGlobal : s.os;
+
     // --- PEMBARUAN Tampilan (DOM) ---
     const updateCell = (id, val) => { 
         let el = document.getElementById(id);
         if(el) el.innerText = val; 
     };
     
-    updateCell('total-os', fmtIDR(s.os));
+    // Gunakan finalOs di sini
+    updateCell('total-os', fmtIDR(finalOs));
+    
+    // ... (seluruh baris updateCell di bawah ini tetap SAMA, JANGAN DIUBAH) ...
     updateCell('total-overdue', fmtIDR(s.ov));
     updateCell('total-penalty', fmtIDR(s.pen));
     updateCell('total-lancar', fmtIDR(s.lan));
@@ -216,7 +222,8 @@ function updateDashboard(data) {
     updateCell('lunas-acc', breakdown.ACC.lunas);
     updateCell('lunas-tafs', breakdown.TAFS.lunas);
 
-    let totalOs = s.os > 0 ? s.os : 1;
+    // ... (sisa logika chart dan rendering lainnya tetap SAMA, JANGAN DIUBAH) ...
+    let totalOs = finalOs > 0 ? finalOs : 1;
     let pctCash = (s.cash / totalOs) * 100;
     let pctLeas = (s.leas / totalOs) * 100;
     
@@ -237,7 +244,7 @@ function updateDashboard(data) {
 
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
-    renderLeasingList(mLeas, s.os);
+    renderLeasingList(mLeas, finalOs);
     renderTopList(mSales, 'list-sales', 'text-blue-600');
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
@@ -250,7 +257,6 @@ function updateDashboard(data) {
         renderDataArUnitFull(data);
     }
 }
-
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
