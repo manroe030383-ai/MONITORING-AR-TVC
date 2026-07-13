@@ -109,75 +109,102 @@ function updateStatusUI(type, message = "") {
 // 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (DIPERBAIKI)
 // ========================================================
 function updateDashboard(data, totalGlobal) {
-    // 1. DEBUGGING (Sangat Penting: Jangan hapus agar Anda bisa cek selisihnya)
-    const totalDiterima = data.reduce((acc, curr) => acc + Number(curr.os_balance || 0), 0);
-    console.log("--- DEBUG DASHBOARD ---");
-    console.log("Total Nominal dari Database (Data Diterima):", totalDiterima);
-    console.log("Total Global (Parameter luar):", totalGlobal);
-    console.log("Jumlah baris data:", data.length);
-
-    // 2. INISIALISASI VARIABEL
+    // 1. Inisialisasi variabel (Sama seperti versi asli Anda)
     let s = { os: 0, ov: 0, pen: 0, lan: 0, cash: 0, leas: 0, cCash: 0, cLeas: 0, countOv: 0, cPen: 0 };
+    let breakdown = { ACC: { total: 0, sudah: 0, belum: 0, lunas: 0 }, TAFS: { total: 0, sudah: 0, belum: 0, lunas: 0 } };
     let aging = { 'LANCAR': 0, '1-30 H': 0, '31-60 H': 0, '>60 H': 0 };
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
-    
-    // 3. PROSES DATA (LOOPING)
+    let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
+    let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
+    let mLeadTime = {};
+
     data.forEach(d => {
         const os = Number(d.os_balance || 0);
         const ov = Number(d.total_overdue || 0);
         const penalti = Number(d.penalty_amount || 0);
-        const umur = Number(d.aging_days || 0); // Menggunakan umur aktual dari Supabase
+        const lt = Number(d.lead_time || 0);
+        const umur = Number(d.aging_days || 0); // Logika baru: Menggunakan aging_days
         
-        s.os += os; 
-        s.ov += ov; 
+        const tglTagih = d.tgl_tagih;
+        const tglBayar = d.tgl_bayar;
+        const ketCabang = String(d.ket_cabang || '').toUpperCase().trim();
+        let l = String(d.leasing_name || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
+
+        s.os += os;
+        s.ov += ov;
         s.pen += penalti;
 
-        // LOGIKA AGING OTOMATIS (Mencakup 36, 38, 44 hari dll)
+        // PERBAIKAN LOGIKA AGING (Mencakup 36, 38, 44 hari, dll)
         if (umur === 0) {
             aging['LANCAR'] += os / 1000000;
             s.lan += os;
         } else if (umur >= 1 && umur <= 30) {
             aging['1-30 H'] += os / 1000000;
         } else if (umur >= 31 && umur <= 60) {
-            // Data 36, 38, dan 44 hari otomatis masuk ke sini
             aging['31-60 H'] += os / 1000000;
         } else if (umur > 60) {
             aging['>60 H'] += os / 1000000;
         }
 
-        // Logic Leasing & Sales (Tetap sama)
-        const l = String(d.leasing_name || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
+        const isTafs = l.includes('TAFS');
+        const isAcc = l.includes('ACC');
+
         if (l === "CASH" || l === "") { 
             s.cash += os; s.cCash++; 
         } else { 
-            s.leas += os; s.cLeas++; mLeas[l] = (mLeas[l] || 0) + os;
+            s.leas += os; s.cLeas++; mLeas[l] = (mLeas[l] || 0) + os; 
+            if (isTafs || isAcc) {
+                let target = isAcc ? breakdown.ACC : breakdown.TAFS;
+                target.total++;
+                if (tglBayar) target.lunas++; else if (tglTagih) target.sudah++; else target.belum++;
+            }
         }
         
-        const finalSales = String(d.salesman_name || "OFFICE").trim();
-        const finalSpv = String(d.supervisor_name || "OFFICE").trim();
-        mSales[finalSales] = (mSales[finalSales] || 0) + os;
-        mSpv[finalSpv] = (mSpv[finalSpv] || 0) + os;
+        if (isTafs || isAcc) {
+            let m = isTafs ? tafsMetrics : accMetrics;
+            if (tglBayar || os <= 0) m.paid++; 
+            else { m.os += os; if (ov > 0) m.overdue++; else m.onProses++; }
+        }
+
+        if (ketCabang.includes('LUNAS') && lt > 0 && (isTafs || isAcc)) {
+            if (!mLeadTime[l]) mLeadTime[l] = { total: 0, count: 0 };
+            mLeadTime[l].total += lt; mLeadTime[l].count += 1;
+        }
+        
+        mSales[String(d.salesman_name || "OFFICE").trim()] = (mSales[String(d.salesman_name || "OFFICE").trim()] || 0) + os;
+        mSpv[String(d.supervisor_name || "OFFICE").trim()] = (mSpv[String(d.supervisor_name || "OFFICE").trim()] || 0) + os;
+        if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
+        if (penalti > 0) s.cPen++;
     });
 
-    // 4. PEMBARUAN DOM
-    const updateCell = (id, val) => { 
-        document.querySelectorAll(`[id="${id}"]`).forEach(el => el.innerText = val);
-    };
+    // 2. LOGIKA TAMPILAN (Tetap sama untuk memastikan fungsi asli berjalan)
+    const updateCell = (id, val) => { document.querySelectorAll(`[id="${id}"]`).forEach(el => el.innerText = val); };
 
-    // PENTING: Gunakan s.os (hasil hitungan nyata dari data yang diterima)
-    // Jika Anda ingin menggunakan totalGlobal, pastikan query Supabase Anda 
-    // TIDAK memfilter data.
-    updateCell('total-os', fmtIDR(s.os)); 
+    updateCell('total-os', fmtIDR(totalGlobal || s.os));
     updateCell('total-overdue', fmtIDR(s.ov));
+    updateCell('total-penalty', fmtIDR(s.pen));
     updateCell('total-lancar', fmtIDR(s.lan));
+    updateCell('val-total-cash', fmtIDR(s.cash));
+    updateCell('unit-total-cash', s.cCash + " Unit");
+    updateCell('val-total-leas', fmtIDR(s.leas));
+    updateCell('unit-total-leas', s.cLeas + " Unit");
     
-    // 5. RENDER CHART
+    // Render Fungsi Lainnya (Dipastikan tidak hilang)
+    updateCell('tafs-outstanding', fmtIDR(tafsMetrics.os));
+    updateCell('acc-outstanding', fmtIDR(accMetrics.os));
+    updateCell('total-do-acc', breakdown.ACC.total);
+    updateCell('total-do-tafs', breakdown.TAFS.total);
+    
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
-    renderLeasingList(mLeas, s.os);
+    renderLeasingList(mLeas, totalGlobal || s.os);
     renderTopList(mSales, 'list-sales', 'text-blue-600');
     renderTopList(mSpv, 'list-spv', 'text-purple-600');
     renderOverdueTop(mOverdueTop);
+    renderTabLeasingFull(data);
+    renderTabOverdueFull(data);
+    renderTabDatabaseFull(data);
+    if (typeof renderDataArUnitFull === 'function') renderDataArUnitFull(data);
 }
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
