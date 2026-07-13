@@ -528,62 +528,52 @@ function renderTabDatabaseFull(data) {
 // ========================================================
 // 6. FUNGSI SIMPAN KHUSUS ADMIN CABANG (DASHBOARD.HTML) - FIXED DATA SYNC
 // ========================================================
-window.simpanCatatan = async function(nomorSPK) {
+window.simpanCatatanCabang = async function(nomorSPK) {
     try {
         if (!nomorSPK) return;
         const idSistem = nomorSPK.replace(/[^a-zA-Z0-9]/g, '_');
         const inputEl = document.getElementById(`cabang-${idSistem}`);
         if (!inputEl) return;
         
-        const valCabang = inputEl.value;
-
-        const spkAngka = parseInt(nomorSPK, 10);
-        if (isNaN(spkAngka)) {
-            alert("Gagal menyimpan: Format Nomor SPK harus berupa angka murni.");
-            return;
-        }
-
         const { error } = await supabase
             .from('ar_unit')
-            .update({ ket_cabang: valCabang })
-            .eq('no_spk', spkAngka);
+            .update({ ket_cabang: inputEl.value })
+            .eq('no_spk', nomorSPK);
 
         if (error) throw error;
         alert("Keterangan cabang berhasil disimpan! 👍");
         fetchData();
-        
     } catch (err) {
         console.error(err);
-        alert("Gagal menyimpan data: " + err.message);
+        alert("Gagal menyimpan: " + err.message);
     }
 }
-
 // ========================================================
 // 7. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML) - FIXED DATA SYNC
 // ========================================================
-window.simpanCatatan = async function(nomorSPK) {
+window.simpanCatatanLeasing = async function(nomorSPK) {
     try {
         if (!nomorSPK) return;
-        // Gunakan string langsung untuk ID elemen
         const idSistem = String(nomorSPK).replace(/[^a-zA-Z0-9]/g, '_');
-        const inputEl = document.getElementById(`cabang-${idSistem}`);
-        if (!inputEl) return;
         
-        const valCabang = inputEl.value;
-
-        // Langsung gunakan nomorSPK untuk query Supabase
+        // Sesuaikan ID yang dicari dengan elemen di TAFS.html/ACC.html
+        const elPlan = document.getElementById(`plan-${idSistem}`);
+        const elKet = document.getElementById(`ket-${idSistem}`);
+        
         const { error } = await supabase
             .from('ar_unit')
-            .update({ ket_cabang: valCabang })
-            .eq('no_spk', nomorSPK); // Mengirim langsung nilai asli
+            .update({ 
+                plan_bayar_leasing: elPlan ? elPlan.value : null,
+                ket_leasing: elKet ? elKet.value : null 
+            })
+            .eq('no_spk', nomorSPK);
 
         if (error) throw error;
-        alert("Keterangan cabang berhasil disimpan! 👍");
+        alert("Respon leasing berhasil disimpan! 👍");
         fetchData();
-        
     } catch (err) {
         console.error(err);
-        alert("Gagal menyimpan data: " + err.message);
+        alert("Gagal menyimpan: " + err.message);
     }
 }
 // ========================================================
@@ -657,7 +647,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ambil data pertama kali saat dashboard dibuka
 
     fetchData();
-
+// Inisialisasi timer untuk debounce
+    let debounceTimer;
     
 
     // ========================================================
@@ -693,7 +684,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         )
-
+// Hapus timer sebelumnya dan mulai timer baru
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    fetchData(); 
+                }, 800); // Tunggu 800ms setelah perubahan terakhir sebelum refresh
+            }
+        )
         .subscribe((status) => {
 
             console.log('Status Sinkronisasi Live Realtime:', status);
