@@ -561,41 +561,31 @@ window.simpanCatatan = async function(nomorSPK) {
 // ========================================================
 // 7. FUNGSI SIMPAN KHUSUS LEASING (TAFS.HTML / ACC.HTML) - FIXED DATA SYNC
 // ========================================================
-window.simpanCatatanLeasing = async function(nomorSPK) {
+window.simpanCatatan = async function(nomorSPK) {
     try {
         if (!nomorSPK) return;
-        const idSistem = nomorSPK.replace(/[^a-zA-Z0-9]/g, '_');
-        const planEl = document.getElementById(`plan-${idSistem}`);
-        const ketEl = document.getElementById(`ket-${idSistem}`);
-        if (!planEl || !ketEl) return;
+        // Gunakan string langsung untuk ID elemen
+        const idSistem = String(nomorSPK).replace(/[^a-zA-Z0-9]/g, '_');
+        const inputEl = document.getElementById(`cabang-${idSistem}`);
+        if (!inputEl) return;
+        
+        const valCabang = inputEl.value;
 
-        const valPlan = planEl.value;
-        const valKetLeas = ketEl.value;
-
-        const spkAngka = parseInt(nomorSPK, 10);
-        if (isNaN(spkAngka)) {
-            alert("Leasing gagal menyimpan: Format Nomor SPK harus berupa angka murni.");
-            return;
-        }
-
+        // Langsung gunakan nomorSPK untuk query Supabase
         const { error } = await supabase
             .from('ar_unit')
-            .update({ 
-                plan_bayar_leasing: valPlan, 
-                ket_leasing: valKetLeas 
-            })
-            .eq('no_spk', spkAngka);
+            .update({ ket_cabang: valCabang })
+            .eq('no_spk', nomorSPK); // Mengirim langsung nilai asli
 
         if (error) throw error;
-        alert("Respon Leasing Berhasil Diperbarui! ✔️");
+        alert("Keterangan cabang berhasil disimpan! 👍");
         fetchData();
         
     } catch (err) {
         console.error(err);
-        alert("Leasing gagal menyimpan data: " + err.message);
+        alert("Gagal menyimpan data: " + err.message);
     }
 }
-
 // ========================================================
 // 8. FUNGSI DOWNLOAD DATA KE EXCEL (FIXED FOR COMPATIBILITY)
 // ========================================================
