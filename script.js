@@ -107,7 +107,7 @@ function updateStatusUI(type, message = "") {
 }
 
 // ========================================================
-// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (DIPERBAIKI)
+// 3. FUNGSI PROSES LOGIKA & UPDATE DASHBOARD (LENGKAP & REVISI)
 // ========================================================
 function updateDashboard(data, totalGlobal) {
     // 1. Inisialisasi variabel
@@ -117,13 +117,10 @@ function updateDashboard(data, totalGlobal) {
     let mLeas = {}, mSales = {}, mSpv = {}, mOverdueTop = [];
     let tafsMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
     let accMetrics = { os: 0, paid: 0, onProses: 0, overdue: 0 };
-    let mLeadTime = {};
+    let mLeadTime = { ACC: { total: 0, count: 0 }, TAFS: { total: 0, count: 0 } };
 
     data.forEach(d => {
-        // Akses langsung kolom database
         const os = Number(d.os_balance || 0);
-        s.os += os; 
-        
         const b1_30 = Number(d.hari_1_30 || 0);
         const b31_60 = Number(d.hari_31_60 || 0);
         const b60 = Number(d.lebih_60_hari || 0);
@@ -135,11 +132,19 @@ function updateDashboard(data, totalGlobal) {
         const tglBayar = d.tgl_bayar;
         const ketCabang = String(d.ket_cabang || '').toUpperCase().trim();
         
-        // Menggunakan leasing_name sesuai database
-        let l = String(d.leasing_name || 'CASH').toUpperCase().replace(/\s+/g, '').trim();
+        // REVISI: Normalisasi lebih toleran terhadap spasi
+        let lRaw = String(d.leasing_name || 'CASH').toUpperCase().trim();
+        const isTafs = lRaw.includes('TAFS');
+        const isAcc = lRaw.includes('ACC');
+        const isCash = (lRaw === "CASH" || lRaw === "");
+
         const lancarNominal = ov === 0 ? os : (os - ov > 0 ? os - ov : 0);
 
-        s.ov += ov; s.pen += penalti; s.lan += lancarNominal;
+        s.os += os;
+        s.ov += ov; 
+        s.pen += penalti; 
+        s.lan += lancarNominal;
+
         if (ov > 0) { s.countOv++; mOverdueTop.push(d); }
         if (penalti > 0) s.cPen++;
 
@@ -148,29 +153,35 @@ function updateDashboard(data, totalGlobal) {
         aging['31-60 H'] += b31_60 / 1000000;
         aging['>60 H'] += b60 / 1000000;
 
-        const isTafs = l.includes('TAFS');
-        const isAcc = l.includes('ACC');
-
-        if (l === "CASH" || l === "") { 
+        if (isCash) { 
             s.cash += os; s.cCash++; 
         } else { 
-            s.leas += os; s.cLeas++; mLeas[l] = (mLeas[l] || 0) + os; 
+            s.leas += os; s.cLeas++; 
+            mLeas[lRaw] = (mLeas[lRaw] || 0) + os; 
+            
             if (isTafs || isAcc) {
-                let target = isAcc ? breakdown.ACC : breakdown.TAFS;
-                target.total++;
-                if (tglBayar) target.lunas++; else if (tglTagih) target.sudah++; else target.belum++;
+                let key = isAcc ? 'ACC' : 'TAFS';
+                breakdown[key].total++;
+                if (tglBayar) breakdown[key].lunas++; 
+                else if (tglTagih) breakdown[key].sudah++; 
+                else breakdown[key].belum++;
             }
         }
         
         if (isTafs || isAcc) {
             let m = isTafs ? tafsMetrics : accMetrics;
             if (tglBayar || os <= 0) m.paid++; 
-            else { m.os += os; if (ov > 0) m.overdue++; else m.onProses++; }
+            else { 
+                m.os += os; 
+                if (ov > 0) m.overdue++; else m.onProses++; 
+            }
         }
 
-        if (ketCabang.includes('LUNAS') && lt > 0 && (isTafs || isAcc)) {
-            if (!mLeadTime[l]) mLeadTime[l] = { total: 0, count: 0 };
-            mLeadTime[l].total += lt; mLeadTime[l].count += 1;
+        // Perhitungan Lead Time: Gunakan status jika tgl_bayar ada
+        if (tglBayar && lt > 0 && (isTafs || isAcc)) {
+            let key = isAcc ? 'ACC' : 'TAFS';
+            mLeadTime[key].total += lt; 
+            mLeadTime[key].count += 1;
         }
         
         const finalSales = String(d.salesman_name || "OFFICE").trim();
@@ -181,13 +192,11 @@ function updateDashboard(data, totalGlobal) {
 
     // 2. LOGIKA TAMPILAN DOM
     const updateCell = (id, val) => { 
-        const elements = document.querySelectorAll(`[id="${id}"]`);
-        elements.forEach(el => el.innerText = val);
+        document.querySelectorAll(`[id="${id}"]`).forEach(el => el.innerText = val);
     };
 
     const displayOs = (totalGlobal && totalGlobal > 0) ? totalGlobal : s.os;
     updateCell('total-os', fmtIDR(displayOs)); 
-    
     updateCell('total-overdue', fmtIDR(s.ov));
     updateCell('total-penalty', fmtIDR(s.pen));
     updateCell('total-lancar', fmtIDR(s.lan));
@@ -201,6 +210,7 @@ function updateDashboard(data, totalGlobal) {
     let spkPen = document.getElementById('spk-penalty');
     if(spkPen) spkPen.innerText = s.cPen + " SPK";
 
+    // Update Metrics TAFS & ACC
     updateCell('tafs-outstanding', fmtIDR(tafsMetrics.os));
     updateCell('tafs-paid', tafsMetrics.paid + " Unit");
     updateCell('tafs-on-proses', tafsMetrics.onProses + " Unit");
@@ -211,13 +221,23 @@ function updateDashboard(data, totalGlobal) {
     updateCell('acc-on-proses', accMetrics.onProses + " Unit");
     updateCell('acc-overdue', accMetrics.overdue + " Unit");
 
+    // Update Lead Time
     ['ACC', 'TAFS'].forEach(l => {
-        let avg = (mLeadTime[l] && mLeadTime[l].count > 0) ? Math.round(mLeadTime[l].total / mLeadTime[l].count) : 0;
+        let avg = (mLeadTime[l].count > 0) ? Math.round(mLeadTime[l].total / mLeadTime[l].count) : 0;
         updateCell(`val-lead-time-${l.toLowerCase()}`, avg + " Hari");
+        updateCell(`avg-lead-${l.toLowerCase()}`, avg + " Hari");
+        
         let bar = document.getElementById(`bar-lead-time-${l.toLowerCase()}`);
         if (bar) bar.style.width = Math.min(avg, 100) + "%";
+        
+        let barMain = document.getElementById(`bar-${l.toLowerCase()}`);
+        if (barMain) {
+            barMain.style.width = Math.min(avg, 100) + "%";
+            barMain.style.backgroundColor = (l === 'ACC') ? '#EF4444' : '#3B82F6';
+        }
     });
 
+    // Update Breakdown
     updateCell('total-do-acc', breakdown.ACC.total);
     updateCell('total-do-tafs', breakdown.TAFS.total);
     updateCell('sudah-tagih-acc', breakdown.ACC.sudah);
@@ -227,25 +247,14 @@ function updateDashboard(data, totalGlobal) {
     updateCell('lunas-acc', breakdown.ACC.lunas);
     updateCell('lunas-tafs', breakdown.TAFS.lunas);
 
+    // Update Progress Bar Global
     let totalOsInternal = s.os > 0 ? s.os : 1;
-    let pctCash = (s.cash / totalOsInternal) * 100;
-    let pctLeas = (s.leas / totalOsInternal) * 100;
-    
     let elBarCash = document.getElementById('bar-cash');
     let elBarLeas = document.getElementById('bar-leasing');
-    if (elBarCash) elBarCash.style.width = pctCash + "%";
-    if (elBarLeas) elBarLeas.style.width = pctLeas + "%";
+    if (elBarCash) elBarCash.style.width = ((s.cash / totalOsInternal) * 100) + "%";
+    if (elBarLeas) elBarLeas.style.width = ((s.leas / totalOsInternal) * 100) + "%";
 
-    ['ACC', 'TAFS'].forEach(l => {
-        let avg = (mLeadTime[l] && mLeadTime[l].count > 0) ? Math.round(mLeadTime[l].total / mLeadTime[l].count) : 0;
-        updateCell(`avg-lead-${l.toLowerCase()}`, avg + " Hari");
-        let bar = document.getElementById(`bar-${l.toLowerCase()}`);
-        if (bar) {
-            bar.style.width = Math.min(avg, 100) + "%";
-            bar.style.backgroundColor = (l === 'ACC') ? '#EF4444' : '#3B82F6';
-        }
-    });
-
+    // Render Charts & Tables
     renderAgingChart(aging);
     renderDonutLeasing(mLeas);
     renderLeasingList(mLeas, displayOs);
@@ -260,8 +269,6 @@ function updateDashboard(data, totalGlobal) {
         renderDataArUnitFull(data);
     }
 }
-
-
  // ========================================================
 // 4. FUNGSI RENDER VISUAL GRAFIK & DIAGRAM (APEXCHARTS)
 // ========================================================
