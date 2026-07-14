@@ -247,6 +247,17 @@ function updateDashboard(data, totalGlobal) {
     updateCell('lunas-acc', breakdown.ACC.lunas);
     updateCell('lunas-tafs', breakdown.TAFS.lunas);
 
+// Berikan warna khusus: ACC (Merah), TAFS (Biru)
+const colorACC = '#EF4444'; // Merah
+const colorTAFS = '#3B82F6'; // Biru
+
+const colorize = (ids, color) => {
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.color = color;
+    });
+};
+
     // Update Progress Bar Global
     let totalOsInternal = s.os > 0 ? s.os : 1;
     let elBarCash = document.getElementById('bar-cash');
